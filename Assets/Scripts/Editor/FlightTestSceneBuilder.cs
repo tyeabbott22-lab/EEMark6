@@ -668,8 +668,17 @@ namespace ExtraterrestrialExhaust.Editor
         static void ConfigureBuildSettings()
         {
             List<EditorBuildSettingsScene> scenes = EditorBuildSettings.scenes.ToList();
-            if (!scenes.Any(scene => scene.path == ScenePath))
-                scenes.Add(new EditorBuildSettingsScene(ScenePath, true));
+            EditorBuildSettingsScene flightTest = scenes.FirstOrDefault(scene => scene.path == ScenePath);
+            if (flightTest == null)
+                flightTest = new EditorBuildSettingsScene(ScenePath, true);
+            else
+                flightTest.enabled = true;
+
+            // The production-facing slice must be the launch scene. Keep any
+            // existing sample scenes after it for editor experiments, but do
+            // not make a reviewer hunt through Build Settings to find the game.
+            scenes.RemoveAll(scene => scene.path == ScenePath);
+            scenes.Insert(0, flightTest);
 
             EditorBuildSettings.scenes = scenes.ToArray();
             PlayerSettings.productName = "Extraterrestrial Exhaust";

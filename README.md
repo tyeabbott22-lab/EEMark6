@@ -38,13 +38,13 @@ The player foundation is intentionally split into three responsibilities:
 | `PlayerRespawnController` | Reproduces the EE5 current-room reload on death, with an explicit in-place respawn fallback for reusable rooms. |
 | `PlayerWeapon` | Handles player firing, cooldowns, fire-rate boosts, recoil, and the EE5-style wall/enemy aim line. |
 | `PlayerProjectile` | Shared projectile movement, lifetime, owner filtering, damage impacts, source-specific speed/tint overrides, and team-colored trails. |
-| `PlayerFlightPresentation` | Drives exhaust and EE5-style one-shot squash feedback without touching physics. |
+| `PlayerFlightPresentation` | Drives particle-backed exhaust, optional sprite-frame sequencing, and EE5-style one-shot squash feedback without touching physics. |
 | `PlayerDamageFeedback` | Converts damage events into the EE5 alternating red/yellow hit flash and clears transient state on death/disable. |
 | `PlayerCameraFollow` | Provides EE5-style velocity lead, speed zoom, starfield parallax, coherent shake, enemy-death feedback, and wall-impact feedback. |
 | `PlayerHealthDisplay` | Presents health state without owning combat rules. |
 | `ContactHazard` | Optional reusable damage volume for authored hazard rooms. |
 | `PlayerCollisionDamage` | Converts high-speed impacts into collision damage. |
-| `HealthPickup` / `FireRatePickup` | Optional reusable player upgrades kept out of the gold-standard slice. |
+| `HealthPickup` / `FireRatePickup` | Optional reusable recovery and weapon-power beats authored as non-required room pressure. |
 | `EnemyController` | Provides explicit dormant, waking, chasing, attacking, and defeated states with EE5-style wall steering, ranged orbit movement, and line-of-sight wake charging. |
 | `EnemySpritePresentation` | Maps enemy states to imported idle, wake-alert, active, and defeat animation frames. |
 | `EnemyWakePresentation` | Renders the controller-owned blocked/clear wake telegraph with a final warning flash so activation is readable before combat begins. |
@@ -63,15 +63,15 @@ Gameplay systems should communicate with these public contracts rather than reac
 
 Combat uses `IDamageable` and `DamageInfo`, so weapons do not need to know whether they hit a player, enemy, or destructible object.
 
-The editor menu `Extraterrestrial Exhaust > Build Flight Test Scene` rebuilds the playable FlightTest scene from code and refreshes the reusable `PlayerCraft`, `EnemyMelee`, and `EnemyGunner` prefabs. The two enemy compositions keep close-range contact pressure separate from ranged pressure, matching the distinct roles present in the EE5 scene family. The generated room deliberately contains only the encounter, energy key, gate, and extraction landmarks; optional pickup and hazard components remain available for later authored rooms without polluting this career-facing slice.
+The editor menu `Extraterrestrial Exhaust > Build Flight Test Scene` rebuilds the playable FlightTest scene from code and refreshes the reusable `PlayerCraft`, `EnemyMelee`, and `EnemyGunner` prefabs. The two enemy compositions keep close-range contact pressure separate from ranged pressure, matching the distinct roles present in the EE5 scene family. The generated room contains the required encounter, energy key, gate, and extraction landmarks plus deliberately optional hazard, health, and fire-rate beats; none of those optional resources can unlock or complete the objective flow.
 
-Running that builder also registers `FlightTest.unity` in Build Settings and configures the project identity for a playable vertical-slice build.
+Running that builder also registers `FlightTest.unity` as the first Build Settings scene and configures the project identity for a playable vertical-slice build.
 
 ## EE5 reference scenes
 
 Reference art is imported under `Assets/Art/Reference` with its Unity metadata intact. Runtime behavior is re-authored in EE MARK 6; legacy prototype scripts and prefabs are not copied into the production path.
 
-The player gold standard is the shared `sniper.prefab` used by the `realScene` family in EE MARK 5. `realScene` is the baseline authored scene; `realScene2` adds the boss-health encounter; `realScene3` contains the final-boss variant. EE MARK 6 preserves the player’s tuned movement, camera, scale, health, weapon, and extraction loop while replacing prototype coupling with explicit runtime contracts. The builder keeps the EE5 camera response profile and the responsive `0.12s` player-shot cadence as deliberate slice tuning, rather than leaving those values implicit in an inspector.
+The player gold standard is the shared `sniper.prefab` used by the `realScene` family in EE MARK 5. `realScene` is the baseline authored scene; `realScene2` adds the boss-health encounter; `realScene3` contains the final-boss variant. EE MARK 6 preserves the player’s tuned movement, camera, scale, health, weapon, and extraction loop while replacing prototype coupling with explicit runtime contracts. The builder keeps the EE5 camera response profile and the deliberate one-second player-shot cadence as named slice tuning, rather than leaving those values implicit in an inspector.
 
 ## Project conventions
 
