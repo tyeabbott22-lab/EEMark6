@@ -37,7 +37,7 @@ The player foundation is intentionally split into three responsibilities:
 | `PlayerWeapon` | Handles player firing, cooldowns, fire-rate boosts, recoil, and the EE5-style wall/enemy aim line. |
 | `PlayerProjectile` | Shared projectile movement, lifetime, owner filtering, damage impacts, source-specific speed/tint overrides, and team-colored trails. |
 | `PlayerFlightPresentation` | Drives exhaust and EE5-style one-shot squash feedback without touching physics. |
-| `PlayerDamageFeedback` | Converts damage events into visual feedback and clears transient hit state on death/disable. |
+| `PlayerDamageFeedback` | Converts damage events into the EE5 alternating red/yellow hit flash and clears transient state on death/disable. |
 | `PlayerCameraFollow` | Provides EE5-style velocity lead, speed zoom, starfield parallax, coherent shake, enemy-death feedback, and wall-impact feedback. |
 | `PlayerHealthDisplay` | Presents health state without owning combat rules. |
 | `ContactHazard` | Optional reusable damage volume for authored hazard rooms. |

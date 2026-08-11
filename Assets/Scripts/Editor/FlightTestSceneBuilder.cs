@@ -202,7 +202,15 @@ namespace ExtraterrestrialExhaust.Editor
             serializedWeapon.ApplyModifiedPropertiesWithoutUndo();
 
             CreateCraftVisual(player.transform);
-            player.AddComponent<PlayerDamageFeedback>();
+            PlayerDamageFeedback damageFeedback = player.AddComponent<PlayerDamageFeedback>();
+            SerializedObject serializedDamageFeedback = new SerializedObject(damageFeedback);
+            // Match EE5's alternating red/yellow damage readout instead of a
+            // single opaque flash that disappears before the player can react.
+            serializedDamageFeedback.FindProperty("flashColor").colorValue = new Color(1f, 0.01f, 0.01f, 1f);
+            serializedDamageFeedback.FindProperty("alternateFlashColor").colorValue = new Color(1f, 0.92f, 0.01f, 1f);
+            serializedDamageFeedback.FindProperty("flashDuration").floatValue = 0.4f;
+            serializedDamageFeedback.FindProperty("flashInterval").floatValue = 1f / 30f;
+            serializedDamageFeedback.ApplyModifiedPropertiesWithoutUndo();
             player.AddComponent<PlayerCollisionDamage>();
             PrefabUtility.SaveAsPrefabAssetAndConnect(
                 player,

@@ -12,8 +12,10 @@ namespace ExtraterrestrialExhaust.Player
     [RequireComponent(typeof(HealthComponent))]
     public sealed class PlayerDamageFeedback : MonoBehaviour
     {
-        [SerializeField] Color flashColor = Color.red;
-        [SerializeField, Min(0f)] float flashDuration = 0.16f;
+        [SerializeField] Color flashColor = new Color(1f, 0.01f, 0.01f, 1f);
+        [SerializeField] Color alternateFlashColor = new Color(1f, 0.92f, 0.01f, 1f);
+        [SerializeField, Min(0f)] float flashDuration = 0.4f;
+        [SerializeField, Min(0.001f)] float flashInterval = 1f / 30f;
 
         HealthComponent health;
         LineRenderer[] renderers;
@@ -72,8 +74,15 @@ namespace ExtraterrestrialExhaust.Player
 
         IEnumerator FlashRoutine()
         {
-            SetColor(flashColor);
-            yield return new WaitForSeconds(flashDuration);
+            float elapsed = 0f;
+            while (elapsed < flashDuration)
+            {
+                bool useAlternateColor = Mathf.FloorToInt(elapsed / flashInterval) % 2 == 1;
+                SetColor(useAlternateColor ? alternateFlashColor : flashColor);
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+
             RestoreColors();
             flashRoutine = null;
         }
