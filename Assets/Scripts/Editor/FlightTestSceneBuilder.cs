@@ -508,6 +508,10 @@ namespace ExtraterrestrialExhaust.Editor
             BoxCollider2D gateCollider = gate.AddComponent<BoxCollider2D>();
             gateCollider.size = new Vector2(0.35f, 2.8f);
             EnergyGate energyGate = gate.AddComponent<EnergyGate>();
+            SerializedObject serializedGate = new SerializedObject(energyGate);
+            serializedGate.FindProperty("liftDistance").floatValue = 12f;
+            serializedGate.FindProperty("liftSpeed").floatValue = 6f;
+            serializedGate.ApplyModifiedPropertiesWithoutUndo();
             CreateSquareOutline(gate.transform, new Vector2(0.35f, 2.8f), new Color(0.2f, 0.55f, 1f));
             CreateGateVisual(gate.transform);
 

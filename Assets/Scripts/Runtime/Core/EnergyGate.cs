@@ -4,17 +4,21 @@ using UnityEngine;
 
 namespace ExtraterrestrialExhaust.Core
 {
-    /// <summary>Reusable blocking energy gate that retreats when deactivated.</summary>
+    /// <summary>Reusable blocking energy gate that lifts away when deactivated.</summary>
     [RequireComponent(typeof(BoxCollider2D))]
     public sealed class EnergyGate : MonoBehaviour
     {
-        [SerializeField, Min(0.01f)] float retreatDuration = 0.5f;
+        // EE5's DoorController clears the route by lifting the authored door,
+        // not by scaling it out. Keep the motion readable for the key-to-exit
+        // handoff and let the collider disable immediately at activation.
+        [SerializeField, Min(0f)] float liftDistance = 12f;
+        [SerializeField, Min(0.01f)] float liftSpeed = 6f;
         [SerializeField] Color activeColor = new Color(0.2f, 0.55f, 1f);
         [SerializeField] Color disabledColor = new Color(0.2f, 1f, 0.85f);
 
         BoxCollider2D gateCollider;
         LineRenderer line;
-        Vector3 initialScale;
+        Vector3 targetPosition;
         bool disabled;
 
         public bool IsDisabled => disabled;
@@ -24,7 +28,7 @@ namespace ExtraterrestrialExhaust.Core
         {
             gateCollider = GetComponent<BoxCollider2D>();
             line = GetComponent<LineRenderer>();
-            initialScale = transform.localScale;
+            targetPosition = transform.position + Vector3.up * liftDistance;
             UpdateVisual(activeColor);
         }
 
@@ -36,23 +40,21 @@ namespace ExtraterrestrialExhaust.Core
             disabled = true;
             gateCollider.enabled = false;
             Disabled?.Invoke();
-            StartCoroutine(RetreatRoutine());
+            StartCoroutine(LiftRoutine());
         }
 
-        IEnumerator RetreatRoutine()
+        IEnumerator LiftRoutine()
         {
-            float elapsed = 0f;
-            while (elapsed < retreatDuration)
+            while (Vector3.Distance(transform.position, targetPosition) > 0.01f)
             {
-                elapsed += Time.deltaTime;
-                float t = Mathf.SmoothStep(0f, 1f, elapsed / retreatDuration);
-                transform.localScale = Vector3.Lerp(initialScale, Vector3.zero, t);
-                if (line)
-                    UpdateVisual(Color.Lerp(activeColor, disabledColor, t));
+                transform.position = Vector3.MoveTowards(
+                    transform.position,
+                    targetPosition,
+                    liftSpeed * Time.deltaTime);
                 yield return null;
             }
 
-            transform.localScale = Vector3.zero;
+            transform.position = targetPosition;
             UpdateVisual(disabledColor);
         }
 
