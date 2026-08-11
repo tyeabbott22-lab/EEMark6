@@ -1,0 +1,4 @@
+﻿<Solution>
+  <Project Path="ExtraterrestrialExhaust.Runtime.csproj" />
+  <Project Path="ExtraterrestrialExhaust.Editor.csproj" />
+</Solution>
