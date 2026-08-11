@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 namespace ExtraterrestrialExhaust.Player
@@ -7,6 +8,8 @@ namespace ExtraterrestrialExhaust.Player
     {
         [SerializeField, Min(1f)] float healAmount = 3f;
 
+        public event Action Collected;
+
         void Reset() => GetComponent<Collider2D>().isTrigger = true;
 
         void OnTriggerEnter2D(Collider2D other)
@@ -15,6 +18,7 @@ namespace ExtraterrestrialExhaust.Player
             if (!CanCollect(player) || !player.Health.TryRestore(healAmount))
                 return;
 
+            Collected?.Invoke();
             Destroy(gameObject);
         }
 

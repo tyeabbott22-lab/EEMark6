@@ -903,6 +903,16 @@ namespace ExtraterrestrialExhaust.Editor
             renderer.color = new Color(0.2f, 1f, 0.45f, 1f);
             renderer.sortingOrder = 12;
             CreateCircleOutline(pickup.transform, 0.42f, new Color(0.2f, 1f, 0.45f, 0.65f), 28, 0.05f);
+
+            PickupPresentation presentation = pickup.AddComponent<PickupPresentation>();
+            SerializedObject serializedPresentation = new SerializedObject(presentation);
+            serializedPresentation.FindProperty("accentColor").colorValue =
+                new Color(0.2f, 1f, 0.45f, 1f);
+            serializedPresentation.FindProperty("bobHeight").floatValue = 0.1f;
+            serializedPresentation.FindProperty("bobSpeed").floatValue = 2.8f;
+            serializedPresentation.FindProperty("rotateSpeed").floatValue = 36f;
+            serializedPresentation.FindProperty("pulseAmount").floatValue = 0.06f;
+            serializedPresentation.ApplyModifiedPropertiesWithoutUndo();
         }
 
         static void CreateFireRatePickup(Vector2 position)
@@ -925,6 +935,16 @@ namespace ExtraterrestrialExhaust.Editor
             renderer.color = new Color(0.2f, 0.9f, 1f, 1f);
             renderer.sortingOrder = 12;
             CreateCircleOutline(pickup.transform, 0.42f, new Color(0.2f, 0.9f, 1f, 0.65f), 28, 0.05f);
+
+            PickupPresentation presentation = pickup.AddComponent<PickupPresentation>();
+            SerializedObject serializedPresentation = new SerializedObject(presentation);
+            serializedPresentation.FindProperty("accentColor").colorValue =
+                new Color(0.2f, 0.9f, 1f, 1f);
+            serializedPresentation.FindProperty("bobHeight").floatValue = 0.1f;
+            serializedPresentation.FindProperty("bobSpeed").floatValue = 2.8f;
+            serializedPresentation.FindProperty("rotateSpeed").floatValue = 36f;
+            serializedPresentation.FindProperty("pulseAmount").floatValue = 0.06f;
+            serializedPresentation.ApplyModifiedPropertiesWithoutUndo();
         }
 
         static void CreateWallVisual(Transform parent, Vector2 size)

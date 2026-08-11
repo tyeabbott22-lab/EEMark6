@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 namespace ExtraterrestrialExhaust.Player
@@ -7,6 +8,8 @@ namespace ExtraterrestrialExhaust.Player
     {
         [SerializeField, Min(0.01f)] float duration = 5f;
         [SerializeField, Min(1f)] float multiplier = 2f;
+
+        public event Action Collected;
 
         void Reset() => GetComponent<Collider2D>().isTrigger = true;
 
@@ -18,6 +21,7 @@ namespace ExtraterrestrialExhaust.Player
                 return;
 
             weapon.ApplyFireRateBoost(duration, multiplier);
+            Collected?.Invoke();
             Destroy(gameObject);
         }
     }
