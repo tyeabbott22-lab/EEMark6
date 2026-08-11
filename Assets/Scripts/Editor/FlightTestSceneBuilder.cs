@@ -50,11 +50,11 @@ namespace ExtraterrestrialExhaust.Editor
             InputActionAsset inputAsset = AssetDatabase.LoadAssetAtPath<InputActionAsset>(InputAssetPath);
             PlayerProjectile projectilePrefab = CreateProjectilePrefab();
 
-            CreateBackdrop();
+            Transform backdrop = CreateBackdrop();
             CreateGameStateMachine(inputAsset);
             new GameObject("Score System").AddComponent<ScoreSystem>();
             PlayerCharacter player = CreatePlayer(inputAsset, projectilePrefab);
-            CreateCamera(player);
+            CreateCamera(player, backdrop);
             EnemyController meleeEnemy = CreateEnemy(
                 projectilePrefab,
                 "Purple Melee Hunter",
@@ -89,7 +89,7 @@ namespace ExtraterrestrialExhaust.Editor
             Debug.Log($"Built {ScenePath}. Use W/S to thrust or stabilize and A/D to rotate.");
         }
 
-        static void CreateBackdrop()
+        static Transform CreateBackdrop()
         {
             GameObject backdrop = new GameObject("Starfield Backdrop");
             backdrop.transform.position = new Vector3(0f, 0f, 4f);
@@ -99,6 +99,7 @@ namespace ExtraterrestrialExhaust.Editor
             renderer.sprite = LoadFirstSprite(StarfieldSpritePath);
             renderer.sortingOrder = -100;
             renderer.color = new Color(0.55f, 0.62f, 0.8f, 1f);
+            return backdrop.transform;
         }
 
         static void CreateGameStateMachine(InputActionAsset inputAsset)
@@ -613,7 +614,7 @@ namespace ExtraterrestrialExhaust.Editor
             line.material = new Material(Shader.Find("Sprites/Default"));
         }
 
-        static void CreateCamera(PlayerCharacter target)
+        static void CreateCamera(PlayerCharacter target, Transform parallaxBackdrop)
         {
             GameObject cameraObject = new GameObject("Main Camera");
             cameraObject.tag = "MainCamera";
@@ -645,6 +646,14 @@ namespace ExtraterrestrialExhaust.Editor
             serializedFollow.FindProperty("zoomSmooth").floatValue = 10f;
             serializedFollow.FindProperty("flipZoomOut").floatValue = 1.4f;
             serializedFollow.FindProperty("flipZoomDuration").floatValue = 0.45f;
+            SerializedProperty parallaxLayers = serializedFollow.FindProperty("parallaxLayers");
+            parallaxLayers.arraySize = parallaxBackdrop ? 1 : 0;
+            if (parallaxBackdrop)
+            {
+                SerializedProperty layer = parallaxLayers.GetArrayElementAtIndex(0);
+                layer.FindPropertyRelative("transform").objectReferenceValue = parallaxBackdrop;
+                layer.FindPropertyRelative("strength").floatValue = 0.18f;
+            }
             serializedFollow.ApplyModifiedPropertiesWithoutUndo();
         }
 

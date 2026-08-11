@@ -9,6 +9,13 @@ namespace ExtraterrestrialExhaust.CameraSystem
     [RequireComponent(typeof(Camera))]
     public sealed class PlayerCameraFollow : MonoBehaviour
     {
+        [System.Serializable]
+        public sealed class ParallaxLayer
+        {
+            public Transform transform;
+            [Range(0f, 1f)] public float strength = 0.18f;
+        }
+
         public static PlayerCameraFollow Instance { get; private set; }
         [SerializeField] PlayerCharacter target;
         [SerializeField, Min(0f)] float followSpeed = 12f;
@@ -34,6 +41,7 @@ namespace ExtraterrestrialExhaust.CameraSystem
         [SerializeField, Min(0f)] float wallSlamShakeStrength = 0.14f;
         [SerializeField, Min(0f)] float wallSlamShakeDuration = 0.18f;
         [SerializeField, Min(0f)] float wallSlamCooldown = 0.14f;
+        [SerializeField] ParallaxLayer[] parallaxLayers;
 
         Camera cameraComponent;
         Rigidbody2D targetBody;
@@ -72,6 +80,8 @@ namespace ExtraterrestrialExhaust.CameraSystem
             if (!target)
                 return;
 
+            Vector3 previousCameraPosition = transform.position;
+
             Vector2 velocity = targetBody ? targetBody.linearVelocity : Vector2.zero;
             Vector2 velocityLeadVector = Vector2.ClampMagnitude(velocity * velocityLead, maxLeadDistance);
             Vector2 desiredLead = velocityLeadVector + (Vector2)target.transform.up * facingLead;
@@ -88,6 +98,7 @@ namespace ExtraterrestrialExhaust.CameraSystem
                 ? desiredPosition
                 : Vector3.Lerp(transform.position, desiredPosition, followT);
 
+            ApplyParallax(transform.position - previousCameraPosition);
             ApplyZoom(velocity.magnitude);
             ApplyShake();
         }
@@ -163,6 +174,23 @@ namespace ExtraterrestrialExhaust.CameraSystem
                 cameraComponent.orthographicSize,
                 targetZoom,
                 1f - Mathf.Exp(-zoomSmooth * Time.deltaTime));
+        }
+
+        void ApplyParallax(Vector3 cameraDelta)
+        {
+            if (parallaxLayers == null || cameraDelta.sqrMagnitude <= 0.000001f)
+                return;
+
+            for (int i = 0; i < parallaxLayers.Length; i++)
+            {
+                ParallaxLayer layer = parallaxLayers[i];
+                if (layer == null || !layer.transform || layer.strength <= 0f)
+                    continue;
+
+                // Move the authored layer with the camera so it drifts more
+                // slowly across the view, matching EE5's starfield language.
+                layer.transform.position += cameraDelta * Mathf.Clamp01(layer.strength);
+            }
         }
 
         void ApplyShake()

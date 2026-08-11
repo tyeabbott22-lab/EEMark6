@@ -38,7 +38,7 @@ The player foundation is intentionally split into three responsibilities:
 | `PlayerProjectile` | Shared projectile movement, lifetime, owner filtering, damage impacts, source-specific speed/tint overrides, and team-colored trails. |
 | `PlayerFlightPresentation` | Drives exhaust and EE5-style one-shot squash feedback without touching physics. |
 | `PlayerDamageFeedback` | Converts damage events into visual feedback and clears transient hit state on death/disable. |
-| `PlayerCameraFollow` | Provides EE5-style velocity lead, speed zoom, coherent shake, enemy-death feedback, and wall-impact feedback. |
+| `PlayerCameraFollow` | Provides EE5-style velocity lead, speed zoom, starfield parallax, coherent shake, enemy-death feedback, and wall-impact feedback. |
 | `PlayerHealthDisplay` | Presents health state without owning combat rules. |
 | `ContactHazard` | Optional reusable damage volume for authored hazard rooms. |
 | `PlayerCollisionDamage` | Converts high-speed impacts into collision damage. |
