@@ -49,8 +49,10 @@ namespace ExtraterrestrialExhaust.Editor
         const string LegacyEnergyGateSpriteAssetPath = "Assets/Art/Reference/Objectives/buttonFInal1.png";
         const string BoundaryWallSpriteAssetPath = "Assets/Art/Reference/Environment/boundary_wall.png";
         const string LegacyBoundaryWallSpriteAssetPath = "Assets/Art/Reference/Environment/wallFinal.png";
-        const string StarfieldSpritePath = "Assets/Art/Reference/Environment/sprStars.png";
-        const string EnemyBurstSpritePath = "Assets/Art/Reference/Effects/sprExplode.png";
+        const string StarfieldSpritePath = "Assets/Art/Reference/Environment/starfield_backdrop.png";
+        const string LegacyStarfieldSpritePath = "Assets/Art/Reference/Environment/sprStars.png";
+        const string EnemyBurstSpritePath = "Assets/Art/Reference/Effects/enemy_defeat_burst.png";
+        const string LegacyEnemyBurstSpritePath = "Assets/Art/Reference/Effects/sprExplode.png";
         const string EnemyBurstAudioPath = "Assets/Audio/Reference/sfxExplode.wav";
 
         [MenuItem("Extraterrestrial Exhaust/Build Flight Test Scene")]
@@ -152,20 +154,36 @@ namespace ExtraterrestrialExhaust.Editor
             renamed += RenameImportedAsset(
                 LegacyBoundaryWallSpriteAssetPath,
                 BoundaryWallSpriteAssetPath);
+            renamed += RenameImportedAsset(
+                LegacyStarfieldSpritePath,
+                StarfieldSpritePath);
+            renamed += RenameImportedAsset(
+                LegacyEnemyBurstSpritePath,
+                EnemyBurstSpritePath);
 
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
             Debug.Log(renamed == 0
-                ? "Imported sprite names already use the semantic EE6 paths."
-                : $"Renamed {renamed} imported sprite asset(s); EE5 GUID references were preserved.");
+                ? "Imported sprite names already use the semantic EE6 paths, or need manual conflict review."
+                : $"Renamed {renamed} imported sprite asset(s); EE5 GUID references were preserved. Enemy strip names were left untouched.");
         }
 
         static int RenameImportedAsset(string legacyPath, string semanticPath)
         {
-            if (AssetDatabase.LoadMainAssetAtPath(semanticPath))
+            bool hasSemanticAsset = AssetDatabase.LoadMainAssetAtPath(semanticPath);
+            bool hasLegacyAsset = AssetDatabase.LoadMainAssetAtPath(legacyPath);
+
+            if (hasSemanticAsset && hasLegacyAsset)
+            {
+                Debug.LogWarning(
+                    $"Skipped sprite rename because both paths exist; resolve the duplicate deliberately: {legacyPath} / {semanticPath}");
+                return 0;
+            }
+
+            if (hasSemanticAsset)
                 return 0;
 
-            if (!AssetDatabase.LoadMainAssetAtPath(legacyPath))
+            if (!hasLegacyAsset)
             {
                 Debug.LogWarning($"Skipped sprite rename; source asset was not found: {legacyPath}");
                 return 0;
@@ -222,7 +240,7 @@ namespace ExtraterrestrialExhaust.Editor
             layer.transform.localScale = scale;
 
             SpriteRenderer renderer = layer.AddComponent<SpriteRenderer>();
-            renderer.sprite = LoadFirstSprite(StarfieldSpritePath);
+            renderer.sprite = LoadFirstSprite(StarfieldSpritePath, LegacyStarfieldSpritePath);
             renderer.sortingOrder = sortingOrder;
             renderer.color = color;
             return layer.transform;
@@ -663,7 +681,10 @@ namespace ExtraterrestrialExhaust.Editor
 
             EnemyDeathPresentation deathPresentation = enemy.AddComponent<EnemyDeathPresentation>();
             SerializedObject serializedDeath = new SerializedObject(deathPresentation);
-            SetSpriteArray(serializedDeath, "burstFrames", LoadSprites(EnemyBurstSpritePath));
+            SetSpriteArray(
+                serializedDeath,
+                "burstFrames",
+                LoadSprites(EnemyBurstSpritePath, LegacyEnemyBurstSpritePath));
             serializedDeath.FindProperty("defeatAudio").objectReferenceValue =
                 AssetDatabase.LoadAssetAtPath<AudioClip>(EnemyBurstAudioPath);
             serializedDeath.FindProperty("burstScale").floatValue = 3f;
