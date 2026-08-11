@@ -459,6 +459,13 @@ namespace ExtraterrestrialExhaust.Editor
                 serializedWeapon.FindProperty("projectileSpeed").floatValue = 9.5f;
                 serializedWeapon.FindProperty("projectileKnockback").floatValue = 2.5f;
                 serializedWeapon.FindProperty("projectileTint").colorValue = new Color(0.05f, 1f, 0.16f, 1f);
+                serializedWeapon.FindProperty("drawAimTelegraph").boolValue = true;
+                serializedWeapon.FindProperty("telegraphDuration").floatValue = 0.18f;
+                serializedWeapon.FindProperty("telegraphMinWidth").floatValue = 0.018f;
+                serializedWeapon.FindProperty("telegraphMaxWidth").floatValue = 0.085f;
+                serializedWeapon.FindProperty("telegraphColor").colorValue =
+                    new Color(0.1f, 1f, 0.3f, 0.5f);
+                serializedWeapon.FindProperty("telegraphSortingOrder").intValue = 75;
                 serializedWeapon.ApplyModifiedPropertiesWithoutUndo();
             }
 

@@ -51,7 +51,7 @@ The player foundation is intentionally split into three responsibilities:
 | `EnemyHealthDisplay` | Presents the imported six-frame health sheet briefly at spawn and after damage, scaled to each enemy's max health. |
 | `EnemyDeathPresentation` / `EnemyDeathBurst` | Plays the imported EE5 defeat animation and audio independently from enemy cleanup. |
 | `EnemyContactDamage` | Applies close-range melee damage through the shared contract; ranged enemies stay ranged. |
-| `EnemyWeapon` | Adds the EE5 white-gunner cadence and travel speed without coupling enemies to player weapons. |
+| `EnemyWeapon` | Adds the EE5 white-gunner cadence, wall-aware line of sight, and readable pre-shot telegraph without coupling enemies to player weapons. |
 | `EncounterController` / `LevelExit` | Define the explicit combat roster while the EE5 carrier-key-gate-extraction sequence owns exit progression. |
 | `ExtractionPortalPresentation` | Provides the layered, pulsing extraction visual without scene-specific prototype dependencies. |
 | `EnergyKey` / `EnergyGate` | Recreate the EE5 key-to-gate traversal objective, including release-point-preserving player orbit motion and the authored upward gate lift. |
