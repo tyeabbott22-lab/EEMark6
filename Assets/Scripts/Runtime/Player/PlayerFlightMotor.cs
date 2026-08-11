@@ -1,5 +1,6 @@
 using UnityEngine;
 using ExtraterrestrialExhaust.CameraSystem;
+using ExtraterrestrialExhaust.Core;
 
 namespace ExtraterrestrialExhaust.Player
 {
@@ -20,6 +21,7 @@ namespace ExtraterrestrialExhaust.Player
         [SerializeField] float stabilizationAngle;
         [SerializeField] Transform visual;
         [SerializeField] bool allowFlip = true;
+        [SerializeField] bool enforceEe5Profile = true;
 
         Rigidbody2D body;
         PlayerFlightInput input;
@@ -33,6 +35,9 @@ namespace ExtraterrestrialExhaust.Player
         void Awake()
         {
             body = GetComponent<Rigidbody2D>();
+            if (enforceEe5Profile)
+                ApplyEe5Profile();
+
             input = GetComponent<PlayerFlightInput>();
             stateMachine = GetComponent<PlayerFlightStateMachine>();
             if (!visual)
@@ -40,6 +45,24 @@ namespace ExtraterrestrialExhaust.Player
             if (!visual)
                 visual = transform;
             facingRight = visual.localScale.x >= 0f;
+        }
+
+        void ApplyEe5Profile()
+        {
+            thrustForce = Ee5SliceProfile.ThrustForce;
+            rotationTorque = Ee5SliceProfile.RotationTorque;
+            rotationAddsThrust = true;
+            rotationBoostMultiplier = Ee5SliceProfile.RotationBoostMultiplier;
+            stabilizationSpeed = Ee5SliceProfile.StabilizationSpeed;
+            angularDamping = Ee5SliceProfile.FlightAngularDamping;
+            stabilizationAngle = 0f;
+
+            body.mass = Ee5SliceProfile.PlayerMass;
+            body.gravityScale = Ee5SliceProfile.PlayerGravityScale;
+            body.linearDamping = Ee5SliceProfile.PlayerLinearDamping;
+            body.angularDamping = Ee5SliceProfile.PlayerAngularDamping;
+            body.interpolation = RigidbodyInterpolation2D.Interpolate;
+            body.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
         }
 
         void Update()

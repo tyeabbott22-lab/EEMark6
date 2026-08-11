@@ -122,10 +122,10 @@ namespace ExtraterrestrialExhaust.Editor
             player.transform.position = Vector3.zero;
 
             Rigidbody2D body = player.AddComponent<Rigidbody2D>();
-            body.mass = 8f;
-            body.gravityScale = 0.285f;
-            body.linearDamping = 0.35f;
-            body.angularDamping = 3.25f;
+            body.mass = Ee5SliceProfile.PlayerMass;
+            body.gravityScale = Ee5SliceProfile.PlayerGravityScale;
+            body.linearDamping = Ee5SliceProfile.PlayerLinearDamping;
+            body.angularDamping = Ee5SliceProfile.PlayerAngularDamping;
             body.interpolation = RigidbodyInterpolation2D.Interpolate;
             body.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
 
@@ -135,12 +135,13 @@ namespace ExtraterrestrialExhaust.Editor
             PlayerCharacter character = player.AddComponent<PlayerCharacter>();
             PlayerFlightMotor motor = player.GetComponent<PlayerFlightMotor>();
             SerializedObject serializedMotor = new SerializedObject(motor);
-            serializedMotor.FindProperty("thrustForce").floatValue = 55f;
-            serializedMotor.FindProperty("rotationTorque").floatValue = 0.4f;
+            serializedMotor.FindProperty("enforceEe5Profile").boolValue = true;
+            serializedMotor.FindProperty("thrustForce").floatValue = Ee5SliceProfile.ThrustForce;
+            serializedMotor.FindProperty("rotationTorque").floatValue = Ee5SliceProfile.RotationTorque;
             serializedMotor.FindProperty("rotationAddsThrust").boolValue = true;
-            serializedMotor.FindProperty("rotationBoostMultiplier").floatValue = 0.225f;
-            serializedMotor.FindProperty("stabilizationSpeed").floatValue = 720f;
-            serializedMotor.FindProperty("angularDamping").floatValue = 0.85f;
+            serializedMotor.FindProperty("rotationBoostMultiplier").floatValue = Ee5SliceProfile.RotationBoostMultiplier;
+            serializedMotor.FindProperty("stabilizationSpeed").floatValue = Ee5SliceProfile.StabilizationSpeed;
+            serializedMotor.FindProperty("angularDamping").floatValue = Ee5SliceProfile.FlightAngularDamping;
             serializedMotor.FindProperty("stabilizationAngle").floatValue = 0f;
             serializedMotor.ApplyModifiedPropertiesWithoutUndo();
             HealthComponent playerHealth = player.GetComponent<HealthComponent>();
@@ -167,10 +168,11 @@ namespace ExtraterrestrialExhaust.Editor
             PlayerWeapon weapon = player.AddComponent<PlayerWeapon>();
             SerializedObject serializedWeapon = new SerializedObject(weapon);
             serializedWeapon.FindProperty("projectilePrefab").objectReferenceValue = projectilePrefab;
+            serializedWeapon.FindProperty("enforceEe5Profile").boolValue = true;
             // Match EE5's authored sniper prefab rather than the faster
             // prototype tuning: each shot should be a meaningful flight beat.
-            serializedWeapon.FindProperty("fireCooldown").floatValue = 1f;
-            serializedWeapon.FindProperty("recoilForce").floatValue = 12f;
+            serializedWeapon.FindProperty("fireCooldown").floatValue = Ee5SliceProfile.PlayerFireCooldown;
+            serializedWeapon.FindProperty("recoilForce").floatValue = Ee5SliceProfile.PlayerRecoilForce;
             serializedWeapon.FindProperty("drawAimLine").boolValue = true;
             serializedWeapon.FindProperty("aimLineMaxDistance").floatValue = 120f;
             serializedWeapon.FindProperty("aimLineWidth").floatValue = 0.035f;
@@ -272,8 +274,9 @@ namespace ExtraterrestrialExhaust.Editor
             if (!projectileComponent)
                 projectileComponent = projectile.AddComponent<PlayerProjectile>();
             SerializedObject serializedProjectile = new SerializedObject(projectileComponent);
+            serializedProjectile.FindProperty("enforceEe5Profile").boolValue = true;
             // EE5's linked player bullet travels at 30 units per second.
-            serializedProjectile.FindProperty("speed").floatValue = 30f;
+            serializedProjectile.FindProperty("speed").floatValue = Ee5SliceProfile.PlayerProjectileSpeed;
             serializedProjectile.FindProperty("lifetime").floatValue = 2f;
             serializedProjectile.FindProperty("damage").floatValue = 1f;
             serializedProjectile.FindProperty("knockback").floatValue = 0f;
@@ -663,24 +666,25 @@ namespace ExtraterrestrialExhaust.Editor
             PlayerCameraFollow follow = cameraObject.AddComponent<PlayerCameraFollow>();
             SerializedObject serializedFollow = new SerializedObject(follow);
             serializedFollow.FindProperty("target").objectReferenceValue = target;
-            serializedFollow.FindProperty("followSpeed").floatValue = 12f;
-            serializedFollow.FindProperty("velocityLead").floatValue = 0.24f;
-            serializedFollow.FindProperty("maxLeadDistance").floatValue = 3.75f;
-            serializedFollow.FindProperty("facingLead").floatValue = 1.15f;
-            serializedFollow.FindProperty("leadSmooth").floatValue = 10f;
-            serializedFollow.FindProperty("catchupDistance").floatValue = 1.4f;
-            serializedFollow.FindProperty("catchupBoost").floatValue = 2.2f;
-            serializedFollow.FindProperty("hardCatchupDistance").floatValue = 5f;
-            serializedFollow.FindProperty("closeEnoughSnap").floatValue = 0.04f;
+            serializedFollow.FindProperty("enforceEe5Profile").boolValue = true;
+            serializedFollow.FindProperty("followSpeed").floatValue = Ee5SliceProfile.CameraFollowSpeed;
+            serializedFollow.FindProperty("velocityLead").floatValue = Ee5SliceProfile.CameraVelocityLead;
+            serializedFollow.FindProperty("maxLeadDistance").floatValue = Ee5SliceProfile.CameraMaxLeadDistance;
+            serializedFollow.FindProperty("facingLead").floatValue = Ee5SliceProfile.CameraFacingLead;
+            serializedFollow.FindProperty("leadSmooth").floatValue = Ee5SliceProfile.CameraLeadSmooth;
+            serializedFollow.FindProperty("catchupDistance").floatValue = Ee5SliceProfile.CameraCatchupDistance;
+            serializedFollow.FindProperty("catchupBoost").floatValue = Ee5SliceProfile.CameraCatchupBoost;
+            serializedFollow.FindProperty("hardCatchupDistance").floatValue = Ee5SliceProfile.CameraHardCatchupDistance;
+            serializedFollow.FindProperty("closeEnoughSnap").floatValue = Ee5SliceProfile.CameraCloseEnoughSnap;
             // These values mirror the EE5 SimpleCameraFollow profile. Keeping
             // them explicit prevents an inspector experiment from becoming the
             // serialized gold-standard scene tuning by accident.
-            serializedFollow.FindProperty("speedZoomStart").floatValue = 6f;
-            serializedFollow.FindProperty("speedZoomFull").floatValue = 18f;
-            serializedFollow.FindProperty("maxZoomOut").floatValue = 2.25f;
-            serializedFollow.FindProperty("zoomSmooth").floatValue = 10f;
-            serializedFollow.FindProperty("flipZoomOut").floatValue = 1.4f;
-            serializedFollow.FindProperty("flipZoomDuration").floatValue = 0.45f;
+            serializedFollow.FindProperty("speedZoomStart").floatValue = Ee5SliceProfile.CameraSpeedZoomStart;
+            serializedFollow.FindProperty("speedZoomFull").floatValue = Ee5SliceProfile.CameraSpeedZoomFull;
+            serializedFollow.FindProperty("maxZoomOut").floatValue = Ee5SliceProfile.CameraMaxZoomOut;
+            serializedFollow.FindProperty("zoomSmooth").floatValue = Ee5SliceProfile.CameraZoomSmooth;
+            serializedFollow.FindProperty("flipZoomOut").floatValue = Ee5SliceProfile.CameraFlipZoomOut;
+            serializedFollow.FindProperty("flipZoomDuration").floatValue = Ee5SliceProfile.CameraFlipZoomDuration;
             SerializedProperty parallaxLayers = serializedFollow.FindProperty("parallaxLayers");
             parallaxLayers.arraySize = parallaxBackdrop ? 1 : 0;
             if (parallaxBackdrop)

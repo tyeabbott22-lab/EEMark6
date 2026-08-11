@@ -1,5 +1,6 @@
 using UnityEngine;
 using ExtraterrestrialExhaust.Player;
+using ExtraterrestrialExhaust.Core;
 
 namespace ExtraterrestrialExhaust.CameraSystem
 {
@@ -18,6 +19,7 @@ namespace ExtraterrestrialExhaust.CameraSystem
 
         public static PlayerCameraFollow Instance { get; private set; }
         [SerializeField] PlayerCharacter target;
+        [SerializeField] bool enforceEe5Profile = true;
         [SerializeField, Min(0f)] float followSpeed = 12f;
         [SerializeField, Min(0f)] float velocityLead = 0.24f;
         [SerializeField, Min(0f)] float maxLeadDistance = 3.75f;
@@ -62,10 +64,33 @@ namespace ExtraterrestrialExhaust.CameraSystem
         {
             Instance = this;
             cameraComponent = GetComponent<Camera>();
+            if (enforceEe5Profile)
+                ApplyEe5Profile();
+
             baseZoom = cameraComponent.orthographicSize;
             shakeSeedX = Random.Range(0f, 1000f);
             shakeSeedY = Random.Range(0f, 1000f);
             ResolveTarget();
+        }
+
+        void ApplyEe5Profile()
+        {
+            followSpeed = Ee5SliceProfile.CameraFollowSpeed;
+            velocityLead = Ee5SliceProfile.CameraVelocityLead;
+            maxLeadDistance = Ee5SliceProfile.CameraMaxLeadDistance;
+            facingLead = Ee5SliceProfile.CameraFacingLead;
+            leadSmooth = Ee5SliceProfile.CameraLeadSmooth;
+            catchupDistance = Ee5SliceProfile.CameraCatchupDistance;
+            catchupBoost = Ee5SliceProfile.CameraCatchupBoost;
+            hardCatchupDistance = Ee5SliceProfile.CameraHardCatchupDistance;
+            closeEnoughSnap = Ee5SliceProfile.CameraCloseEnoughSnap;
+            speedZoomStart = Ee5SliceProfile.CameraSpeedZoomStart;
+            speedZoomFull = Ee5SliceProfile.CameraSpeedZoomFull;
+            maxZoomOut = Ee5SliceProfile.CameraMaxZoomOut;
+            zoomSmooth = Ee5SliceProfile.CameraZoomSmooth;
+            flipZoomOut = Ee5SliceProfile.CameraFlipZoomOut;
+            flipZoomDuration = Ee5SliceProfile.CameraFlipZoomDuration;
+            wallTag = Ee5SliceProfile.WallTag;
         }
 
         void OnDestroy()

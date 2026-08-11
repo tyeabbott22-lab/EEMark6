@@ -19,6 +19,7 @@ namespace ExtraterrestrialExhaust.Player
         [SerializeField] GameStateMachine gameState;
         [SerializeField] PlayerProjectile projectilePrefab;
         [SerializeField] Transform firePoint;
+        [SerializeField] bool enforceEe5Profile = true;
         // Match the authored EE5 sniper prefab: deliberate one-second shots
         // and a strong recoil impulse that remains part of the flight rhythm.
         [SerializeField, Min(0.01f)] float fireCooldown = 1f;
@@ -54,6 +55,11 @@ namespace ExtraterrestrialExhaust.Player
         void Awake()
         {
             ResolveReferences();
+            if (enforceEe5Profile)
+            {
+                fireCooldown = Ee5SliceProfile.PlayerFireCooldown;
+                recoilForce = Ee5SliceProfile.PlayerRecoilForce;
+            }
             EnsureAimLine();
         }
 

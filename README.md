@@ -32,6 +32,7 @@ The player foundation is intentionally split into three responsibilities:
 | `GameStateMachine` | Coordinates playing, pausing, game over, and the short EE5 defeat slowdown without scattering global time writes. |
 | `HealthComponent` | Shared health and damage contract for players, enemies, and hazards. |
 | `ProjectileTeam` | Prevents player fire from harming the player and enemy fire from harming enemy allies. |
+| `Ee5SliceProfile` | Named EE5 realScene tuning for player flight, weapon cadence, projectile speed, and camera feel; runtime locks are opt-out for experiments. |
 | `PlayerCharacter` | Composition root exposing the playable character's core systems and shared gameplay-eligibility contract, including game-state gating. |
 | `PlayerRespawnController` | Reproduces the EE5 current-room reload on death, with an explicit in-place respawn fallback for reusable rooms. |
 | `PlayerWeapon` | Handles player firing, cooldowns, fire-rate boosts, recoil, and the EE5-style wall/enemy aim line. |

@@ -1,6 +1,7 @@
 using UnityEngine;
 using ExtraterrestrialExhaust.Enemy;
 using ExtraterrestrialExhaust.Player;
+using ExtraterrestrialExhaust.Core;
 
 namespace ExtraterrestrialExhaust.Combat
 {
@@ -21,6 +22,7 @@ namespace ExtraterrestrialExhaust.Combat
         [SerializeField, Min(0f)] float knockback;
         [SerializeField] bool destroyOnUnrecognizedCollision;
         [SerializeField] ProjectileTeam team = ProjectileTeam.Player;
+        [SerializeField] bool enforceEe5Profile = true;
 
         Rigidbody2D body;
         SpriteRenderer spriteRenderer;
@@ -32,6 +34,9 @@ namespace ExtraterrestrialExhaust.Combat
         void Awake()
         {
             body = GetComponent<Rigidbody2D>();
+            if (enforceEe5Profile)
+                speed = Ee5SliceProfile.PlayerProjectileSpeed;
+
             spriteRenderer = GetComponent<SpriteRenderer>();
             trailRenderer = GetComponent<LineRenderer>();
             body.gravityScale = 0f;
