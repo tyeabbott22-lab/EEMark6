@@ -57,7 +57,7 @@ The player foundation is intentionally split into three responsibilities:
 | `ExtractionPortalPresentation` | Provides the layered, pulsing extraction visual without scene-specific prototype dependencies. |
 | `EnergyKey` / `EnergyGate` | Recreate the EE5 key-to-gate traversal objective, including release-point-preserving player orbit motion and the authored upward gate lift. |
 | `EnergyKeyPresentation` / `EnergyGatePresentation` / `ObjectiveSignalBurst` | Keep the key release, player collection, gate flight, timed gate-unlock pulse, and objective beats readable without coupling VFX to objective rules. |
-| `ScoreSystem` | Provides event-driven arcade scoring for combat and objectives. |
+| `ScoreSystem` | Provides event-driven arcade scoring for speed, enemy damage, defeats, and objective beats, with throttled movement credits. |
 | `GameplayHud` | Presents score, live hull, action score callouts, and the current vertical-slice objective. |
 | `SliceInstructionDisplay` / `SliceInstructionTrigger` | Recreate EE5 realScene's trigger-driven center instructions for controls, key flow, gate flow, and extraction. |
 | `DamageFlashFeedback` / `ProjectileImpactBurst` | Provide immediate combat readability while authored VFX are migrated. |

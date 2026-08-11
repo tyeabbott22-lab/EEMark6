@@ -90,6 +90,7 @@ namespace ExtraterrestrialExhaust.Enemy
                 Mathf.Max(0.01f, wakeDuration),
                 Mathf.Max(0f, wakeDuration - wakeFinalWarningDuration));
         public event Action<EnemyController> Defeated;
+        public event Action<EnemyController, DamageInfo> Damaged;
         public event Action<EnemyController, EnemyState> StateChanged;
 
         void Awake()
@@ -106,13 +107,24 @@ namespace ExtraterrestrialExhaust.Enemy
         void OnEnable()
         {
             if (health)
+            {
                 health.Died += HandleDefeated;
+                health.Damaged += HandleDamaged;
+            }
         }
 
         void OnDisable()
         {
             if (health)
+            {
                 health.Died -= HandleDefeated;
+                health.Damaged -= HandleDamaged;
+            }
+        }
+
+        void HandleDamaged(DamageInfo damage)
+        {
+            Damaged?.Invoke(this, damage);
         }
 
         void Update()

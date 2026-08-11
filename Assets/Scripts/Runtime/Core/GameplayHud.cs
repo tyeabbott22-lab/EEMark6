@@ -334,6 +334,10 @@ namespace ExtraterrestrialExhaust.Core
         {
             switch (reason)
             {
+                case ScoreReason.Speed:
+                    return "SPEED";
+                case ScoreReason.EnemyDamaged:
+                    return "DAMAGE";
                 case ScoreReason.EnemyDefeated:
                     return "KILL";
                 case ScoreReason.ObjectiveCollected:
@@ -353,6 +357,10 @@ namespace ExtraterrestrialExhaust.Core
         {
             switch (reason)
             {
+                case ScoreReason.Speed:
+                    return new Color(0.35f, 0.75f, 1f, 1f);
+                case ScoreReason.EnemyDamaged:
+                    return new Color(1f, 0.58f, 0.16f, 1f);
                 case ScoreReason.EnemyDefeated:
                     return new Color(1f, 0.28f, 0.2f, 1f);
                 case ScoreReason.ObjectiveCollected:

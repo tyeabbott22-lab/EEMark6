@@ -1,6 +1,8 @@
 using System;
 using UnityEngine;
+using ExtraterrestrialExhaust.Combat;
 using ExtraterrestrialExhaust.Enemy;
+using ExtraterrestrialExhaust.Player;
 
 namespace ExtraterrestrialExhaust.Core
 {
@@ -34,7 +36,11 @@ namespace ExtraterrestrialExhaust.Core
                 return;
 
             foreach (EnemyController enemy in enemies)
-                if (enemy) enemy.Defeated += HandleEnemyDefeated;
+                if (enemy)
+                {
+                    enemy.Defeated += HandleEnemyDefeated;
+                    enemy.Damaged += HandleEnemyDamaged;
+                }
         }
 
         void OnDisable()
@@ -43,7 +49,19 @@ namespace ExtraterrestrialExhaust.Core
                 return;
 
             foreach (EnemyController enemy in enemies)
-                if (enemy) enemy.Defeated -= HandleEnemyDefeated;
+                if (enemy)
+                {
+                    enemy.Defeated -= HandleEnemyDefeated;
+                    enemy.Damaged -= HandleEnemyDamaged;
+                }
+        }
+
+        void HandleEnemyDamaged(EnemyController damagedEnemy, DamageInfo damage)
+        {
+            if (!damage.Source || !damage.Source.GetComponentInParent<PlayerCharacter>())
+                return;
+
+            scoreSystem?.AddScore(75, ScoreReason.EnemyDamaged);
         }
 
         void HandleEnemyDefeated(EnemyController defeatedEnemy)

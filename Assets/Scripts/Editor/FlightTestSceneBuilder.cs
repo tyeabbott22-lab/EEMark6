@@ -62,7 +62,13 @@ namespace ExtraterrestrialExhaust.Editor
 
             Transform[] backdrops = CreateBackdrop();
             GameStateMachine gameState = CreateGameStateMachine(inputAsset);
-            new GameObject("Score System").AddComponent<ScoreSystem>();
+            GameObject scoreObject = new GameObject("Score System");
+            ScoreSystem scoreSystem = scoreObject.AddComponent<ScoreSystem>();
+            SerializedObject serializedScore = new SerializedObject(scoreSystem);
+            serializedScore.FindProperty("speedCreditThreshold").floatValue = 11f;
+            serializedScore.FindProperty("speedCreditCooldown").floatValue = 0.45f;
+            serializedScore.FindProperty("speedCreditPoints").intValue = 25;
+            serializedScore.ApplyModifiedPropertiesWithoutUndo();
             PlayerCharacter player = CreatePlayer(inputAsset, projectilePrefab);
             CreateCamera(player, backdrops);
             EnemyController meleeEnemy = CreateEnemy(
