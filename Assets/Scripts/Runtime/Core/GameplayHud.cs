@@ -1,6 +1,8 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
+using ExtraterrestrialExhaust.Combat;
+using ExtraterrestrialExhaust.Player;
 
 namespace ExtraterrestrialExhaust.Core
 {
@@ -10,6 +12,10 @@ namespace ExtraterrestrialExhaust.Core
     public sealed class GameplayHud : MonoBehaviour
     {
         [SerializeField] Text statusLabel;
+        [SerializeField] Text healthLabel;
+        [SerializeField] Text actionCalloutLabel;
+        [SerializeField] CanvasGroup actionCalloutGroup;
+        [SerializeField, Min(0f)] float actionCalloutDuration = 0.9f;
         [SerializeField] Text objectiveBannerLabel;
         [SerializeField] CanvasGroup objectiveBannerGroup;
         [SerializeField, Min(0f)] float objectiveBannerDuration = 1.35f;
@@ -22,7 +28,10 @@ namespace ExtraterrestrialExhaust.Core
 
         float nextRefreshTime;
         Coroutine bannerRoutine;
+        Coroutine actionCalloutRoutine;
         Vector3 bannerBaseScale = Vector3.one;
+        Vector3 actionCalloutBaseScale = Vector3.one;
+        HealthComponent playerHealth;
 
         void Awake()
         {
@@ -38,11 +47,19 @@ namespace ExtraterrestrialExhaust.Core
                 gameState = FindFirstObjectByType<GameStateMachine>();
             if (!objectiveDirector)
                 objectiveDirector = FindFirstObjectByType<SliceObjectiveDirector>();
+            PlayerCharacter player = FindFirstObjectByType<PlayerCharacter>();
+            playerHealth = player ? player.Health : FindFirstObjectByType<HealthComponent>();
             if (objectiveBannerLabel)
             {
                 if (!objectiveBannerGroup)
                     objectiveBannerGroup = objectiveBannerLabel.GetComponent<CanvasGroup>();
                 bannerBaseScale = objectiveBannerLabel.transform.localScale;
+            }
+            if (actionCalloutLabel)
+            {
+                if (!actionCalloutGroup)
+                    actionCalloutGroup = actionCalloutLabel.GetComponent<CanvasGroup>();
+                actionCalloutBaseScale = actionCalloutLabel.transform.localScale;
             }
         }
 
@@ -54,6 +71,11 @@ namespace ExtraterrestrialExhaust.Core
                 gameState.StateChanged += HandleStateChanged;
             if (objectiveDirector)
                 objectiveDirector.ObjectiveChanged += HandleObjectiveChanged;
+            if (playerHealth)
+            {
+                playerHealth.HealthChanged += HandleHealthChanged;
+                playerHealth.Died += HandlePlayerDied;
+            }
             Refresh();
             if (objectiveDirector)
                 ShowObjectiveBanner(objectiveDirector.CurrentObjective);
@@ -67,13 +89,24 @@ namespace ExtraterrestrialExhaust.Core
                 gameState.StateChanged -= HandleStateChanged;
             if (objectiveDirector)
                 objectiveDirector.ObjectiveChanged -= HandleObjectiveChanged;
+            if (playerHealth)
+            {
+                playerHealth.HealthChanged -= HandleHealthChanged;
+                playerHealth.Died -= HandlePlayerDied;
+            }
 
             if (bannerRoutine != null)
             {
                 StopCoroutine(bannerRoutine);
                 bannerRoutine = null;
             }
+            if (actionCalloutRoutine != null)
+            {
+                StopCoroutine(actionCalloutRoutine);
+                actionCalloutRoutine = null;
+            }
             SetBannerVisible(false, 0f);
+            SetActionCalloutVisible(false, 0f);
         }
 
         void Update()
@@ -85,7 +118,14 @@ namespace ExtraterrestrialExhaust.Core
             Refresh();
         }
 
-        void HandleScoreChanged(int score, int awarded, ScoreReason reason) => Refresh();
+        void HandleScoreChanged(int score, int awarded, ScoreReason reason)
+        {
+            Refresh();
+            if (awarded > 0)
+                ShowActionCallout($"+{awarded:000}  {GetScoreReasonLabel(reason)}", GetScoreReasonColor(reason));
+        }
+        void HandleHealthChanged(float currentHealth) => Refresh();
+        void HandlePlayerDied() => ShowActionCallout("HULL LOST", new Color(1f, 0.14f, 0.1f, 1f));
         void HandleStateChanged(GameState previous, GameState next)
         {
             Refresh();
@@ -106,6 +146,79 @@ namespace ExtraterrestrialExhaust.Core
             if (bannerRoutine != null)
                 StopCoroutine(bannerRoutine);
             bannerRoutine = StartCoroutine(ObjectiveBannerRoutine(objective));
+        }
+
+        void ShowActionCallout(string message, Color color)
+        {
+            if (!actionCalloutLabel)
+                return;
+
+            if (actionCalloutRoutine != null)
+                StopCoroutine(actionCalloutRoutine);
+            actionCalloutLabel.text = message;
+            actionCalloutLabel.color = color;
+            actionCalloutRoutine = StartCoroutine(ActionCalloutRoutine());
+        }
+
+        IEnumerator ActionCalloutRoutine()
+        {
+            const float introDuration = 0.08f;
+            const float outroDuration = 0.22f;
+            float holdDuration = Mathf.Max(
+                0f,
+                actionCalloutDuration - introDuration - outroDuration);
+
+            float elapsed = 0f;
+            SetActionCalloutVisible(true, 0f);
+            while (elapsed < introDuration)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                SetActionCalloutVisible(
+                    true,
+                    Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(elapsed / introDuration)));
+                yield return null;
+            }
+
+            elapsed = 0f;
+            while (elapsed < holdDuration)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                SetActionCalloutVisible(true, 1f);
+                yield return null;
+            }
+
+            elapsed = 0f;
+            while (elapsed < outroDuration)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                SetActionCalloutVisible(
+                    true,
+                    1f - Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(elapsed / outroDuration)));
+                yield return null;
+            }
+
+            SetActionCalloutVisible(false, 0f);
+            actionCalloutRoutine = null;
+        }
+
+        void SetActionCalloutVisible(bool visible, float alpha)
+        {
+            if (!actionCalloutLabel)
+                return;
+
+            actionCalloutLabel.transform.localScale = actionCalloutBaseScale *
+                Mathf.Lerp(0.88f, 1f, Mathf.Clamp01(alpha));
+            if (actionCalloutGroup)
+            {
+                actionCalloutGroup.alpha = visible ? alpha : 0f;
+                actionCalloutGroup.interactable = false;
+                actionCalloutGroup.blocksRaycasts = false;
+                return;
+            }
+
+            Color color = actionCalloutLabel.color;
+            color.a = visible ? alpha : 0f;
+            actionCalloutLabel.color = color;
         }
 
         IEnumerator ObjectiveBannerRoutine(string objective)
@@ -172,10 +285,11 @@ namespace ExtraterrestrialExhaust.Core
 
         void Refresh()
         {
+            int score = scoreSystem ? scoreSystem.CurrentScore : 0;
+            RefreshHealthLabel();
             if (!statusLabel)
                 return;
 
-            int score = scoreSystem ? scoreSystem.CurrentScore : 0;
             if (gameState && gameState.CurrentState == GameState.Paused)
             {
                 statusLabel.text = $"SCORE  {score:0000}\nPAUSED  PRESS ESC TO RESUME";
@@ -193,6 +307,65 @@ namespace ExtraterrestrialExhaust.Core
                 : ResolveFallbackObjective();
 
             statusLabel.text = $"SCORE  {score:0000}\nOBJECTIVE  {objective}";
+        }
+
+        void RefreshHealthLabel()
+        {
+            if (!healthLabel)
+                return;
+
+            if (!playerHealth)
+            {
+                healthLabel.text = "HULL  --";
+                return;
+            }
+
+            int current = Mathf.Max(0, Mathf.CeilToInt(playerHealth.CurrentHealth));
+            int maximum = Mathf.Max(1, Mathf.CeilToInt(playerHealth.MaxHealth));
+            healthLabel.text = $"HULL  {current}/{maximum}";
+            float healthT = Mathf.Clamp01(current / (float)maximum);
+            healthLabel.color = Color.Lerp(
+                new Color(1f, 0.1f, 0.08f, 1f),
+                new Color(1f, 0.82f, 0.18f, 1f),
+                healthT);
+        }
+
+        static string GetScoreReasonLabel(ScoreReason reason)
+        {
+            switch (reason)
+            {
+                case ScoreReason.EnemyDefeated:
+                    return "KILL";
+                case ScoreReason.ObjectiveCollected:
+                    return "KEY";
+                case ScoreReason.GateDeactivated:
+                    return "GATE";
+                case ScoreReason.WallBroken:
+                    return "WALL";
+                case ScoreReason.LevelCompleted:
+                    return "EXTRACTION";
+                default:
+                    return "SCORE";
+            }
+        }
+
+        static Color GetScoreReasonColor(ScoreReason reason)
+        {
+            switch (reason)
+            {
+                case ScoreReason.EnemyDefeated:
+                    return new Color(1f, 0.28f, 0.2f, 1f);
+                case ScoreReason.ObjectiveCollected:
+                    return new Color(1f, 0.86f, 0.18f, 1f);
+                case ScoreReason.GateDeactivated:
+                    return new Color(0.2f, 1f, 0.85f, 1f);
+                case ScoreReason.WallBroken:
+                    return new Color(1f, 0.2f, 0.92f, 1f);
+                case ScoreReason.LevelCompleted:
+                    return new Color(0.55f, 0.9f, 1f, 1f);
+                default:
+                    return Color.white;
+            }
         }
 
         string ResolveFallbackObjective()

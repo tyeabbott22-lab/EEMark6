@@ -761,6 +761,52 @@ namespace ExtraterrestrialExhaust.Editor
             label.horizontalOverflow = HorizontalWrapMode.Overflow;
             label.verticalOverflow = VerticalWrapMode.Overflow;
 
+            GameObject healthObject = new GameObject("Health Label");
+            healthObject.transform.SetParent(canvasObject.transform, false);
+            RectTransform healthRect = healthObject.AddComponent<RectTransform>();
+            healthRect.anchorMin = new Vector2(1f, 1f);
+            healthRect.anchorMax = new Vector2(1f, 1f);
+            healthRect.pivot = new Vector2(1f, 1f);
+            healthRect.anchoredPosition = new Vector2(-24f, -24f);
+            healthRect.sizeDelta = new Vector2(260f, 48f);
+
+            Text healthLabel = healthObject.AddComponent<Text>();
+            healthLabel.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            healthLabel.fontSize = 22;
+            healthLabel.fontStyle = FontStyle.Bold;
+            healthLabel.alignment = TextAnchor.UpperRight;
+            healthLabel.color = new Color(1f, 0.82f, 0.18f, 1f);
+            healthLabel.horizontalOverflow = HorizontalWrapMode.Overflow;
+            healthLabel.verticalOverflow = VerticalWrapMode.Overflow;
+            Outline healthOutline = healthObject.AddComponent<Outline>();
+            healthOutline.effectColor = new Color(0.02f, 0.04f, 0.12f, 0.9f);
+            healthOutline.effectDistance = new Vector2(2f, -2f);
+
+            GameObject actionCalloutObject = new GameObject("Action Callout");
+            actionCalloutObject.transform.SetParent(canvasObject.transform, false);
+            RectTransform actionCalloutRect = actionCalloutObject.AddComponent<RectTransform>();
+            actionCalloutRect.anchorMin = new Vector2(0.5f, 1f);
+            actionCalloutRect.anchorMax = new Vector2(0.5f, 1f);
+            actionCalloutRect.pivot = new Vector2(0.5f, 1f);
+            actionCalloutRect.anchoredPosition = new Vector2(0f, -178f);
+            actionCalloutRect.sizeDelta = new Vector2(700f, 48f);
+
+            Text actionCalloutLabel = actionCalloutObject.AddComponent<Text>();
+            actionCalloutLabel.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            actionCalloutLabel.fontSize = 20;
+            actionCalloutLabel.fontStyle = FontStyle.Bold;
+            actionCalloutLabel.alignment = TextAnchor.UpperCenter;
+            actionCalloutLabel.color = Color.white;
+            actionCalloutLabel.horizontalOverflow = HorizontalWrapMode.Overflow;
+            actionCalloutLabel.verticalOverflow = VerticalWrapMode.Overflow;
+            Outline actionCalloutOutline = actionCalloutObject.AddComponent<Outline>();
+            actionCalloutOutline.effectColor = new Color(0.02f, 0.04f, 0.12f, 0.9f);
+            actionCalloutOutline.effectDistance = new Vector2(2f, -2f);
+            CanvasGroup actionCalloutGroup = actionCalloutObject.AddComponent<CanvasGroup>();
+            actionCalloutGroup.alpha = 0f;
+            actionCalloutGroup.interactable = false;
+            actionCalloutGroup.blocksRaycasts = false;
+
             GameObject bannerObject = new GameObject("Objective Banner");
             bannerObject.transform.SetParent(canvasObject.transform, false);
             RectTransform bannerRect = bannerObject.AddComponent<RectTransform>();
@@ -789,6 +835,10 @@ namespace ExtraterrestrialExhaust.Editor
             GameplayHud hud = canvasObject.AddComponent<GameplayHud>();
             SerializedObject serialized = new SerializedObject(hud);
             serialized.FindProperty("statusLabel").objectReferenceValue = label;
+            serialized.FindProperty("healthLabel").objectReferenceValue = healthLabel;
+            serialized.FindProperty("actionCalloutLabel").objectReferenceValue = actionCalloutLabel;
+            serialized.FindProperty("actionCalloutGroup").objectReferenceValue = actionCalloutGroup;
+            serialized.FindProperty("actionCalloutDuration").floatValue = 0.9f;
             serialized.FindProperty("objectiveBannerLabel").objectReferenceValue = bannerLabel;
             serialized.FindProperty("objectiveBannerGroup").objectReferenceValue = bannerGroup;
             serialized.FindProperty("objectiveBannerDuration").floatValue = 1.35f;
