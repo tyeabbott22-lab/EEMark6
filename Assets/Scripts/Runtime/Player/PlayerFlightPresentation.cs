@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace ExtraterrestrialExhaust.Player
@@ -44,6 +45,7 @@ namespace ExtraterrestrialExhaust.Player
         Sprite[] currentFrames;
         int frameIndex;
         float frameTimer;
+        readonly List<Material> runtimeMaterials = new();
 
         void Awake()
         {
@@ -70,6 +72,17 @@ namespace ExtraterrestrialExhaust.Player
         {
             if (flightMotor)
                 flightMotor.Flipped -= HandleFlipped;
+            StopPresentation();
+        }
+
+        void OnDestroy()
+        {
+            StopPresentation();
+            foreach (Material material in runtimeMaterials)
+            {
+                if (material)
+                    Destroy(material);
+            }
         }
 
         void Update()
@@ -227,8 +240,10 @@ namespace ExtraterrestrialExhaust.Player
                 line.endWidth = 0.02f;
                 line.startColor = new Color(0.2f, 0.85f, 1f);
                 line.endColor = new Color(0.6f, 0.1f, 1f, 0f);
-                line.material = new Material(Shader.Find("Sprites/Default"));
             }
+
+            if (!line.sharedMaterial)
+                line.sharedMaterial = CreateRuntimeMaterial($"{name} Material");
         }
 
         void EnsureParticleExhaust(
@@ -291,8 +306,28 @@ namespace ExtraterrestrialExhaust.Player
             ParticleSystemRenderer renderer = particles.GetComponent<ParticleSystemRenderer>();
             renderer.renderMode = ParticleSystemRenderMode.Billboard;
             renderer.sortingOrder = 8;
-            renderer.material = new Material(Shader.Find("Sprites/Default"));
+            if (!renderer.sharedMaterial)
+                renderer.sharedMaterial = CreateRuntimeMaterial($"{name} Particle Material");
             particles.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        }
+
+        Material CreateRuntimeMaterial(string materialName)
+        {
+            Shader shader = Shader.Find("Sprites/Default");
+            if (!shader)
+                return null;
+
+            Material material = new Material(shader);
+            material.name = materialName;
+            runtimeMaterials.Add(material);
+            return material;
+        }
+
+        void StopPresentation()
+        {
+            AnimateExhaust(leftExhaust, leftExhaustParticles, 0f, false);
+            AnimateExhaust(rightExhaust, rightExhaustParticles, 0f, false);
+            UpdateThrustAudio(false);
         }
 
         void AnimateExhaust(
@@ -301,7 +336,13 @@ namespace ExtraterrestrialExhaust.Player
             float amount,
             bool boosted)
         {
+            if (!exhaust)
+                return;
+
             LineRenderer line = exhaust.GetComponent<LineRenderer>();
+            if (!line)
+                return;
+
             line.enabled = amount > 0.01f;
             line.SetPosition(0, Vector3.zero);
             float boostScale = boosted ? boostedExhaustLengthMultiplier : 1f;
