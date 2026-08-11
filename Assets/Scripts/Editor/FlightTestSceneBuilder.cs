@@ -1149,9 +1149,13 @@ namespace ExtraterrestrialExhaust.Editor
             collider.size = size;
             BrittleWall brittleWall = wall.AddComponent<BrittleWall>();
             SerializedObject serialized = new SerializedObject(brittleWall);
+            serialized.FindProperty("dentSpeed").floatValue = 0.15f;
             serialized.FindProperty("breakSpeed").floatValue = 14f;
+            serialized.FindProperty("minimumChipDirectness").floatValue = 0.12f;
             serialized.FindProperty("minimumDirectness").floatValue = 0.68f;
+            serialized.FindProperty("requireThrustToChip").boolValue = false;
             serialized.FindProperty("requireThrustToBreak").boolValue = true;
+            serialized.FindProperty("chipsBeforeBreak").intValue = 8;
             serialized.FindProperty("retainedVelocity").floatValue = 0.94f;
             serialized.FindProperty("followThroughNudge").floatValue = 0.34f;
             serialized.FindProperty("impactCooldown").floatValue = 0.32f;
@@ -1159,6 +1163,11 @@ namespace ExtraterrestrialExhaust.Editor
             serialized.FindProperty("cameraShakeDuration").floatValue = 0.18f;
             serialized.FindProperty("breakScore").intValue = 200;
             serialized.FindProperty("breakColor").colorValue = new Color(0.95f, 0.12f, 1f, 1f);
+            serialized.FindProperty("scrapeAnimationDuration").floatValue = 0.18f;
+            serialized.FindProperty("scrapeSlideDistance").floatValue = 0.075f;
+            serialized.FindProperty("scrapeShakeAngle").floatValue = 4.5f;
+            serialized.FindProperty("scrapePulseScale").floatValue = 0.045f;
+            serialized.FindProperty("scrapeFlashColor").colorValue = new Color(1f, 0.62f, 1f, 1f);
             serialized.ApplyModifiedPropertiesWithoutUndo();
             CreateWallVisual(wall.transform, size, new Color(0.95f, 0.12f, 1f, 0.92f));
         }
