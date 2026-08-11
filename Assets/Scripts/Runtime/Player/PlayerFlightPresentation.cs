@@ -22,6 +22,14 @@ namespace ExtraterrestrialExhaust.Player
         [SerializeField, Min(0.1f)] float thrustFramesPerSecond = 14f;
         [SerializeField] AudioSource thrustAudio;
         [SerializeField] AudioClip thrustClip;
+
+        [Header("Rotation Boost Exhaust")]
+        [SerializeField, Min(1f)] float boostedExhaustLengthMultiplier = 1.25f;
+        [SerializeField, Min(1f)] float boostedExhaustWidthMultiplier = 1.15f;
+        [SerializeField, Min(1f)] float boostedParticleEmissionMultiplier = 1.4f;
+        [SerializeField] Color boostedExhaustStartColor = new Color(0.75f, 1f, 1f, 1f);
+        [SerializeField] Color boostedExhaustEndColor = new Color(0.12f, 0.4f, 1f, 0f);
+
         [SerializeField, Min(0f)] float exhaustLength = 0.55f;
         [SerializeField, Min(0f)] float turnExhaustAmount = 1f;
         [SerializeField] Vector2 squashScale = new Vector2(1.25f, 0.75f);
@@ -69,8 +77,8 @@ namespace ExtraterrestrialExhaust.Player
             if (stateMachine && !stateMachine.AcceptsPlayerInput)
             {
                 squashTimer = 0f;
-                AnimateExhaust(leftExhaust, leftExhaustParticles, 0f);
-                AnimateExhaust(rightExhaust, rightExhaustParticles, 0f);
+                AnimateExhaust(leftExhaust, leftExhaustParticles, 0f, false);
+                AnimateExhaust(rightExhaust, rightExhaustParticles, 0f, false);
                 UpdateThrustAudio(false);
                 UpdateSpriteAnimation(false);
                 return;
@@ -82,6 +90,8 @@ namespace ExtraterrestrialExhaust.Player
             bool stabilizing = command.y < -0.2f;
             float leftExhaustAmount = stabilizing ? 0f : thrust;
             float rightExhaustAmount = stabilizing ? 0f : thrust;
+            bool leftBoosted = false;
+            bool rightBoosted = false;
 
             // Match EE5's asymmetric thruster read: thrust uses both flames,
             // while rotation uses the flame on the side producing the torque.
@@ -95,10 +105,22 @@ namespace ExtraterrestrialExhaust.Player
                     rightExhaustAmount = Mathf.Max(rightExhaustAmount, turningAmount);
                 else
                     leftExhaustAmount = Mathf.Max(leftExhaustAmount, turningAmount);
+
+                // EE5 uses the turning flame as a visibly hotter boost only
+                // while the craft is under thrust. The side changes with the
+                // facing state, so a flip never leaves the boost on the old
+                // visual side for a frame.
+                if (thrust > 0.01f)
+                {
+                    if (useRightThruster)
+                        rightBoosted = true;
+                    else
+                        leftBoosted = true;
+                }
             }
 
-            AnimateExhaust(leftExhaust, leftExhaustParticles, leftExhaustAmount);
-            AnimateExhaust(rightExhaust, rightExhaustParticles, rightExhaustAmount);
+            AnimateExhaust(leftExhaust, leftExhaustParticles, leftExhaustAmount, leftBoosted);
+            AnimateExhaust(rightExhaust, rightExhaustParticles, rightExhaustAmount, rightBoosted);
             UpdateThrustAudio(!stabilizing && (thrust > 0.01f || turn > 0.01f));
             UpdateSpriteAnimation(!stabilizing && thrust > 0.01f);
 
@@ -128,9 +150,10 @@ namespace ExtraterrestrialExhaust.Player
         public void ResetPresentation()
         {
             squashTimer = 0f;
-            AnimateExhaust(leftExhaust, leftExhaustParticles, 0f);
-            AnimateExhaust(rightExhaust, rightExhaustParticles, 0f);
+            AnimateExhaust(leftExhaust, leftExhaustParticles, 0f, false);
+            AnimateExhaust(rightExhaust, rightExhaustParticles, 0f, false);
             UpdateThrustAudio(false);
+            UpdateSpriteAnimation(false);
 
             if (!visual)
                 return;
@@ -147,6 +170,42 @@ namespace ExtraterrestrialExhaust.Player
             // event on the motor prevents update-order drift between input and
             // presentation when a flip is triggered by a non-keyboard device.
             squashTimer = squashDuration;
+            RefreshExhaustPresentation();
+        }
+
+        void RefreshExhaustPresentation()
+        {
+            if (!input || !flightMotor)
+                return;
+
+            Vector2 command = input.Move;
+            float thrust = Mathf.Clamp01(Mathf.Max(0f, command.y));
+            float turn = Mathf.Clamp01(Mathf.Abs(command.x));
+            bool stabilizing = command.y < -0.2f;
+            float leftAmount = stabilizing ? 0f : thrust;
+            float rightAmount = stabilizing ? 0f : thrust;
+            bool leftBoosted = false;
+            bool rightBoosted = false;
+
+            if (!stabilizing && turn > 0.01f)
+            {
+                float turningAmount = turn * turnExhaustAmount;
+                bool turningLeft = command.x < 0f;
+                bool useRightThruster = turningLeft == flightMotor.FacingRight;
+                if (useRightThruster)
+                {
+                    rightAmount = Mathf.Max(rightAmount, turningAmount);
+                    rightBoosted = thrust > 0.01f;
+                }
+                else
+                {
+                    leftAmount = Mathf.Max(leftAmount, turningAmount);
+                    leftBoosted = thrust > 0.01f;
+                }
+            }
+
+            AnimateExhaust(leftExhaust, leftExhaustParticles, leftAmount, leftBoosted);
+            AnimateExhaust(rightExhaust, rightExhaustParticles, rightAmount, rightBoosted);
         }
 
         void EnsureExhaust(ref Transform exhaust, string name, float xPosition)
@@ -236,19 +295,46 @@ namespace ExtraterrestrialExhaust.Player
             particles.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
         }
 
-        void AnimateExhaust(Transform exhaust, ParticleSystem particles, float amount)
+        void AnimateExhaust(
+            Transform exhaust,
+            ParticleSystem particles,
+            float amount,
+            bool boosted)
         {
             LineRenderer line = exhaust.GetComponent<LineRenderer>();
             line.enabled = amount > 0.01f;
             line.SetPosition(0, Vector3.zero);
-            line.SetPosition(1, Vector3.down * Mathf.Lerp(0.08f, exhaustLength, amount));
-            line.startWidth = Mathf.Lerp(0.04f, 0.14f, amount);
+            float boostScale = boosted ? boostedExhaustLengthMultiplier : 1f;
+            line.SetPosition(
+                1,
+                Vector3.down * Mathf.Lerp(0.08f, exhaustLength * boostScale, amount));
+            line.startWidth = Mathf.Lerp(0.04f, 0.14f, amount)
+                * (boosted ? boostedExhaustWidthMultiplier : 1f);
+            line.startColor = boosted
+                ? boostedExhaustStartColor
+                : new Color(0.2f, 0.85f, 1f);
+            line.endColor = boosted
+                ? boostedExhaustEndColor
+                : new Color(0.6f, 0.1f, 1f, 0f);
 
             if (!particles)
                 return;
 
             ParticleSystem.EmissionModule emission = particles.emission;
-            emission.rateOverTime = Mathf.Lerp(0f, 24f, amount);
+            float emissionMultiplier = boosted ? boostedParticleEmissionMultiplier : 1f;
+            emission.rateOverTime = Mathf.Lerp(0f, 24f * emissionMultiplier, amount);
+            ParticleSystem.MainModule main = particles.main;
+            float particleSizeMultiplier = boosted ? boostedExhaustWidthMultiplier : 1f;
+            main.startSize = new ParticleSystem.MinMaxCurve(
+                0.035f * particleSizeMultiplier,
+                0.09f * particleSizeMultiplier);
+            main.startColor = boosted
+                ? new ParticleSystem.MinMaxGradient(
+                    boostedExhaustStartColor,
+                    boostedExhaustEndColor)
+                : new ParticleSystem.MinMaxGradient(
+                    new Color(0.25f, 0.92f, 1f, 0.82f),
+                    new Color(0.62f, 0.12f, 1f, 0.2f));
             if (amount > 0.01f)
             {
                 if (!particles.isPlaying)

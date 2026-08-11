@@ -293,6 +293,13 @@ namespace ExtraterrestrialExhaust.Editor
             SerializedObject serializedPresentation = new SerializedObject(presentation);
             serializedPresentation.FindProperty("thrustAudio").objectReferenceValue = thrustAudio;
             serializedPresentation.FindProperty("thrustClip").objectReferenceValue = AssetDatabase.LoadAssetAtPath<AudioClip>(ThrustAudioPath);
+            serializedPresentation.FindProperty("boostedExhaustLengthMultiplier").floatValue = 1.25f;
+            serializedPresentation.FindProperty("boostedExhaustWidthMultiplier").floatValue = 1.15f;
+            serializedPresentation.FindProperty("boostedParticleEmissionMultiplier").floatValue = 1.4f;
+            serializedPresentation.FindProperty("boostedExhaustStartColor").colorValue =
+                new Color(0.75f, 1f, 1f, 1f);
+            serializedPresentation.FindProperty("boostedExhaustEndColor").colorValue =
+                new Color(0.12f, 0.4f, 1f, 0f);
             serializedPresentation.FindProperty("exhaustLength").floatValue = 0.55f;
             serializedPresentation.FindProperty("turnExhaustAmount").floatValue = 1f;
             serializedPresentation.FindProperty("squashScale").vector2Value = new Vector2(1.25f, 0.75f);
