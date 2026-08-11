@@ -19,6 +19,11 @@ namespace ExtraterrestrialExhaust.Enemy
         [SerializeField, Min(0f)] float detectionRange = 12f;
         [SerializeField, Min(0f)] float wakeDistance = 6f;
         [SerializeField, Min(0f)] float wakeDuration = 1.35f;
+        [SerializeField] bool requireLineOfSightToWake = true;
+        [SerializeField, Min(1f)] float wakeSignalDistanceMultiplier = 4f;
+        [SerializeField, Min(0.01f)] float wakeSignalChargeDuration = 1.15f;
+        [SerializeField, Min(0f)] float wakeSignalChargeDecay = 1.8f;
+        [SerializeField, Min(0f)] float wakeFinalWarningDuration = 0.35f;
         [SerializeField, Min(0f)] float attackRange = 1.2f;
         [SerializeField, Min(0f)] float chaseSpeed = 2.5f;
         [SerializeField] PlayerCharacter target;
@@ -55,6 +60,7 @@ namespace ExtraterrestrialExhaust.Enemy
         HealthComponent health;
         SpriteRenderer spriteRenderer;
         readonly RaycastHit2D[] castHits = new RaycastHit2D[8];
+        readonly RaycastHit2D[] lineOfSightHits = new RaycastHit2D[16];
         Vector2 chaseSteerDirection;
         float chaseSteerRemaining;
         Vector2 lastChasePosition;
@@ -63,6 +69,7 @@ namespace ExtraterrestrialExhaust.Enemy
         Vector2 orbitCenter;
         float orbitAngle;
         float wakeTimer;
+        float wakeSignalCharge;
 
         public EnemyState State { get; private set; }
         public PlayerCharacter Target => target;
@@ -70,6 +77,18 @@ namespace ExtraterrestrialExhaust.Enemy
         public float WakeProgress => State == EnemyState.Waking && wakeDuration > 0f
             ? Mathf.Clamp01(wakeTimer / wakeDuration)
             : 0f;
+        public float WakeSignalChargeProgress => wakeSignalChargeDuration > 0f
+            ? Mathf.Clamp01(wakeSignalCharge / wakeSignalChargeDuration)
+            : 0f;
+        public bool WakeSignalVisible { get; private set; }
+        public bool WakeSignalHasClearSight { get; private set; }
+        public Vector2 WakeSignalEnd { get; private set; }
+        public bool IsWakeFinalWarning => State == EnemyState.Waking
+            && wakeFinalWarningDuration > 0f
+            && WakeProgress >= Mathf.InverseLerp(
+                0f,
+                Mathf.Max(0.01f, wakeDuration),
+                Mathf.Max(0f, wakeDuration - wakeFinalWarningDuration));
         public event Action<EnemyController> Defeated;
         public event Action<EnemyController, EnemyState> StateChanged;
 
@@ -106,12 +125,16 @@ namespace ExtraterrestrialExhaust.Enemy
 
             if (!target || !target.CanReceiveGameplayInput)
             {
+                ClearWakeSignal();
                 SetState(EnemyState.Dormant);
                 return;
             }
 
             float distance = Vector2.Distance(transform.position, target.transform.position);
-            if (distance > detectionRange)
+            UpdateWakeSignal(distance);
+
+            float behaviorRange = Mathf.Max(detectionRange, GetWakeSignalDistance());
+            if (distance > behaviorRange)
             {
                 SetState(EnemyState.Dormant);
                 return;
@@ -119,16 +142,28 @@ namespace ExtraterrestrialExhaust.Enemy
 
             if (State == EnemyState.Dormant)
             {
-                if (distance <= wakeDistance)
+                if (distance <= wakeDistance
+                    && (!requireLineOfSightToWake || WakeSignalHasClearSight)
+                    && WakeSignalChargeProgress >= 0.999f)
                     SetState(EnemyState.Waking);
                 return;
             }
 
             if (State == EnemyState.Waking)
             {
-                if (distance > wakeDistance)
+                if (distance > behaviorRange)
                 {
                     SetState(EnemyState.Dormant);
+                    return;
+                }
+
+                if (requireLineOfSightToWake && !WakeSignalHasClearSight)
+                {
+                    // A wall interrupts the activation buildup without
+                    // teleporting the enemy back to its dormant pose.
+                    wakeTimer = Mathf.Max(
+                        0f,
+                        wakeTimer - Time.deltaTime * wakeSignalChargeDecay);
                     return;
                 }
 
@@ -138,6 +173,101 @@ namespace ExtraterrestrialExhaust.Enemy
             }
 
             SetState(distance > attackRange ? EnemyState.Chasing : EnemyState.Attacking);
+        }
+
+        void UpdateWakeSignal(float distance)
+        {
+            float signalDistance = GetWakeSignalDistance();
+            WakeSignalVisible = distance <= signalDistance;
+            WakeSignalEnd = target ? target.transform.position : transform.position;
+
+            if (!WakeSignalVisible)
+            {
+                WakeSignalHasClearSight = false;
+                wakeSignalCharge = Mathf.MoveTowards(
+                    wakeSignalCharge,
+                    0f,
+                    wakeSignalChargeDecay * Time.deltaTime);
+                return;
+            }
+
+            Vector2 origin = bodyCollider ? bodyCollider.bounds.center : transform.position;
+            Vector2 targetPoint = target.transform.position;
+            Vector2 lineEnd = targetPoint;
+            WakeSignalHasClearSight = !requireLineOfSightToWake
+                || HasClearLineOfSight(origin, targetPoint, out lineEnd);
+            if (requireLineOfSightToWake && !WakeSignalHasClearSight)
+                WakeSignalEnd = lineEnd;
+
+            if (WakeSignalHasClearSight)
+            {
+                wakeSignalCharge = Mathf.MoveTowards(
+                    wakeSignalCharge,
+                    wakeSignalChargeDuration,
+                    Time.deltaTime);
+            }
+            else
+            {
+                wakeSignalCharge = Mathf.MoveTowards(
+                    wakeSignalCharge,
+                    0f,
+                    wakeSignalChargeDecay * Time.deltaTime);
+            }
+        }
+
+        void ClearWakeSignal()
+        {
+            WakeSignalVisible = false;
+            WakeSignalHasClearSight = false;
+            WakeSignalEnd = transform.position;
+            wakeSignalCharge = 0f;
+        }
+
+        float GetWakeSignalDistance() =>
+            wakeDistance * Mathf.Max(1f, wakeSignalDistanceMultiplier);
+
+        bool HasClearLineOfSight(Vector2 origin, Vector2 targetPoint, out Vector2 lineEnd)
+        {
+            Vector2 toTarget = targetPoint - origin;
+            float distance = toTarget.magnitude;
+            lineEnd = targetPoint;
+            if (distance <= 0.0001f)
+                return true;
+
+            // Unity 6 marks the allocation-free overload obsolete while the
+            // contact-filter replacement is still not available in every
+            // supported 2D package version used by this project.
+#pragma warning disable CS0618
+            int hitCount = Physics2D.RaycastNonAlloc(
+                origin,
+                toTarget / distance,
+                lineOfSightHits,
+                distance);
+#pragma warning restore CS0618
+            float closestBlockDistance = float.PositiveInfinity;
+            bool blocked = false;
+
+            for (int i = 0; i < hitCount; i++)
+            {
+                RaycastHit2D hit = lineOfSightHits[i];
+                if (hit.collider == null || hit.collider.isTrigger)
+                    continue;
+
+                if (hit.collider == bodyCollider || hit.collider.transform.IsChildOf(transform))
+                    continue;
+
+                if (target && hit.collider.transform.IsChildOf(target.transform))
+                    continue;
+
+                if (!IsWallCollider(hit.collider) || hit.distance >= closestBlockDistance)
+                    continue;
+
+                closestBlockDistance = hit.distance;
+                lineEnd = hit.point;
+                blocked = true;
+            }
+
+            return !blocked;
         }
 
         void FixedUpdate()

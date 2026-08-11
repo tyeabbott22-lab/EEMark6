@@ -340,6 +340,11 @@ namespace ExtraterrestrialExhaust.Editor
             serializedController.FindProperty("detectionRange").floatValue = 12f;
             serializedController.FindProperty("wakeDistance").floatValue = 6f;
             serializedController.FindProperty("wakeDuration").floatValue = 1.35f;
+            serializedController.FindProperty("requireLineOfSightToWake").boolValue = true;
+            serializedController.FindProperty("wakeSignalDistanceMultiplier").floatValue = 4f;
+            serializedController.FindProperty("wakeSignalChargeDuration").floatValue = 1.15f;
+            serializedController.FindProperty("wakeSignalChargeDecay").floatValue = 1.8f;
+            serializedController.FindProperty("wakeFinalWarningDuration").floatValue = 0.35f;
             serializedController.FindProperty("attackRange").floatValue = ranged ? 7f : 0.8f;
             // Match the two authored EE5 roles: the purple close bruiser is
             // slightly slower than the orbiting white gunner, but both remain
@@ -435,11 +440,19 @@ namespace ExtraterrestrialExhaust.Editor
 
             EnemyWakePresentation wakePresentation = enemy.AddComponent<EnemyWakePresentation>();
             SerializedObject serializedWake = new SerializedObject(wakePresentation);
-            serializedWake.FindProperty("chargingColor").colorValue = new Color(0.45f, 0.1f, 1f, 0.22f);
+            serializedWake.FindProperty("blockedColor").colorValue = new Color(0.5f, 0.14f, 1f, 0.18f);
             serializedWake.FindProperty("readyColor").colorValue = new Color(0.08f, 1f, 0.34f, 0.9f);
+            serializedWake.FindProperty("flashYellow").colorValue = new Color(1f, 0.9f, 0.05f, 0.95f);
+            serializedWake.FindProperty("flashRed").colorValue = new Color(1f, 0.04f, 0.02f, 0.95f);
             serializedWake.FindProperty("minWidth").floatValue = 0.014f;
             serializedWake.FindProperty("maxWidth").floatValue = 0.11f;
-            serializedWake.FindProperty("sortingOrder").intValue = 16;
+            serializedWake.FindProperty("endpointSmoothTime").floatValue = 0.055f;
+            serializedWake.FindProperty("glanceRadius").floatValue = 0.56f;
+            serializedWake.FindProperty("glanceSpeed").floatValue = 15f;
+            serializedWake.FindProperty("enemyEndAlphaMultiplier").floatValue = 0.5f;
+            serializedWake.FindProperty("playerEndAlphaMultiplier").floatValue = 0f;
+            serializedWake.FindProperty("endWidthMultiplier").floatValue = 0.08f;
+            serializedWake.FindProperty("sortingOrder").intValue = 80;
             serializedWake.ApplyModifiedPropertiesWithoutUndo();
 
             EnemyDeathPresentation deathPresentation = enemy.AddComponent<EnemyDeathPresentation>();

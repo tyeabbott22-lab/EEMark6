@@ -43,9 +43,9 @@ The player foundation is intentionally split into three responsibilities:
 | `ContactHazard` | Optional reusable damage volume for authored hazard rooms. |
 | `PlayerCollisionDamage` | Converts high-speed impacts into collision damage. |
 | `HealthPickup` / `FireRatePickup` | Optional reusable player upgrades kept out of the gold-standard slice. |
-| `EnemyController` | Provides explicit dormant, waking, chasing, attacking, and defeated states with EE5-style wall steering and optional ranged orbit movement. |
+| `EnemyController` | Provides explicit dormant, waking, chasing, attacking, and defeated states with EE5-style wall steering, ranged orbit movement, and line-of-sight wake charging. |
 | `EnemySpritePresentation` | Maps enemy states to imported idle, wake-alert, active, and defeat animation frames. |
-| `EnemyWakePresentation` | Renders the controller-owned wake telegraph so enemy activation is readable before combat begins. |
+| `EnemyWakePresentation` | Renders the controller-owned blocked/clear wake telegraph with a final warning flash so activation is readable before combat begins. |
 | `EnemyHealthDisplay` | Presents the imported six-frame health sheet briefly at spawn and after damage, scaled to each enemy's max health. |
 | `EnemyDeathPresentation` / `EnemyDeathBurst` | Plays the imported EE5 defeat animation and audio independently from enemy cleanup. |
 | `EnemyContactDamage` | Applies close-range melee damage through the shared contract; ranged enemies stay ranged. |
