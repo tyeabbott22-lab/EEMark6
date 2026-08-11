@@ -316,6 +316,23 @@ namespace ExtraterrestrialExhaust.Editor
             serializedWeapon.FindProperty("firePoint").objectReferenceValue = firePoint.transform;
             serializedWeapon.ApplyModifiedPropertiesWithoutUndo();
 
+            PlayerWeaponPresentation weaponPresentation = player.AddComponent<PlayerWeaponPresentation>();
+            SerializedObject serializedWeaponPresentation = new SerializedObject(weaponPresentation);
+            serializedWeaponPresentation.FindProperty("firePoint").objectReferenceValue = firePoint.transform;
+            serializedWeaponPresentation.FindProperty("flashDuration").floatValue = 0.08f;
+            serializedWeaponPresentation.FindProperty("flashLength").floatValue = 0.34f;
+            serializedWeaponPresentation.FindProperty("flashWidth").floatValue = 0.11f;
+            serializedWeaponPresentation.FindProperty("sideFlashLength").floatValue = 0.22f;
+            serializedWeaponPresentation.FindProperty("sideFlashWidth").floatValue = 0.12f;
+            serializedWeaponPresentation.FindProperty("flashColor").colorValue =
+                new Color(1f, 0.95f, 0.42f, 1f);
+            serializedWeaponPresentation.FindProperty("flashEdgeColor").colorValue =
+                new Color(1f, 0.16f, 0.04f, 0f);
+            serializedWeaponPresentation.FindProperty("sortingOrder").intValue = 34;
+            serializedWeaponPresentation.FindProperty("cameraShakeStrength").floatValue = 0.025f;
+            serializedWeaponPresentation.FindProperty("cameraShakeDuration").floatValue = 0.05f;
+            serializedWeaponPresentation.ApplyModifiedPropertiesWithoutUndo();
+
             CreateCraftVisual(player.transform);
             Transform craftVisual = player.transform.Find("Craft Visual");
             serializedPresentation = new SerializedObject(presentation);

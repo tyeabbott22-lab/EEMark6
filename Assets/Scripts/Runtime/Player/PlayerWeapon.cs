@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using ExtraterrestrialExhaust.Combat;
@@ -46,6 +47,8 @@ namespace ExtraterrestrialExhaust.Player
 
         public bool CanFire => cooldownRemaining <= 0f;
         public float FireRateMultiplier => fireRateMultiplier;
+        public Transform FirePoint => firePoint;
+        public event Action<Vector2, Vector2> Fired;
 
         void Reset()
         {
@@ -108,6 +111,8 @@ namespace ExtraterrestrialExhaust.Player
             cooldownRemaining = fireCooldown / fireRateMultiplier;
             if (flightMotor && flightMotor.Body)
                 flightMotor.Body.AddForce(-direction * recoilForce, ForceMode2D.Impulse);
+
+            Fired?.Invoke(spawnPosition, direction);
 
             return true;
         }
