@@ -8,6 +8,7 @@ namespace ExtraterrestrialExhaust.Core
         EnemyDefeated,
         ObjectiveCollected,
         GateDeactivated,
+        WallBroken,
         LevelCompleted
     }
 

@@ -968,6 +968,30 @@ namespace ExtraterrestrialExhaust.Editor
             CreateWallVisual(wall.transform, size);
         }
 
+        static void CreateBrittleWall(string name, Vector2 position, Vector2 size)
+        {
+            GameObject wall = new GameObject(name);
+            wall.tag = "Wall";
+            wall.transform.position = position;
+
+            BoxCollider2D collider = wall.AddComponent<BoxCollider2D>();
+            collider.size = size;
+            BrittleWall brittleWall = wall.AddComponent<BrittleWall>();
+            SerializedObject serialized = new SerializedObject(brittleWall);
+            serialized.FindProperty("breakSpeed").floatValue = 14f;
+            serialized.FindProperty("minimumDirectness").floatValue = 0.68f;
+            serialized.FindProperty("requireThrustToBreak").boolValue = true;
+            serialized.FindProperty("retainedVelocity").floatValue = 0.94f;
+            serialized.FindProperty("followThroughNudge").floatValue = 0.34f;
+            serialized.FindProperty("impactCooldown").floatValue = 0.32f;
+            serialized.FindProperty("cameraShakeStrength").floatValue = 0.14f;
+            serialized.FindProperty("cameraShakeDuration").floatValue = 0.18f;
+            serialized.FindProperty("breakScore").intValue = 150;
+            serialized.FindProperty("breakColor").colorValue = new Color(0.95f, 0.12f, 1f, 1f);
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            CreateWallVisual(wall.transform, size, new Color(0.95f, 0.12f, 1f, 0.92f));
+        }
+
         static void CreateArenaBoundaries()
         {
             // Keep the playable rectangle in one place so movement tuning and
@@ -982,11 +1006,11 @@ namespace ExtraterrestrialExhaust.Editor
             // give the wake telegraph and gunner pressure somewhere to matter.
             // They stay off the authored key, gate, and exit landmarks so the
             // objective route remains direct and testable.
-            CreateWall(
+            CreateBrittleWall(
                 "Upper Crater Shelf",
                 new Vector2(0.8f, 4.15f),
                 new Vector2(4.2f, 0.35f));
-            CreateWall(
+            CreateBrittleWall(
                 "Lower Crater Shelf",
                 new Vector2(-0.6f, -4.15f),
                 new Vector2(4.8f, 0.35f));
@@ -1118,7 +1142,10 @@ namespace ExtraterrestrialExhaust.Editor
             serializedPresentation.ApplyModifiedPropertiesWithoutUndo();
         }
 
-        static void CreateWallVisual(Transform parent, Vector2 size)
+        static void CreateWallVisual(
+            Transform parent,
+            Vector2 size,
+            Color? tintOverride = null)
         {
             Sprite wallSprite = LoadFirstSprite(
                 BoundaryWallSpriteAssetPath,
@@ -1155,7 +1182,7 @@ namespace ExtraterrestrialExhaust.Editor
 
             SpriteRenderer renderer = visual.AddComponent<SpriteRenderer>();
             renderer.sprite = wallSprite;
-            renderer.color = new Color(0.52f, 0.63f, 0.9f, 0.9f);
+            renderer.color = tintOverride ?? new Color(0.52f, 0.63f, 0.9f, 0.9f);
             renderer.sortingOrder = -10;
         }
 
