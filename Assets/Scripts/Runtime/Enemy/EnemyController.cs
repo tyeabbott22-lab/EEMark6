@@ -390,10 +390,13 @@ namespace ExtraterrestrialExhaust.Enemy
             SetState(EnemyState.Defeated);
             body.linearVelocity = Vector2.zero;
             body.simulated = false;
-            Defeated?.Invoke(this);
             // EE5 briefly slows the world on a confirmed defeat. The game
             // state machine owns time so this remains compatible with pause.
+            // Apply it before broadcasting the death event, matching EE5's
+            // EnemyHealth.Die ordering so the burst and key handoff begin
+            // inside the same readable hit-stop beat.
             FindFirstObjectByType<GameStateMachine>()?.TriggerEnemyDefeatSlowdown();
+            Defeated?.Invoke(this);
 
             foreach (Collider2D collider in GetComponentsInChildren<Collider2D>(true))
                 collider.enabled = false;

@@ -104,6 +104,27 @@ namespace ExtraterrestrialExhaust.Core
             UpdateAvailabilityVisual();
         }
 
+        void OnEnable()
+        {
+            if (enemyTarget)
+                enemyTarget.Defeated += HandleEnemyDefeated;
+            if (requiredEncounter)
+                requiredEncounter.Completed += HandleEncounterCompleted;
+
+            // A scene can be enabled after its carrier has already been
+            // defeated. The event path is authoritative, but this keeps
+            // prefab-preview and additive-scene loading deterministic.
+            TryReleaseFromCarrier();
+        }
+
+        void OnDisable()
+        {
+            if (enemyTarget)
+                enemyTarget.Defeated -= HandleEnemyDefeated;
+            if (requiredEncounter)
+                requiredEncounter.Completed -= HandleEncounterCompleted;
+        }
+
         void Update()
         {
             ResolvePlayer();
@@ -134,8 +155,10 @@ namespace ExtraterrestrialExhaust.Core
             {
                 case EnergyKeyState.AttachedToEnemy:
                     FollowEnemyOrbit();
-                    if (CanReleaseFromEnemy())
-                        ReleaseFromEnemy();
+                    // Keep the poll as a recovery path for references that are
+                    // resolved late; normal gameplay releases from the carrier
+                    // event so the objective handoff has no frame of drift.
+                    TryReleaseFromCarrier();
                     break;
                 case EnergyKeyState.OrbitingPlayer:
                     FollowPlayerOrbit();
@@ -294,6 +317,22 @@ namespace ExtraterrestrialExhaust.Core
                     || (requiredEncounter && requiredEncounter.IsComplete);
 
             return requiredEncounter == null || requiredEncounter.IsComplete;
+        }
+
+        void HandleEnemyDefeated(EnemyController defeatedEnemy)
+        {
+            TryReleaseFromCarrier();
+        }
+
+        void HandleEncounterCompleted()
+        {
+            TryReleaseFromCarrier();
+        }
+
+        void TryReleaseFromCarrier()
+        {
+            if (state == EnergyKeyState.AttachedToEnemy && CanReleaseFromEnemy())
+                ReleaseFromEnemy();
         }
 
         void ResolvePlayer()
