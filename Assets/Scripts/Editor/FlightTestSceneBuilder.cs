@@ -296,6 +296,9 @@ namespace ExtraterrestrialExhaust.Editor
             spriteProperty.arraySize = sprites.Length;
             for (int i = 0; i < sprites.Length; i++)
                 spriteProperty.GetArrayElementAtIndex(i).objectReferenceValue = sprites[i];
+            serialized.FindProperty("showOnStartDuration").floatValue = 0.8f;
+            serialized.FindProperty("showOnHitDuration").floatValue = 0.6f;
+            serialized.FindProperty("fadeSpeed").floatValue = 6f;
             serialized.ApplyModifiedPropertiesWithoutUndo();
         }
 

@@ -31,10 +31,25 @@ namespace ExtraterrestrialExhaust.Player
             startColors = new Color[renderers.Length];
             for (int i = 0; i < renderers.Length; i++)
                 startColors[i] = renderers[i].startColor;
-            sprites = GetComponentsInChildren<SpriteRenderer>(true);
-            startSpriteColors = new Color[sprites.Length];
-            for (int i = 0; i < sprites.Length; i++)
-                startSpriteColors[i] = sprites[i].color;
+
+            SpriteRenderer[] candidates = GetComponentsInChildren<SpriteRenderer>(true);
+            int spriteCount = 0;
+            for (int i = 0; i < candidates.Length; i++)
+                if (ShouldFlash(candidates[i]))
+                    spriteCount++;
+
+            sprites = new SpriteRenderer[spriteCount];
+            startSpriteColors = new Color[spriteCount];
+            int spriteIndex = 0;
+            for (int i = 0; i < candidates.Length; i++)
+            {
+                if (!ShouldFlash(candidates[i]))
+                    continue;
+
+                sprites[spriteIndex] = candidates[i];
+                startSpriteColors[spriteIndex] = candidates[i].color;
+                spriteIndex++;
+            }
         }
 
         void OnEnable()
@@ -108,7 +123,8 @@ namespace ExtraterrestrialExhaust.Player
                 renderers[i].endColor = color;
             }
             for (int i = 0; i < sprites.Length; i++)
-                sprites[i].color = color;
+                if (sprites[i])
+                    sprites[i].color = color;
         }
 
         void RestoreColors()
@@ -121,7 +137,17 @@ namespace ExtraterrestrialExhaust.Player
                 renderers[i].endColor = startColors[i];
             }
             for (int i = 0; i < sprites.Length; i++)
-                sprites[i].color = startSpriteColors[i];
+                if (sprites[i])
+                    sprites[i].color = startSpriteColors[i];
+        }
+
+        static bool ShouldFlash(SpriteRenderer sprite)
+        {
+            if (!sprite)
+                return false;
+
+            string name = sprite.gameObject.name.ToLowerInvariant();
+            return !name.Contains("health") && !name.Contains("bar");
         }
 
         static bool IsAimLine(LineRenderer renderer) =>
