@@ -873,6 +873,7 @@ namespace ExtraterrestrialExhaust.Editor
             SerializedObject serialized = new SerializedObject(contactHazard);
             serialized.FindProperty("damage").floatValue = 1f;
             serialized.FindProperty("damageCooldown").floatValue = 0.45f;
+            serialized.FindProperty("knockback").floatValue = 7f;
             serialized.ApplyModifiedPropertiesWithoutUndo();
 
             CreateCircleOutline(hazard.transform, radius, color, 40, 0.12f);
@@ -882,6 +883,21 @@ namespace ExtraterrestrialExhaust.Editor
                 new Color(1f, 0.55f, 0.04f, 0.75f),
                 32,
                 0.075f);
+
+            HazardPresentation presentation = hazard.AddComponent<HazardPresentation>();
+            SerializedObject serializedPresentation = new SerializedObject(presentation);
+            serializedPresentation.FindProperty("bodyColor").colorValue =
+                new Color(1f, 0.02f, 0.01f, 0.92f);
+            serializedPresentation.FindProperty("pulseColor").colorValue =
+                new Color(1f, 0.3f, 0.01f, 0.95f);
+            serializedPresentation.FindProperty("hotFlashColor").colorValue =
+                new Color(1f, 0.8f, 0.1f, 1f);
+            serializedPresentation.FindProperty("pulseFrequency").floatValue = 4.2f;
+            serializedPresentation.FindProperty("pulseStrength").floatValue = 0.72f;
+            serializedPresentation.FindProperty("scalePulse").floatValue = 0.035f;
+            serializedPresentation.FindProperty("emberRate").floatValue = 18f;
+            serializedPresentation.FindProperty("emberRadius").floatValue = 1.15f;
+            serializedPresentation.ApplyModifiedPropertiesWithoutUndo();
         }
 
         static void CreateHealthPickup(Vector2 position)

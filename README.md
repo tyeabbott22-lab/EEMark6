@@ -37,14 +37,14 @@ The player foundation is intentionally split into three responsibilities:
 | `PlayerCharacter` | Composition root exposing the playable character's core systems and shared gameplay-eligibility contract, including game-state gating. |
 | `PlayerRespawnController` | Reproduces the EE5 current-room reload on death, with an explicit in-place respawn fallback for reusable rooms. |
 | `PlayerWeapon` | Handles player firing, cooldowns, fire-rate boosts, recoil, and the EE5-style wall/enemy aim line. |
-| `PlayerProjectile` | Shared projectile movement, lifetime, owner filtering, damage impacts, source-specific speed/tint overrides, and team-colored trails. |
+| `PlayerProjectile` / `ProjectileExhaustPresentation` | Shared projectile movement, lifetime, owner filtering, damage impacts, source-specific speed/tint overrides, and EE5-style team-colored exhaust. |
 | `PlayerFlightPresentation` | Drives particle-backed exhaust, optional sprite-frame sequencing, and EE5-style one-shot squash feedback without touching physics. |
 | `PlayerDamageFeedback` | Converts damage events into the EE5 alternating red/yellow hit flash and clears transient state on death/disable. |
 | `PlayerCameraFollow` | Provides EE5-style velocity lead, speed zoom, starfield parallax, coherent shake, enemy-death feedback, and wall-impact feedback. |
 | `PlayerHealthDisplay` | Presents health state without owning combat rules. |
-| `ContactHazard` | Optional reusable damage volume for authored hazard rooms. |
+| `ContactHazard` / `HazardPresentation` | Optional reusable heat volume with EE5-style knockback, pulse telegraph, damage accent, and ember presentation. |
 | `PlayerCollisionDamage` | Converts high-speed impacts into collision damage. |
-| `HealthPickup` / `FireRatePickup` | Optional reusable recovery and weapon-power beats authored as non-required room pressure. |
+| `HealthPickup` / `FireRatePickup` / `PickupPresentation` | Optional recovery and weapon-power beats with authored idle motion and collection confirmation, while remaining non-required room pressure. |
 | `EnemyController` | Provides explicit dormant, waking, chasing, attacking, and defeated states with EE5-style wall steering, ranged orbit movement, and line-of-sight wake charging. |
 | `EnemySpritePresentation` | Maps enemy states to imported idle, wake-alert, active, and defeat animation frames. |
 | `EnemyWakePresentation` | Renders the controller-owned blocked/clear wake telegraph with a final warning flash so activation is readable before combat begins. |
