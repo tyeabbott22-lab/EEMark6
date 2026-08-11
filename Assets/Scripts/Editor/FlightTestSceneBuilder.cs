@@ -27,18 +27,21 @@ namespace ExtraterrestrialExhaust.Editor
         const string PlayerPrefabPath = "Assets/Prefabs/PlayerCraft.prefab";
         const string EnemyGunnerPrefabPath = "Assets/Prefabs/EnemyGunner.prefab";
         const string EnemyMeleePrefabPath = "Assets/Prefabs/EnemyMelee.prefab";
-        const string ShipSpritePath = "Assets/Art/Player/sprSnipe.png";
-        const string HealthSpritePath = "Assets/Art/Player/health.png";
-        const string BulletSpritePath = "Assets/Art/Player/bullet.png";
+        // Keep the source asset filenames compatible with the EE5 wiring,
+        // while giving the builder semantic names so a future asset rename is
+        // a one-line, reviewable change instead of a hunt through scene code.
+        const string PlayerCraftSpriteAssetPath = "Assets/Art/Player/sprSnipe.png";
+        const string PlayerHealthSpriteAssetPath = "Assets/Art/Player/health.png";
+        const string PlayerProjectileSpriteAssetPath = "Assets/Art/Player/bullet.png";
         const string ThrustAudioPath = "Assets/Audio/Player/sfxThrust.wav";
         const string EnemySpritePath = "Assets/Art/Reference/Enemies/sprAlienWhiteGunner.png";
         const string EnemyIdleSpritePath = "Assets/Art/Reference/Enemies/sprAlienWhiteSleep.png";
         const string EnemyDefeatSpritePath = "Assets/Art/Reference/Enemies/sprAlienWhiteScream.png";
         const string MeleeSpritePath = "Assets/Art/Reference/Enemies/sprPurpleEat.png";
         const string MeleeDefeatSpritePath = "Assets/Art/Reference/Enemies/sprAlienPurpleScream.png";
-        const string KeySpritePath = "Assets/Art/Reference/Objectives/keyfinal.png";
-        const string GateSpritePath = "Assets/Art/Reference/Objectives/buttonFInal1.png";
-        const string WallSpritePath = "Assets/Art/Reference/Environment/wallFinal.png";
+        const string EnergyKeySpriteAssetPath = "Assets/Art/Reference/Objectives/keyfinal.png";
+        const string EnergyGateSpriteAssetPath = "Assets/Art/Reference/Objectives/buttonFInal1.png";
+        const string BoundaryWallSpriteAssetPath = "Assets/Art/Reference/Environment/wallFinal.png";
         const string StarfieldSpritePath = "Assets/Art/Reference/Environment/sprStars.png";
         const string EnemyBurstSpritePath = "Assets/Art/Reference/Effects/sprExplode.png";
         const string EnemyBurstAudioPath = "Assets/Audio/Reference/sfxExplode.wav";
@@ -249,8 +252,8 @@ namespace ExtraterrestrialExhaust.Editor
             serializedPresentation.FindProperty("visual").objectReferenceValue = craftVisual;
             serializedPresentation.FindProperty("visualRenderer").objectReferenceValue =
                 craftVisual ? craftVisual.GetComponent<SpriteRenderer>() : null;
-            SetSpriteArray(serializedPresentation, "flightFrames", LoadSprites(ShipSpritePath));
-            SetSpriteArray(serializedPresentation, "thrustFrames", LoadSprites(ShipSpritePath));
+            SetSpriteArray(serializedPresentation, "flightFrames", LoadSprites(PlayerCraftSpriteAssetPath));
+            SetSpriteArray(serializedPresentation, "thrustFrames", LoadSprites(PlayerCraftSpriteAssetPath));
             serializedPresentation.FindProperty("animationFramesPerSecond").floatValue = 8f;
             serializedPresentation.FindProperty("thrustFramesPerSecond").floatValue = 14f;
             serializedPresentation.ApplyModifiedPropertiesWithoutUndo();
@@ -281,7 +284,7 @@ namespace ExtraterrestrialExhaust.Editor
 
             SpriteRenderer renderer = displayObject.AddComponent<SpriteRenderer>();
             renderer.sortingOrder = 30;
-            Sprite[] sprites = AssetDatabase.LoadAllAssetsAtPath(HealthSpritePath)
+            Sprite[] sprites = AssetDatabase.LoadAllAssetsAtPath(PlayerHealthSpriteAssetPath)
                 .OfType<Sprite>()
                 .OrderBy(sprite => sprite.name)
                 .ToArray();
@@ -334,7 +337,7 @@ namespace ExtraterrestrialExhaust.Editor
             SpriteRenderer sprite = projectile.GetComponent<SpriteRenderer>();
             if (!sprite)
                 sprite = projectile.AddComponent<SpriteRenderer>();
-            sprite.sprite = AssetDatabase.LoadAssetAtPath<Sprite>(BulletSpritePath);
+            sprite.sprite = AssetDatabase.LoadAssetAtPath<Sprite>(PlayerProjectileSpriteAssetPath);
             sprite.sortingOrder = 21;
 
             LineRenderer line = projectile.GetComponent<LineRenderer>();
@@ -538,7 +541,7 @@ namespace ExtraterrestrialExhaust.Editor
 
             SpriteRenderer renderer = displayObject.AddComponent<SpriteRenderer>();
             renderer.sortingOrder = 30;
-            Sprite[] sprites = AssetDatabase.LoadAllAssetsAtPath(HealthSpritePath)
+            Sprite[] sprites = AssetDatabase.LoadAllAssetsAtPath(PlayerHealthSpriteAssetPath)
                 .OfType<Sprite>()
                 .OrderBy(sprite => sprite.name)
                 .ToArray();
@@ -600,7 +603,7 @@ namespace ExtraterrestrialExhaust.Editor
             serializedKey.FindProperty("releasePulseScale").floatValue = Ee5SliceProfile.KeyReleasePulseScale;
             serializedKey.ApplyModifiedPropertiesWithoutUndo();
             SpriteRenderer keySprite = key.AddComponent<SpriteRenderer>();
-            keySprite.sprite = LoadFirstSprite(KeySpritePath);
+            keySprite.sprite = LoadFirstSprite(EnergyKeySpriteAssetPath);
             keySprite.sortingOrder = 10;
             key.transform.localScale = Vector3.one * 0.7f;
             CreateSquareOutline(key.transform, Vector2.one * 0.5f, new Color(1f, 0.8f, 0.1f));
@@ -702,7 +705,7 @@ namespace ExtraterrestrialExhaust.Editor
             visual.transform.localScale = Vector3.one * 1.5f;
 
             SpriteRenderer sprite = visual.AddComponent<SpriteRenderer>();
-            sprite.sprite = AssetDatabase.LoadAssetAtPath<Sprite>(ShipSpritePath);
+            sprite.sprite = AssetDatabase.LoadAssetAtPath<Sprite>(PlayerCraftSpriteAssetPath);
             sprite.sortingOrder = 10;
 
             LineRenderer line = visual.AddComponent<LineRenderer>();
@@ -850,7 +853,7 @@ namespace ExtraterrestrialExhaust.Editor
             serialized.ApplyModifiedPropertiesWithoutUndo();
 
             SpriteRenderer renderer = pickup.AddComponent<SpriteRenderer>();
-            renderer.sprite = LoadFirstSprite(HealthSpritePath);
+            renderer.sprite = LoadFirstSprite(PlayerHealthSpriteAssetPath);
             renderer.color = new Color(0.2f, 1f, 0.45f, 1f);
             renderer.sortingOrder = 12;
             CreateCircleOutline(pickup.transform, 0.42f, new Color(0.2f, 1f, 0.45f, 0.65f), 28, 0.05f);
@@ -872,7 +875,7 @@ namespace ExtraterrestrialExhaust.Editor
             serialized.ApplyModifiedPropertiesWithoutUndo();
 
             SpriteRenderer renderer = pickup.AddComponent<SpriteRenderer>();
-            renderer.sprite = LoadFirstSprite(BulletSpritePath);
+            renderer.sprite = LoadFirstSprite(PlayerProjectileSpriteAssetPath);
             renderer.color = new Color(0.2f, 0.9f, 1f, 1f);
             renderer.sortingOrder = 12;
             CreateCircleOutline(pickup.transform, 0.42f, new Color(0.2f, 0.9f, 1f, 0.65f), 28, 0.05f);
@@ -880,7 +883,7 @@ namespace ExtraterrestrialExhaust.Editor
 
         static void CreateWallVisual(Transform parent, Vector2 size)
         {
-            Sprite wallSprite = LoadFirstSprite(WallSpritePath);
+            Sprite wallSprite = LoadFirstSprite(BoundaryWallSpriteAssetPath);
             if (!wallSprite)
             {
                 CreateSquareOutline(parent, size, new Color(0.3f, 0.35f, 0.6f));
@@ -919,7 +922,7 @@ namespace ExtraterrestrialExhaust.Editor
 
         static void CreateGateVisual(Transform parent)
         {
-            Sprite gateSprite = LoadFirstSprite(GateSpritePath);
+            Sprite gateSprite = LoadFirstSprite(EnergyGateSpriteAssetPath);
             if (!gateSprite)
                 return;
 

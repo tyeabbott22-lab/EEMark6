@@ -40,6 +40,16 @@ namespace ExtraterrestrialExhaust.Combat
         {
             if (health)
                 health.Damaged -= HandleDamaged;
+
+            // A pooled or temporarily disabled actor can leave the coroutine
+            // halfway through its flash. Always restore authored colors so the
+            // next encounter does not inherit a stale hit state.
+            if (routine != null)
+            {
+                StopCoroutine(routine);
+                routine = null;
+            }
+            RestoreColors();
         }
 
         void HandleDamaged(DamageInfo damage)
@@ -61,22 +71,28 @@ namespace ExtraterrestrialExhaust.Combat
         {
             foreach (LineRenderer line in renderers)
             {
+                if (!line || line.gameObject.name == "Player Aim Line")
+                    continue;
                 line.startColor = color;
                 line.endColor = color;
             }
             foreach (SpriteRenderer sprite in sprites)
-                sprite.color = color;
+                if (sprite)
+                    sprite.color = color;
         }
 
         void RestoreColors()
         {
             for (int i = 0; i < renderers.Length; i++)
             {
+                if (!renderers[i] || renderers[i].gameObject.name == "Player Aim Line")
+                    continue;
                 renderers[i].startColor = originalColors[i];
                 renderers[i].endColor = originalColors[i];
             }
             for (int i = 0; i < sprites.Length; i++)
-                sprites[i].color = originalSpriteColors[i];
+                if (sprites[i])
+                    sprites[i].color = originalSpriteColors[i];
         }
     }
 }
