@@ -71,6 +71,7 @@ namespace ExtraterrestrialExhaust.Editor
             serializedScore.FindProperty("flipPoints").intValue = 100;
             serializedScore.FindProperty("enemyDamagePoints").intValue = 75;
             serializedScore.FindProperty("enemyDefeatPoints").intValue = 300;
+            serializedScore.FindProperty("nearMissPoints").intValue = 150;
             serializedScore.FindProperty("objectiveCollectedPoints").intValue = 175;
             serializedScore.FindProperty("gateDeactivatedPoints").intValue = 250;
             serializedScore.FindProperty("wallBrokenPoints").intValue = 200;
@@ -449,6 +450,7 @@ namespace ExtraterrestrialExhaust.Editor
             serializedProjectile.FindProperty("damage").floatValue = 1f;
             serializedProjectile.FindProperty("knockback").floatValue = 0f;
             serializedProjectile.FindProperty("destroyOnUnrecognizedCollision").boolValue = true;
+            serializedProjectile.FindProperty("nearMissDistance").floatValue = 1.35f;
             serializedProjectile.ApplyModifiedPropertiesWithoutUndo();
 
             SpriteRenderer sprite = projectile.GetComponent<SpriteRenderer>();
@@ -545,6 +547,8 @@ namespace ExtraterrestrialExhaust.Editor
             serializedController.FindProperty("orbitMoveSpeed").floatValue = 2f;
             serializedController.FindProperty("orbitAngularSpeed").floatValue = ranged ? 135f : 100f;
             serializedController.FindProperty("orbitDirection").floatValue = 1f;
+            serializedController.FindProperty("nearMissDistance").floatValue = 1.65f;
+            serializedController.FindProperty("nearMissExitDistance").floatValue = 2.15f;
             serializedController.FindProperty("faceTurnSpeed").floatValue = ranged ? 7.4f : 7.6f;
             serializedController.FindProperty("keepSpriteUpright").boolValue = true;
             serializedController.ApplyModifiedPropertiesWithoutUndo();

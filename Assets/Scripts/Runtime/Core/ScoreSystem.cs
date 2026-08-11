@@ -10,6 +10,7 @@ namespace ExtraterrestrialExhaust.Core
         Flip,
         EnemyDamaged,
         EnemyDefeated,
+        NearMiss,
         ObjectiveCollected,
         GateDeactivated,
         WallBroken,
@@ -29,6 +30,7 @@ namespace ExtraterrestrialExhaust.Core
         [SerializeField, Min(0)] int flipPoints = 100;
         [SerializeField, Min(0)] int enemyDamagePoints = 75;
         [SerializeField, Min(0)] int enemyDefeatPoints = 300;
+        [SerializeField, Min(0)] int nearMissPoints = 150;
         [SerializeField, Min(0)] int objectiveCollectedPoints = 175;
         [SerializeField, Min(0)] int gateDeactivatedPoints = 250;
         [SerializeField, Min(0)] int wallBrokenPoints = 200;
@@ -193,6 +195,8 @@ namespace ExtraterrestrialExhaust.Core
                     return enemyDamagePoints;
                 case ScoreReason.EnemyDefeated:
                     return enemyDefeatPoints;
+                case ScoreReason.NearMiss:
+                    return nearMissPoints;
                 case ScoreReason.ObjectiveCollected:
                     return objectiveCollectedPoints;
                 case ScoreReason.GateDeactivated:

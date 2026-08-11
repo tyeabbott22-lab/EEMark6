@@ -356,6 +356,8 @@ namespace ExtraterrestrialExhaust.Core
                     return "DAMAGE";
                 case ScoreReason.EnemyDefeated:
                     return "KILL";
+                case ScoreReason.NearMiss:
+                    return "NEAR MISS";
                 case ScoreReason.ObjectiveCollected:
                     return "KEY";
                 case ScoreReason.GateDeactivated:
@@ -381,6 +383,8 @@ namespace ExtraterrestrialExhaust.Core
                     return new Color(1f, 0.58f, 0.16f, 1f);
                 case ScoreReason.EnemyDefeated:
                     return new Color(1f, 0.28f, 0.2f, 1f);
+                case ScoreReason.NearMiss:
+                    return new Color(1f, 0.48f, 0.12f, 1f);
                 case ScoreReason.ObjectiveCollected:
                     return new Color(1f, 0.86f, 0.18f, 1f);
                 case ScoreReason.GateDeactivated:

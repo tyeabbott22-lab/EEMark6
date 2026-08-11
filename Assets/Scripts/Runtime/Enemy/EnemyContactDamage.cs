@@ -42,6 +42,7 @@ namespace ExtraterrestrialExhaust.Enemy
                 direction,
                 knockback);
 
+            controller?.RegisterPlayerContact();
             if (player.Health.TryTakeDamage(damageInfo))
             {
                 // Health owns whether the hit was lethal. Only shove a player

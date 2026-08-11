@@ -23,14 +23,20 @@ namespace ExtraterrestrialExhaust.Combat
         [SerializeField] bool destroyOnUnrecognizedCollision;
         [SerializeField] ProjectileTeam team = ProjectileTeam.Player;
         [SerializeField] bool enforceEe5Profile = true;
+        [Header("Enemy Near Miss")]
+        [SerializeField, Min(0f)] float nearMissDistance = 1.35f;
 
         Rigidbody2D body;
         SpriteRenderer spriteRenderer;
         LineRenderer trailRenderer;
         ProjectileExhaustPresentation exhaustPresentation;
         GameObject owner;
+        PlayerCharacter nearMissTarget;
         Vector2 direction;
         float lifetimeRemaining;
+        bool nearPlayer;
+        bool nearMissAwarded;
+        bool hitPlayer;
 
         void Awake()
         {
@@ -49,9 +55,13 @@ namespace ExtraterrestrialExhaust.Combat
 
         void Update()
         {
+            CheckNearMiss();
             lifetimeRemaining -= Time.deltaTime;
             if (lifetimeRemaining <= 0f)
+            {
+                AwardNearMissIfNeeded();
                 Destroy(gameObject);
+            }
         }
 
         public void Launch(Vector2 launchDirection, GameObject source, float speedOverride = -1f)
@@ -61,6 +71,10 @@ namespace ExtraterrestrialExhaust.Combat
                 : Vector2.right;
             owner = source;
             lifetimeRemaining = lifetime;
+            nearMissTarget = null;
+            nearPlayer = false;
+            nearMissAwarded = false;
+            hitPlayer = false;
             body.linearVelocity = direction * (speedOverride > 0f ? speedOverride : speed);
             transform.right = direction;
         }
@@ -94,6 +108,10 @@ namespace ExtraterrestrialExhaust.Combat
         {
             if (IsOwnerCollider(other))
                 return;
+
+            if (team == ProjectileTeam.Enemy
+                && other.GetComponentInParent<PlayerCharacter>())
+                hitPlayer = true;
 
             IDamageable damageable = other.GetComponentInParent<IDamageable>();
             if (damageable != null && CanDamage(other))
@@ -133,8 +151,38 @@ namespace ExtraterrestrialExhaust.Combat
             if (destroyOnUnrecognizedCollision || other.CompareTag("Wall"))
             {
                 ProjectileImpactBurst.Spawn(transform.position, new Color(1f, 0.25f, 0.1f));
+                AwardNearMissIfNeeded();
                 Destroy(gameObject);
             }
+        }
+
+        void CheckNearMiss()
+        {
+            if (team != ProjectileTeam.Enemy || nearMissAwarded || hitPlayer)
+                return;
+
+            if (!nearMissTarget)
+                nearMissTarget = FindFirstObjectByType<PlayerCharacter>();
+            if (!nearMissTarget || !nearMissTarget.Health || !nearMissTarget.Health.IsAlive)
+                return;
+
+            float distance = Vector2.Distance(transform.position, nearMissTarget.transform.position);
+            if (distance <= nearMissDistance)
+            {
+                nearPlayer = true;
+                return;
+            }
+
+            AwardNearMissIfNeeded();
+        }
+
+        void AwardNearMissIfNeeded()
+        {
+            if (team != ProjectileTeam.Enemy || nearMissAwarded || hitPlayer || !nearPlayer)
+                return;
+
+            nearMissAwarded = true;
+            FindFirstObjectByType<ScoreSystem>()?.Award(ScoreReason.NearMiss);
         }
 
         bool IsOwnerCollider(Collider2D other)

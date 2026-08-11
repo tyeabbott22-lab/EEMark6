@@ -51,6 +51,10 @@ namespace ExtraterrestrialExhaust.Enemy
         [SerializeField, Min(0f)] float orbitAngularSpeed = 100f;
         [SerializeField] float orbitDirection = 1f;
 
+        [Header("Near Miss")]
+        [SerializeField, Min(0f)] float nearMissDistance = 1.65f;
+        [SerializeField, Min(0f)] float nearMissExitDistance = 2.15f;
+
         [Header("Facing")]
         [SerializeField, Min(0f)] float faceTurnSpeed = 5f;
         [SerializeField] bool keepSpriteUpright = true;
@@ -70,6 +74,8 @@ namespace ExtraterrestrialExhaust.Enemy
         float orbitAngle;
         float wakeTimer;
         float wakeSignalCharge;
+        bool nearPlayer;
+        bool touchedPlayerDuringNearPass;
 
         public EnemyState State { get; private set; }
         public PlayerCharacter Target => target;
@@ -143,6 +149,7 @@ namespace ExtraterrestrialExhaust.Enemy
             }
 
             float distance = Vector2.Distance(transform.position, target.transform.position);
+            UpdateNearMiss(distance);
             UpdateWakeSignal(distance);
 
             float behaviorRange = Mathf.Max(detectionRange, GetWakeSignalDistance());
@@ -376,6 +383,7 @@ namespace ExtraterrestrialExhaust.Enemy
 
         void HandleDefeated()
         {
+            ResolveNearMiss();
             SetState(EnemyState.Defeated);
             body.linearVelocity = Vector2.zero;
             body.simulated = false;
@@ -386,6 +394,46 @@ namespace ExtraterrestrialExhaust.Enemy
 
             foreach (Collider2D collider in GetComponentsInChildren<Collider2D>(true))
                 collider.enabled = false;
+        }
+
+        /// <summary>
+        /// Contact damage marks a close pass as a hit so the same enemy cannot
+        /// award both a collision and a near-miss credit.
+        /// </summary>
+        public void RegisterPlayerContact() => touchedPlayerDuringNearPass = true;
+
+        void UpdateNearMiss(float distance)
+        {
+            if (State == EnemyState.Dormant || State == EnemyState.Defeated)
+            {
+                nearPlayer = false;
+                touchedPlayerDuringNearPass = false;
+                return;
+            }
+
+            if (!nearPlayer && distance <= nearMissDistance)
+            {
+                nearPlayer = true;
+                touchedPlayerDuringNearPass = false;
+                return;
+            }
+
+            if (!nearPlayer || distance < nearMissExitDistance)
+                return;
+
+            ResolveNearMiss();
+        }
+
+        void ResolveNearMiss()
+        {
+            if (!nearPlayer)
+                return;
+
+            if (!touchedPlayerDuringNearPass)
+                FindFirstObjectByType<ScoreSystem>()?.Award(ScoreReason.NearMiss);
+
+            nearPlayer = false;
+            touchedPlayerDuringNearPass = false;
         }
 
         void SetState(EnemyState nextState)
