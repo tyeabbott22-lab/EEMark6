@@ -80,11 +80,12 @@ namespace ExtraterrestrialExhaust.Editor
             CreateHud(objectiveDirector);
 
             CreateArenaBoundaries();
+            CreateEnvironmentalPressure();
 
             // The gold-standard slice is intentionally focused on the EE5 loop:
             // encounter -> key -> gate -> extraction. Pickup and hazard scripts
-            // remain reusable runtime systems, but are not silently mixed into
-            // this authored test room as prototype-era sandbox clutter.
+            // remain optional pressure and recovery beats rather than becoming
+            // hidden objective requirements.
 
             EditorSceneManager.SaveScene(scene, ScenePath);
             ConfigureBuildSettings();
@@ -528,19 +529,19 @@ namespace ExtraterrestrialExhaust.Editor
             serializedEncounter.ApplyModifiedPropertiesWithoutUndo();
 
             GameObject gate = new GameObject("Energy Gate");
-            gate.transform.position = new Vector3(5f, 4f, 0f);
+            gate.transform.position = new Vector3(5f, 0f, 0f);
             BoxCollider2D gateCollider = gate.AddComponent<BoxCollider2D>();
-            gateCollider.size = new Vector2(0.35f, 2.8f);
+            gateCollider.size = new Vector2(0.35f, 3.8f);
             EnergyGate energyGate = gate.AddComponent<EnergyGate>();
             SerializedObject serializedGate = new SerializedObject(energyGate);
             serializedGate.FindProperty("liftDistance").floatValue = 12f;
             serializedGate.FindProperty("liftSpeed").floatValue = 6f;
             serializedGate.ApplyModifiedPropertiesWithoutUndo();
-            CreateSquareOutline(gate.transform, new Vector2(0.35f, 2.8f), new Color(0.2f, 0.55f, 1f));
+            CreateSquareOutline(gate.transform, new Vector2(0.35f, 3.8f), new Color(0.2f, 0.55f, 1f));
             CreateGateVisual(gate.transform);
 
             GameObject key = new GameObject("Energy Key");
-            key.transform.position = new Vector3(2.5f, 4f, 0f);
+            key.transform.position = new Vector3(2.5f, 3.5f, 0f);
             CircleCollider2D keyCollider = key.AddComponent<CircleCollider2D>();
             keyCollider.isTrigger = true;
             EnergyKey energyKey = key.AddComponent<EnergyKey>();
@@ -560,10 +561,10 @@ namespace ExtraterrestrialExhaust.Editor
             CreateSquareOutline(key.transform, Vector2.one * 0.5f, new Color(1f, 0.8f, 0.1f));
 
             GameObject exit = new GameObject("Level Exit");
-            exit.transform.position = new Vector3(6f, 4f, 0f);
+            exit.transform.position = new Vector3(6.8f, 0f, 0f);
             CircleCollider2D collider = exit.AddComponent<CircleCollider2D>();
             collider.isTrigger = true;
-            collider.radius = 2f;
+            collider.radius = 1.45f;
             LevelExit levelExit = exit.AddComponent<LevelExit>();
             SerializedObject serializedExit = new SerializedObject(levelExit);
             serializedExit.FindProperty("requiredGate").objectReferenceValue = energyGate;
@@ -735,6 +736,88 @@ namespace ExtraterrestrialExhaust.Editor
             CreateWall("Ceiling", new Vector2(0f, 6f), new Vector2(16f, 0.5f));
         }
 
+        static void CreateEnvironmentalPressure()
+        {
+            CreateContactHazard(
+                "Red Heat Hazard",
+                new Vector2(0f, -2.4f),
+                1.15f,
+                new Color(1f, 0.08f, 0.01f, 0.92f));
+            CreateHealthPickup(new Vector2(-5.8f, 4.4f));
+            CreateFireRatePickup(new Vector2(-5.8f, -4.4f));
+        }
+
+        static void CreateContactHazard(
+            string objectName,
+            Vector2 position,
+            float radius,
+            Color color)
+        {
+            GameObject hazard = new GameObject(objectName);
+            hazard.transform.position = position;
+
+            CircleCollider2D collider = hazard.AddComponent<CircleCollider2D>();
+            collider.radius = radius;
+            collider.isTrigger = true;
+
+            ContactHazard contactHazard = hazard.AddComponent<ContactHazard>();
+            SerializedObject serialized = new SerializedObject(contactHazard);
+            serialized.FindProperty("damage").floatValue = 1f;
+            serialized.FindProperty("damageCooldown").floatValue = 0.45f;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+
+            CreateCircleOutline(hazard.transform, radius, color, 40, 0.12f);
+            CreateCircleOutline(
+                hazard.transform,
+                radius * 0.62f,
+                new Color(1f, 0.55f, 0.04f, 0.75f),
+                32,
+                0.075f);
+        }
+
+        static void CreateHealthPickup(Vector2 position)
+        {
+            GameObject pickup = new GameObject("Health Cache");
+            pickup.transform.position = position;
+
+            CircleCollider2D collider = pickup.AddComponent<CircleCollider2D>();
+            collider.isTrigger = true;
+            collider.radius = 0.32f;
+
+            HealthPickup healthPickup = pickup.AddComponent<HealthPickup>();
+            SerializedObject serialized = new SerializedObject(healthPickup);
+            serialized.FindProperty("healAmount").floatValue = 3f;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+
+            SpriteRenderer renderer = pickup.AddComponent<SpriteRenderer>();
+            renderer.sprite = LoadFirstSprite(HealthSpritePath);
+            renderer.color = new Color(0.2f, 1f, 0.45f, 1f);
+            renderer.sortingOrder = 12;
+            CreateCircleOutline(pickup.transform, 0.42f, new Color(0.2f, 1f, 0.45f, 0.65f), 28, 0.05f);
+        }
+
+        static void CreateFireRatePickup(Vector2 position)
+        {
+            GameObject pickup = new GameObject("Fire Rate Cache");
+            pickup.transform.position = position;
+
+            CircleCollider2D collider = pickup.AddComponent<CircleCollider2D>();
+            collider.isTrigger = true;
+            collider.radius = 0.32f;
+
+            FireRatePickup fireRatePickup = pickup.AddComponent<FireRatePickup>();
+            SerializedObject serialized = new SerializedObject(fireRatePickup);
+            serialized.FindProperty("duration").floatValue = 5f;
+            serialized.FindProperty("multiplier").floatValue = 2f;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+
+            SpriteRenderer renderer = pickup.AddComponent<SpriteRenderer>();
+            renderer.sprite = LoadFirstSprite(BulletSpritePath);
+            renderer.color = new Color(0.2f, 0.9f, 1f, 1f);
+            renderer.sortingOrder = 12;
+            CreateCircleOutline(pickup.transform, 0.42f, new Color(0.2f, 0.9f, 1f, 0.65f), 28, 0.05f);
+        }
+
         static void CreateWallVisual(Transform parent, Vector2 size)
         {
             Sprite wallSprite = LoadFirstSprite(WallSpritePath);
@@ -808,6 +891,35 @@ namespace ExtraterrestrialExhaust.Editor
             line.startColor = color;
             line.endColor = color;
             line.material = new Material(Shader.Find("Sprites/Default"));
+        }
+
+        static void CreateCircleOutline(
+            Transform parent,
+            float radius,
+            Color color,
+            int segments,
+            float width)
+        {
+            LineRenderer line = parent.gameObject.AddComponent<LineRenderer>();
+            line.useWorldSpace = false;
+            line.loop = true;
+            line.positionCount = segments;
+            line.startWidth = width;
+            line.endWidth = width;
+            line.startColor = color;
+            line.endColor = color;
+            line.sortingOrder = 14;
+            line.numCornerVertices = 2;
+            line.material = new Material(Shader.Find("Sprites/Default"));
+
+            for (int i = 0; i < segments; i++)
+            {
+                float angle = i / (float)segments * Mathf.PI * 2f;
+                line.SetPosition(i, new Vector3(
+                    Mathf.Cos(angle) * radius,
+                    Mathf.Sin(angle) * radius,
+                    0f));
+            }
         }
 
         static Sprite LoadFirstSprite(string assetPath)
