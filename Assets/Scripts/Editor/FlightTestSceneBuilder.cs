@@ -637,8 +637,10 @@ namespace ExtraterrestrialExhaust.Editor
             SetSpriteArray(serializedPresentation, "activeSprites", LoadSprites(activeSpritePath));
             SetSpriteArray(serializedPresentation, "defeatedSprites", LoadSprites(defeatedSpritePath));
             serializedPresentation.FindProperty("animationFramesPerSecond").floatValue = 10f;
+            serializedPresentation.FindProperty("dormantFramesPerSecond").floatValue = 8f;
             serializedPresentation.FindProperty("wakeFramesPerSecond").floatValue = 14f;
             serializedPresentation.FindProperty("defeatDisplayDuration").floatValue = 0.3f;
+            serializedPresentation.FindProperty("pingPongDormantAnimation").boolValue = ranged;
             serializedPresentation.ApplyModifiedPropertiesWithoutUndo();
             CreateEnemyHealthDisplay(enemy.transform, ranged);
 

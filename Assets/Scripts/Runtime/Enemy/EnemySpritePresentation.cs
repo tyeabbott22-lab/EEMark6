@@ -16,8 +16,10 @@ namespace ExtraterrestrialExhaust.Enemy
         [SerializeField] Sprite[] activeSprites;
         [SerializeField] Sprite[] defeatedSprites;
         [SerializeField, Min(0.1f)] float animationFramesPerSecond = 10f;
+        [SerializeField, Min(0.1f)] float dormantFramesPerSecond = 8f;
         [SerializeField, Min(0.1f)] float wakeFramesPerSecond = 14f;
         [SerializeField, Min(0f)] float defeatDisplayDuration = 0.3f;
+        [SerializeField] bool pingPongDormantAnimation = true;
         [SerializeField] bool hideAfterDefeat = true;
 
         EnemyController controller;
@@ -31,6 +33,8 @@ namespace ExtraterrestrialExhaust.Enemy
         bool waking;
         float wakeFrameTimer;
         int wakeFrameIndex;
+        int dormantFrameDirection = 1;
+        bool wakeAlertStarted;
 
         void Reset()
         {
@@ -82,17 +86,11 @@ namespace ExtraterrestrialExhaust.Enemy
                 return;
             }
 
-            if (currentFrames == null || currentFrames.Length <= 1)
-                return;
-
-            frameTimer += Time.deltaTime;
-            float frameDuration = 1f / animationFramesPerSecond;
-            if (frameTimer < frameDuration)
-                return;
-
-            frameTimer -= frameDuration;
-            frameIndex = (frameIndex + 1) % currentFrames.Length;
-            ApplyFrame();
+            bool useDormantTiming = !hasWoken
+                && currentState != EnemyState.Defeated;
+            AdvanceRegularAnimation(
+                useDormantTiming ? dormantFramesPerSecond : animationFramesPerSecond,
+                useDormantTiming && pingPongDormantAnimation);
         }
 
         void HandleStateChanged(EnemyController source, EnemyState state)
@@ -102,10 +100,20 @@ namespace ExtraterrestrialExhaust.Enemy
 
         void ApplyState(EnemyState state)
         {
+            EnemyState previousState = currentState;
+            bool preserveDormantFrame = state == EnemyState.Waking
+                && previousState == EnemyState.Dormant
+                && currentFrames != null
+                && currentFrames.Length > 0;
             currentState = state;
-            frameIndex = 0;
-            frameTimer = 0f;
+            if (!preserveDormantFrame)
+            {
+                frameIndex = 0;
+                frameTimer = 0f;
+                dormantFrameDirection = 1;
+            }
             defeatTimer = 0f;
+            wakeAlertStarted = false;
 
             if (state == EnemyState.Dormant)
             {
@@ -146,29 +154,94 @@ namespace ExtraterrestrialExhaust.Enemy
             waking = true;
             wakeFrameTimer = 0f;
             wakeFrameIndex = 0;
-            currentFrames = FirstAvailable(alertSprites, defeatedSprites);
+            // EE5 holds the authored idle strip through the buildup and only
+            // enters the scream strip during the final warning window.
+            currentFrames = FirstAvailable(dormantSprites, activeSprites);
             SetRenderersEnabled(true);
             ApplyFrame();
         }
 
         void UpdateWakeAnimation()
         {
-            wakeFrameTimer += Time.deltaTime;
-            float frameDuration = 1f / wakeFramesPerSecond;
-            if (currentFrames != null && currentFrames.Length > 1 && wakeFrameTimer >= frameDuration)
+            if (!controller || controller.State != EnemyState.Waking)
             {
-                wakeFrameTimer -= frameDuration;
-                wakeFrameIndex = (wakeFrameIndex + 1) % currentFrames.Length;
+                FinishWake();
+                return;
+            }
+
+            if (!wakeAlertStarted && controller.IsWakeFinalWarning)
+            {
+                wakeAlertStarted = true;
+                wakeFrameTimer = 0f;
+                wakeFrameIndex = 0;
+                currentFrames = FirstAvailable(alertSprites, defeatedSprites);
                 ApplyWakeFrame();
             }
 
-            if (controller && controller.State == EnemyState.Waking)
+            if (wakeAlertStarted)
+                AdvanceWakeAnimation();
+            else
+                AdvanceRegularAnimation(dormantFramesPerSecond, pingPongDormantAnimation);
+        }
+
+        void AdvanceRegularAnimation(float framesPerSecond, bool pingPong)
+        {
+            if (currentFrames == null || currentFrames.Length <= 1)
                 return;
 
+            frameTimer += Time.deltaTime;
+            float frameDuration = 1f / Mathf.Max(0.1f, framesPerSecond);
+            while (frameTimer >= frameDuration)
+            {
+                frameTimer -= frameDuration;
+                if (pingPong && currentFrames.Length > 2)
+                {
+                    if (frameIndex >= currentFrames.Length - 1)
+                        dormantFrameDirection = -1;
+                    else if (frameIndex <= 0)
+                        dormantFrameDirection = 1;
+                    frameIndex = Mathf.Clamp(
+                        frameIndex + dormantFrameDirection,
+                        0,
+                        currentFrames.Length - 1);
+                }
+                else
+                {
+                    frameIndex = (frameIndex + 1) % currentFrames.Length;
+                }
+
+                ApplyFrame();
+            }
+        }
+
+        void AdvanceWakeAnimation()
+        {
+            if (currentFrames == null || currentFrames.Length <= 1)
+                return;
+
+            wakeFrameTimer += Time.deltaTime;
+            float frameDuration = 1f / Mathf.Max(0.1f, wakeFramesPerSecond);
+            while (wakeFrameTimer >= frameDuration)
+            {
+                wakeFrameTimer -= frameDuration;
+                wakeFrameIndex++;
+                if (wakeFrameIndex >= currentFrames.Length)
+                {
+                    // The authored scream strip is allowed to hold its last
+                    // frame until the controller finishes the wake state.
+                    wakeFrameIndex = currentFrames.Length - 1;
+                }
+                ApplyWakeFrame();
+            }
+        }
+
+        void FinishWake()
+        {
             waking = false;
             hasWoken = true;
             frameIndex = 0;
             frameTimer = 0f;
+            dormantFrameDirection = 1;
             currentFrames = activeSprites;
             ApplyFrame();
         }
