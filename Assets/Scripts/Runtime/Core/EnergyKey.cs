@@ -209,7 +209,7 @@ namespace ExtraterrestrialExhaust.Core
             if (!player || !targetGate)
                 return;
 
-            if (Vector2.Distance(player.transform.position, targetGate.transform.position) <= gateUnlockRange)
+            if (Vector2.Distance(player.transform.position, targetGate.KeyTarget.position) <= gateUnlockRange)
             {
                 SetState(EnergyKeyState.FlyingToGate);
                 keyCollider.enabled = false;
@@ -222,13 +222,14 @@ namespace ExtraterrestrialExhaust.Core
             if (!targetGate)
                 return;
 
+            Vector2 gateTarget = targetGate.KeyTarget.position;
             Vector2 nextPosition = Vector2.MoveTowards(
                 body.position,
-                targetGate.transform.position,
+                gateTarget,
                 gateFlySpeed * Time.deltaTime);
             body.MovePosition(nextPosition);
 
-            if (Vector2.Distance(nextPosition, targetGate.transform.position) > 0.15f)
+            if (Vector2.Distance(nextPosition, gateTarget) > 0.15f)
                 return;
 
             targetGate.DisableGate();

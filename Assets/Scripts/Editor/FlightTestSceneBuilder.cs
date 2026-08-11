@@ -721,13 +721,18 @@ namespace ExtraterrestrialExhaust.Editor
             serializedEncounter.ApplyModifiedPropertiesWithoutUndo();
 
             GameObject gate = new GameObject("Energy Gate");
+            gate.tag = "Wall";
             gate.transform.position = new Vector3(5f, 0f, 0f);
             BoxCollider2D gateCollider = gate.AddComponent<BoxCollider2D>();
             gateCollider.size = new Vector2(0.35f, 3.8f);
             EnergyGate energyGate = gate.AddComponent<EnergyGate>();
+            GameObject keyTarget = new GameObject("Key Target");
+            keyTarget.transform.SetParent(gate.transform, false);
+            keyTarget.transform.localPosition = new Vector3(0f, 1.7f, 0f);
             SerializedObject serializedGate = new SerializedObject(energyGate);
             serializedGate.FindProperty("liftDistance").floatValue = 12f;
             serializedGate.FindProperty("liftSpeed").floatValue = 6f;
+            serializedGate.FindProperty("keyTarget").objectReferenceValue = keyTarget.transform;
             serializedGate.ApplyModifiedPropertiesWithoutUndo();
             EnergyGatePresentation gatePresentation = gate.AddComponent<EnergyGatePresentation>();
             SerializedObject serializedGatePresentation = new SerializedObject(gatePresentation);
@@ -755,6 +760,8 @@ namespace ExtraterrestrialExhaust.Editor
             serializedKey.FindProperty("enemyOrbitRadius").floatValue = 1f;
             serializedKey.FindProperty("enemyOrbitSpeed").floatValue = 4f;
             serializedKey.FindProperty("enemyOrbitSharpness").floatValue = 8f;
+            serializedKey.FindProperty("gateUnlockRange").floatValue = 2.25f;
+            serializedKey.FindProperty("collectDistance").floatValue = 0.85f;
             serializedKey.FindProperty("playerFollowSharpness").floatValue = 14f;
             serializedKey.FindProperty("releasePulseDuration").floatValue = Ee5SliceProfile.KeyReleasePulseDuration;
             serializedKey.FindProperty("releasePulseScale").floatValue = Ee5SliceProfile.KeyReleasePulseScale;

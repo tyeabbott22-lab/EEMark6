@@ -13,6 +13,10 @@ namespace ExtraterrestrialExhaust.Core
         // handoff and let the collider disable immediately at activation.
         [SerializeField, Min(0f)] float liftDistance = 12f;
         [SerializeField, Min(0.01f)] float liftSpeed = 6f;
+
+        [Header("Key Handoff")]
+        [SerializeField] Transform keyTarget;
+
         [SerializeField] Color activeColor = new Color(0.2f, 0.55f, 1f);
         [SerializeField] Color disabledColor = new Color(0.2f, 1f, 0.85f);
 
@@ -22,6 +26,7 @@ namespace ExtraterrestrialExhaust.Core
         bool disabled;
 
         public bool IsDisabled => disabled;
+        public Transform KeyTarget => keyTarget ? keyTarget : transform;
         public event Action Disabled;
 
         void Awake()
