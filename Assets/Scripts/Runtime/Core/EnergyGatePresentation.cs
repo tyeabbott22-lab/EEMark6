@@ -19,10 +19,17 @@ namespace ExtraterrestrialExhaust.Core
         [SerializeField, Min(0f)] float unlockPulseDuration = 1.8f;
         [SerializeField, Min(0f)] float unlockPulseWidthMultiplier = 1.55f;
         [SerializeField, Min(0f)] float unlockPulseSpeed = 18f;
+        [Header("Key Approach")]
+        [SerializeField] Color approachColor = new Color(1f, 0.8f, 0.18f, 1f);
+        [SerializeField, Min(0f)] float approachPulseDuration = 0.85f;
+        [SerializeField, Min(0f)] float approachPulseWidthMultiplier = 1.25f;
+        [SerializeField, Min(0f)] float approachPulseSpeed = 24f;
 
         EnergyGate energyGate;
         float pulseRemaining;
+        float approachRemaining;
         float baseWidthMultiplier = 1f;
+        Color baseColor = new Color(0.2f, 0.55f, 1f, 1f);
 
         void Awake()
         {
@@ -30,7 +37,10 @@ namespace ExtraterrestrialExhaust.Core
             if (!gateLine)
                 gateLine = GetComponent<LineRenderer>();
             if (gateLine)
+            {
                 baseWidthMultiplier = gateLine.widthMultiplier;
+                baseColor = gateLine.startColor;
+            }
         }
 
         void OnEnable()
@@ -44,35 +54,78 @@ namespace ExtraterrestrialExhaust.Core
             if (energyGate)
                 energyGate.Disabled -= HandleDisabled;
             pulseRemaining = 0f;
+            approachRemaining = 0f;
             RestoreGateLine();
         }
 
         void Update()
         {
-            if (!gateLine || pulseRemaining <= 0f)
+            if (!gateLine)
                 return;
 
-            pulseRemaining = Mathf.Max(0f, pulseRemaining - Time.deltaTime);
-            float progress = unlockPulseDuration > 0f
-                ? Mathf.Clamp01(1f - pulseRemaining / unlockPulseDuration)
+            if (pulseRemaining > 0f)
+            {
+                pulseRemaining = Mathf.Max(0f, pulseRemaining - Time.deltaTime);
+                float progress = unlockPulseDuration > 0f
+                    ? Mathf.Clamp01(1f - pulseRemaining / unlockPulseDuration)
+                    : 1f;
+                float pulse = 0.5f + Mathf.Sin(Time.time * unlockPulseSpeed) * 0.5f;
+                float fade = 1f - Mathf.SmoothStep(0f, 1f, progress);
+                Color color = Color.Lerp(unlockColor, Color.white, pulse * 0.35f);
+                color.a *= Mathf.Lerp(0.55f, 1f, fade);
+                gateLine.startColor = color;
+                gateLine.endColor = color;
+                gateLine.widthMultiplier = Mathf.Lerp(
+                    baseWidthMultiplier,
+                    baseWidthMultiplier * unlockPulseWidthMultiplier,
+                    Mathf.SmoothStep(0f, 1f, pulse) * fade);
+
+                if (pulseRemaining <= 0f)
+                    RestoreGateLine();
+                return;
+            }
+
+            if (approachRemaining <= 0f || (energyGate && energyGate.IsDisabled))
+                return;
+
+            approachRemaining = Mathf.Max(0f, approachRemaining - Time.deltaTime);
+            float approachProgress = approachPulseDuration > 0f
+                ? Mathf.Clamp01(1f - approachRemaining / approachPulseDuration)
                 : 1f;
-            float pulse = 0.5f + Mathf.Sin(Time.time * unlockPulseSpeed) * 0.5f;
-            float fade = 1f - Mathf.SmoothStep(0f, 1f, progress);
-            Color color = Color.Lerp(unlockColor, Color.white, pulse * 0.35f);
-            color.a *= Mathf.Lerp(0.55f, 1f, fade);
-            gateLine.startColor = color;
-            gateLine.endColor = color;
+            float approachPulse = 0.5f
+                + Mathf.Sin(Time.time * approachPulseSpeed) * 0.5f;
+            float approachFade = 1f - Mathf.SmoothStep(0f, 1f, approachProgress);
+            Color approachLineColor = Color.Lerp(
+                baseColor,
+                approachColor,
+                Mathf.SmoothStep(0f, 1f, approachPulse));
+            approachLineColor.a *= Mathf.Lerp(0.45f, 0.95f, approachFade);
+            gateLine.startColor = approachLineColor;
+            gateLine.endColor = approachLineColor;
             gateLine.widthMultiplier = Mathf.Lerp(
                 baseWidthMultiplier,
-                baseWidthMultiplier * unlockPulseWidthMultiplier,
-                Mathf.SmoothStep(0f, 1f, pulse) * fade);
+                baseWidthMultiplier * approachPulseWidthMultiplier,
+                approachPulse * approachFade);
 
-            if (pulseRemaining <= 0f)
+            if (approachRemaining <= 0f)
                 RestoreGateLine();
+        }
+
+        /// <summary>
+        /// Gives the player a short incoming-key cue before the key reaches the
+        /// target socket. The gate still unlocks only through EnergyGate.
+        /// </summary>
+        public void BeginKeyApproach()
+        {
+            if (energyGate && energyGate.IsDisabled)
+                return;
+
+            approachRemaining = approachPulseDuration;
         }
 
         void HandleDisabled()
         {
+            approachRemaining = 0f;
             pulseRemaining = unlockPulseDuration;
             ObjectiveSignalBurst.Spawn(transform.position, unlockColor, burstScale);
             if (cameraShakeStrength > 0f && cameraShakeDuration > 0f)
@@ -85,8 +138,11 @@ namespace ExtraterrestrialExhaust.Core
                 return;
 
             gateLine.widthMultiplier = baseWidthMultiplier;
-            gateLine.startColor = unlockColor;
-            gateLine.endColor = unlockColor;
+            Color color = energyGate && energyGate.IsDisabled
+                ? unlockColor
+                : baseColor;
+            gateLine.startColor = color;
+            gateLine.endColor = color;
         }
     }
 }

@@ -75,6 +75,12 @@ namespace ExtraterrestrialExhaust.Core
                     break;
                 case EnergyKeyState.FlyingToGate:
                     ObjectiveSignalBurst.Spawn(transform.position, availableColor, 1.15f);
+                    if (energyKey.TargetGate)
+                    {
+                        EnergyGatePresentation gatePresentation =
+                            energyKey.TargetGate.GetComponent<EnergyGatePresentation>();
+                        gatePresentation?.BeginKeyApproach();
+                    }
                     break;
             }
         }
@@ -85,7 +91,9 @@ namespace ExtraterrestrialExhaust.Core
                 return energyKey.CurrentPlayer ? energyKey.CurrentPlayer.transform : null;
 
             if (energyKey.State == EnergyKeyState.FlyingToGate)
-                return energyKey.TargetGate ? energyKey.TargetGate.transform : null;
+                return energyKey.TargetGate
+                    ? energyKey.TargetGate.KeyTarget
+                    : null;
 
             return null;
         }
