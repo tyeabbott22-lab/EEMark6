@@ -693,6 +693,9 @@ namespace ExtraterrestrialExhaust.Editor
             serializedGatePresentation.FindProperty("burstScale").floatValue = 1.35f;
             serializedGatePresentation.FindProperty("cameraShakeStrength").floatValue = 0.08f;
             serializedGatePresentation.FindProperty("cameraShakeDuration").floatValue = 0.24f;
+            serializedGatePresentation.FindProperty("unlockPulseDuration").floatValue = 1.8f;
+            serializedGatePresentation.FindProperty("unlockPulseWidthMultiplier").floatValue = 1.55f;
+            serializedGatePresentation.FindProperty("unlockPulseSpeed").floatValue = 18f;
             serializedGatePresentation.ApplyModifiedPropertiesWithoutUndo();
             CreateSquareOutline(gate.transform, new Vector2(0.35f, 3.8f), new Color(0.2f, 0.55f, 1f));
             CreateGateVisual(gate.transform);

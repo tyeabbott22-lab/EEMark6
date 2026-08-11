@@ -56,7 +56,7 @@ The player foundation is intentionally split into three responsibilities:
 | `EncounterController` / `LevelExit` | Define the explicit combat roster while the EE5 carrier-key-gate-extraction sequence owns exit progression. |
 | `ExtractionPortalPresentation` | Provides the layered, pulsing extraction visual without scene-specific prototype dependencies. |
 | `EnergyKey` / `EnergyGate` | Recreate the EE5 key-to-gate traversal objective, including release-point-preserving player orbit motion and the authored upward gate lift. |
-| `EnergyKeyPresentation` / `EnergyGatePresentation` / `ObjectiveSignalBurst` | Keep the key release, player collection, gate flight, and gate unlock beats readable without coupling VFX to objective rules. |
+| `EnergyKeyPresentation` / `EnergyGatePresentation` / `ObjectiveSignalBurst` | Keep the key release, player collection, gate flight, timed gate-unlock pulse, and objective beats readable without coupling VFX to objective rules. |
 | `ScoreSystem` | Provides event-driven arcade scoring for combat and objectives. |
 | `GameplayHud` | Presents score, live hull, action score callouts, and the current vertical-slice objective. |
 | `SliceInstructionDisplay` / `SliceInstructionTrigger` | Recreate EE5 realScene's trigger-driven center instructions for controls, key flow, gate flow, and extraction. |
