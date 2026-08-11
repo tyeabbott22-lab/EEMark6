@@ -58,6 +58,7 @@ The player foundation is intentionally split into three responsibilities:
 | `EnergyKeyPresentation` / `EnergyGatePresentation` / `ObjectiveSignalBurst` | Keep the key release, player collection, gate flight, and gate unlock beats readable without coupling VFX to objective rules. |
 | `ScoreSystem` | Provides event-driven arcade scoring for combat and objectives. |
 | `GameplayHud` | Presents score and the current vertical-slice objective. |
+| `SliceInstructionDisplay` / `SliceInstructionTrigger` | Recreate EE5 realScene's trigger-driven center instructions for controls, key flow, gate flow, and extraction. |
 | `DamageFlashFeedback` / `ProjectileImpactBurst` | Provide immediate combat readability while authored VFX are migrated. |
 
 Gameplay systems should communicate with these public contracts rather than reaching into Rigidbody2D directly.

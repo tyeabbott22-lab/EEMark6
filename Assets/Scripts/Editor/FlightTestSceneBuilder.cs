@@ -88,6 +88,7 @@ namespace ExtraterrestrialExhaust.Editor
                 meleeEnemy,
                 gunnerEnemy);
             CreateHud(objectiveDirector);
+            CreateInstructionTriggers();
 
             CreateArenaBoundaries();
             CreateEnvironmentalPressure();
@@ -792,6 +793,55 @@ namespace ExtraterrestrialExhaust.Editor
             serialized.FindProperty("objectiveBannerGroup").objectReferenceValue = bannerGroup;
             serialized.FindProperty("objectiveBannerDuration").floatValue = 1.35f;
             serialized.FindProperty("objectiveDirector").objectReferenceValue = objectiveDirector;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            canvasObject.AddComponent<SliceInstructionDisplay>();
+        }
+
+        static void CreateInstructionTriggers()
+        {
+            CreateInstructionTrigger(
+                "Flight Controls Instruction",
+                new Vector2(0f, 0f),
+                new Vector2(4.2f, 3.4f),
+                "W / UP / SPACE  THRUST\nA / D  ROTATE    S / DOWN  STABILIZE\nX  FLIP    Z / ENTER / MOUSE  FIRE",
+                true);
+            CreateInstructionTrigger(
+                "Energy Key Instruction",
+                new Vector2(2.5f, 3.5f),
+                new Vector2(4.8f, 2.8f),
+                "DEFEAT THE CARRIER.\nTHE ENERGY KEY WILL BREAK FREE WHEN IT IS DEFEATED.");
+            CreateInstructionTrigger(
+                "Energy Gate Instruction",
+                new Vector2(5f, 0f),
+                new Vector2(2.2f, 5f),
+                "COLLECT THE ENERGY KEY,\nTHEN FLY INTO THE ENERGY GATE.");
+            CreateInstructionTrigger(
+                "Extraction Instruction",
+                new Vector2(6.8f, 0f),
+                new Vector2(3f, 4f),
+                "EXTRACTION ONLINE.\nFLY INTO THE PORTAL TO COMPLETE THE SLICE.",
+                true);
+        }
+
+        static void CreateInstructionTrigger(
+            string objectName,
+            Vector2 position,
+            Vector2 size,
+            string message,
+            bool onlyTriggerOnce = false)
+        {
+            GameObject instructionObject = new GameObject(objectName);
+            instructionObject.transform.position = position;
+            BoxCollider2D trigger = instructionObject.AddComponent<BoxCollider2D>();
+            trigger.isTrigger = true;
+            trigger.size = size;
+
+            SliceInstructionTrigger instruction =
+                instructionObject.AddComponent<SliceInstructionTrigger>();
+            SerializedObject serialized = new SerializedObject(instruction);
+            serialized.FindProperty("message").stringValue = message;
+            serialized.FindProperty("hideOnExit").boolValue = true;
+            serialized.FindProperty("onlyTriggerOnce").boolValue = onlyTriggerOnce;
             serialized.ApplyModifiedPropertiesWithoutUndo();
         }
 
