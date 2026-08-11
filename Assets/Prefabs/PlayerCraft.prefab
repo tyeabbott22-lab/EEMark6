@@ -205,8 +205,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: ExtraterrestrialExhaust.Runtime::ExtraterrestrialExhaust.Player.PlayerRespawnController
   respawnPoint: {fileID: 0}
+  reloadSceneOnDeath: 1
+  reloadDelay: 0
   respawnDelay: 1
-  respawnAutomatically: 1
+  respawnAutomatically: 0
 --- !u!114 &2961945746425291219
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -403,8 +405,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e3feb49d9d3c3e1438daac904a46ba8a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: ExtraterrestrialExhaust.Runtime::ExtraterrestrialExhaust.Player.PlayerDamageFeedback
-  flashColor: {r: 1, g: 0, b: 0, a: 1}
-  flashDuration: 0.16
+  flashColor: {r: 1, g: 0.01, b: 0.01, a: 1}
+  alternateFlashColor: {r: 1, g: 0.92, b: 0.01, a: 1}
+  flashDuration: 0.4
+  flashInterval: 0.033333335
 --- !u!114 &5916018212856065163
 MonoBehaviour:
   m_ObjectHideFlags: 0

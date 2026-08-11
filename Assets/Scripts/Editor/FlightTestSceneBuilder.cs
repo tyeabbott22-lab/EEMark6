@@ -167,8 +167,10 @@ namespace ExtraterrestrialExhaust.Editor
             PlayerWeapon weapon = player.AddComponent<PlayerWeapon>();
             SerializedObject serializedWeapon = new SerializedObject(weapon);
             serializedWeapon.FindProperty("projectilePrefab").objectReferenceValue = projectilePrefab;
-            serializedWeapon.FindProperty("fireCooldown").floatValue = 0.12f;
-            serializedWeapon.FindProperty("recoilForce").floatValue = 2f;
+            // Match EE5's authored sniper prefab rather than the faster
+            // prototype tuning: each shot should be a meaningful flight beat.
+            serializedWeapon.FindProperty("fireCooldown").floatValue = 1f;
+            serializedWeapon.FindProperty("recoilForce").floatValue = 12f;
             serializedWeapon.FindProperty("drawAimLine").boolValue = true;
             serializedWeapon.FindProperty("aimLineMaxDistance").floatValue = 120f;
             serializedWeapon.FindProperty("aimLineWidth").floatValue = 0.035f;
@@ -270,7 +272,8 @@ namespace ExtraterrestrialExhaust.Editor
             if (!projectileComponent)
                 projectileComponent = projectile.AddComponent<PlayerProjectile>();
             SerializedObject serializedProjectile = new SerializedObject(projectileComponent);
-            serializedProjectile.FindProperty("speed").floatValue = 45f;
+            // EE5's linked player bullet travels at 30 units per second.
+            serializedProjectile.FindProperty("speed").floatValue = 30f;
             serializedProjectile.FindProperty("lifetime").floatValue = 2f;
             serializedProjectile.FindProperty("damage").floatValue = 1f;
             serializedProjectile.FindProperty("knockback").floatValue = 0f;

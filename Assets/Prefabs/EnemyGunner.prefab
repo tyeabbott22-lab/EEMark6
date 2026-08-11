@@ -229,6 +229,11 @@ MonoBehaviour:
   detectionRange: 12
   wakeDistance: 6
   wakeDuration: 1.35
+  requireLineOfSightToWake: 1
+  wakeSignalDistanceMultiplier: 4
+  wakeSignalChargeDuration: 1.15
+  wakeSignalChargeDecay: 1.8
+  wakeFinalWarningDuration: 0.35
   attackRange: 7
   chaseSpeed: 2.7
   target: {fileID: 0}
@@ -544,11 +549,19 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: ExtraterrestrialExhaust.Runtime::ExtraterrestrialExhaust.Enemy.EnemyWakePresentation
   wakeLine: {fileID: 0}
-  chargingColor: {r: 0.45, g: 0.1, b: 1, a: 0.22}
+  blockedColor: {r: 0.5, g: 0.14, b: 1, a: 0.18}
   readyColor: {r: 0.08, g: 1, b: 0.34, a: 0.9}
+  flashYellow: {r: 1, g: 0.9, b: 0.05, a: 0.95}
+  flashRed: {r: 1, g: 0.04, b: 0.02, a: 0.95}
   minWidth: 0.014
   maxWidth: 0.11
-  sortingOrder: 16
+  endpointSmoothTime: 0.055
+  glanceRadius: 0.56
+  glanceSpeed: 15
+  enemyEndAlphaMultiplier: 0.5
+  playerEndAlphaMultiplier: 0
+  endWidthMultiplier: 0.08
+  sortingOrder: 80
 --- !u!114 &407800770754282219
 MonoBehaviour:
   m_ObjectHideFlags: 0

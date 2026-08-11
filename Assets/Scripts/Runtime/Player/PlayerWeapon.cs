@@ -19,10 +19,10 @@ namespace ExtraterrestrialExhaust.Player
         [SerializeField] GameStateMachine gameState;
         [SerializeField] PlayerProjectile projectilePrefab;
         [SerializeField] Transform firePoint;
-        // EE5's sniper profile is deliberately responsive: frequent shots keep
-        // combat in motion while the small recoil still feeds back into flight.
-        [SerializeField, Min(0.01f)] float fireCooldown = 0.12f;
-        [SerializeField, Min(0f)] float recoilForce = 2f;
+        // Match the authored EE5 sniper prefab: deliberate one-second shots
+        // and a strong recoil impulse that remains part of the flight rhythm.
+        [SerializeField, Min(0.01f)] float fireCooldown = 1f;
+        [SerializeField, Min(0f)] float recoilForce = 12f;
 
         [Header("Aim Line")]
         [SerializeField] bool drawAimLine;

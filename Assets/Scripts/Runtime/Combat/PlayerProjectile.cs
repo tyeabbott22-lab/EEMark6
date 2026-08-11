@@ -13,9 +13,9 @@ namespace ExtraterrestrialExhaust.Combat
     [RequireComponent(typeof(Collider2D))]
     public sealed class PlayerProjectile : MonoBehaviour
     {
-        // Match the authored EE5 projectile travel speed. Enemy projectiles can
-        // still use their own source override when the encounter needs pacing.
-        [SerializeField, Min(0f)] float speed = 45f;
+        // Match the authored EE5 player bullet. Enemy projectiles still use
+        // their own source override when the encounter needs different pacing.
+        [SerializeField, Min(0f)] float speed = 30f;
         [SerializeField, Min(0.01f)] float lifetime = 2f;
         [SerializeField, Min(0f)] float damage = 1f;
         [SerializeField, Min(0f)] float knockback;
