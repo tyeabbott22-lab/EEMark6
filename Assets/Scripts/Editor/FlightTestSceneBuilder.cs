@@ -468,6 +468,13 @@ namespace ExtraterrestrialExhaust.Editor
             serializedProjectile.FindProperty("damage").floatValue = 1f;
             serializedProjectile.FindProperty("knockback").floatValue = 0f;
             serializedProjectile.FindProperty("destroyOnUnrecognizedCollision").boolValue = true;
+            serializedProjectile.FindProperty("maxTrailPoints").intValue = 6;
+            serializedProjectile.FindProperty("pointSpacing").floatValue = 0.03f;
+            serializedProjectile.FindProperty("useImpactFade").boolValue = true;
+            serializedProjectile.FindProperty("impactFadeTime").floatValue = 0.08f;
+            serializedProjectile.FindProperty("trailStartColor").colorValue = Color.white;
+            serializedProjectile.FindProperty("trailEndColor").colorValue =
+                new Color(1f, 0.1f, 0.04f, 1f);
             serializedProjectile.FindProperty("nearMissDistance").floatValue = 1.35f;
             serializedProjectile.ApplyModifiedPropertiesWithoutUndo();
 
@@ -482,12 +489,12 @@ namespace ExtraterrestrialExhaust.Editor
             LineRenderer line = projectile.GetComponent<LineRenderer>();
             if (!line)
                 line = projectile.AddComponent<LineRenderer>();
-            line.useWorldSpace = false;
-            line.positionCount = 2;
-            line.SetPosition(0, new Vector3(-0.3f, 0f));
-            line.SetPosition(1, new Vector3(0.3f, 0f));
-            line.startWidth = 0.08f;
-            line.endWidth = 0.08f;
+            line.useWorldSpace = true;
+            line.positionCount = 0;
+            line.startWidth = 0.01f;
+            line.endWidth = 0.1f;
+            line.numCapVertices = 8;
+            line.numCornerVertices = 4;
             line.startColor = Color.white;
             line.endColor = new Color(1f, 0.1f, 0.1f);
             line.sortingOrder = 20;

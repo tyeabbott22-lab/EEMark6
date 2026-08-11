@@ -1,3 +1,5 @@
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using ExtraterrestrialExhaust.Enemy;
 using ExtraterrestrialExhaust.Player;
@@ -23,6 +25,13 @@ namespace ExtraterrestrialExhaust.Combat
         [SerializeField] bool destroyOnUnrecognizedCollision;
         [SerializeField] ProjectileTeam team = ProjectileTeam.Player;
         [SerializeField] bool enforceEe5Profile = true;
+        [Header("Trail")]
+        [SerializeField, Min(1)] int maxTrailPoints = 6;
+        [SerializeField, Min(0.001f)] float pointSpacing = 0.03f;
+        [SerializeField] bool useImpactFade = true;
+        [SerializeField, Min(0.01f)] float impactFadeTime = 0.08f;
+        [SerializeField] Color trailStartColor = Color.white;
+        [SerializeField] Color trailEndColor = new Color(1f, 0.1f, 0.04f, 1f);
         [Header("Enemy Near Miss")]
         [SerializeField, Min(0f)] float nearMissDistance = 1.35f;
 
@@ -37,6 +46,9 @@ namespace ExtraterrestrialExhaust.Combat
         bool nearPlayer;
         bool nearMissAwarded;
         bool hitPlayer;
+        bool dying;
+        Material trailMaterial;
+        readonly List<Vector3> trailPoints = new();
 
         void Awake()
         {
@@ -49,19 +61,27 @@ namespace ExtraterrestrialExhaust.Combat
             exhaustPresentation = GetComponent<ProjectileExhaustPresentation>();
             if (!exhaustPresentation)
                 exhaustPresentation = gameObject.AddComponent<ProjectileExhaustPresentation>();
+            ConfigureTrail();
             body.gravityScale = 0f;
             body.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
         }
 
+        void OnDestroy()
+        {
+            if (trailMaterial)
+                Destroy(trailMaterial);
+        }
+
         void Update()
         {
+            if (dying)
+                return;
+
             CheckNearMiss();
+            AddTrailPoint(transform.position);
             lifetimeRemaining -= Time.deltaTime;
             if (lifetimeRemaining <= 0f)
-            {
-                AwardNearMissIfNeeded();
-                Destroy(gameObject);
-            }
+                BeginLifetimeEnd();
         }
 
         public void Launch(Vector2 launchDirection, GameObject source, float speedOverride = -1f)
@@ -75,8 +95,10 @@ namespace ExtraterrestrialExhaust.Combat
             nearPlayer = false;
             nearMissAwarded = false;
             hitPlayer = false;
+            dying = false;
             body.linearVelocity = direction * (speedOverride > 0f ? speedOverride : speed);
             transform.right = direction;
+            ResetTrail();
         }
 
         /// <summary>Applies source-specific presentation without changing impact rules.</summary>
@@ -91,10 +113,10 @@ namespace ExtraterrestrialExhaust.Combat
                 trailRenderer = GetComponent<LineRenderer>();
             if (trailRenderer)
             {
-                Color trailEnd = color;
-                trailEnd.a *= 0.15f;
-                trailRenderer.startColor = color;
-                trailRenderer.endColor = trailEnd;
+                trailStartColor = color;
+                trailEndColor = color;
+                trailEndColor.a *= 0.15f;
+                ApplyTrailColors(1f);
             }
 
             exhaustPresentation?.SetColorTheme(color);
@@ -106,6 +128,9 @@ namespace ExtraterrestrialExhaust.Combat
 
         void OnTriggerEnter2D(Collider2D other)
         {
+            if (dying)
+                return;
+
             if (IsOwnerCollider(other))
                 return;
 
@@ -117,6 +142,7 @@ namespace ExtraterrestrialExhaust.Combat
             if (damageable != null && CanDamage(other))
             {
                 Vector2 hitPoint = other.ClosestPoint(transform.position);
+                Vector2 impactNormal = ((Vector2)transform.position - hitPoint).normalized;
                 DamageInfo damageInfo = new DamageInfo(
                     damage,
                     DamageType.Projectile,
@@ -143,17 +169,149 @@ namespace ExtraterrestrialExhaust.Combat
                 }
                 ProjectileImpactBurst.Spawn(hitPoint, team == ProjectileTeam.Enemy
                     ? new Color(0.05f, 1f, 0.16f)
-                    : Color.white);
-                Destroy(gameObject);
+                    : Color.white, impactNormal);
+                BeginImpactEnd();
                 return;
             }
 
             if (destroyOnUnrecognizedCollision || other.CompareTag("Wall"))
             {
-                ProjectileImpactBurst.Spawn(transform.position, new Color(1f, 0.25f, 0.1f));
-                AwardNearMissIfNeeded();
-                Destroy(gameObject);
+                Vector2 hitPoint = other.ClosestPoint(transform.position);
+                Vector2 impactNormal = ((Vector2)transform.position - hitPoint).normalized;
+                ProjectileImpactBurst.Spawn(
+                    hitPoint,
+                    new Color(1f, 0.25f, 0.1f),
+                    impactNormal);
+                BeginImpactEnd();
             }
+        }
+
+        void ConfigureTrail()
+        {
+            if (!trailRenderer)
+                return;
+
+            trailRenderer.useWorldSpace = true;
+            trailRenderer.positionCount = 0;
+            trailRenderer.startWidth = 0.01f;
+            trailRenderer.endWidth = 0.1f;
+            trailRenderer.numCapVertices = 8;
+            trailRenderer.numCornerVertices = 4;
+            if (!trailRenderer.sharedMaterial)
+            {
+                Shader shader = Shader.Find("Sprites/Default");
+                if (shader)
+                {
+                    trailMaterial = new Material(shader);
+                    trailMaterial.name = "Runtime Projectile Trail";
+                    trailRenderer.sharedMaterial = trailMaterial;
+                }
+            }
+
+            ApplyTrailColors(1f);
+        }
+
+        void ResetTrail()
+        {
+            trailPoints.Clear();
+            if (trailRenderer)
+                trailRenderer.positionCount = 0;
+            AddTrailPoint(transform.position);
+            ApplyTrailColors(1f);
+        }
+
+        void AddTrailPoint(Vector3 point)
+        {
+            if (!trailRenderer)
+                return;
+
+            if (trailPoints.Count > 0
+                && Vector3.Distance(trailPoints[trailPoints.Count - 1], point)
+                    < Mathf.Max(0.001f, pointSpacing))
+                return;
+
+            trailPoints.Add(point);
+            int pointLimit = Mathf.Max(1, maxTrailPoints);
+            while (trailPoints.Count > pointLimit)
+                trailPoints.RemoveAt(0);
+
+            trailRenderer.positionCount = trailPoints.Count;
+            for (int i = 0; i < trailPoints.Count; i++)
+                trailRenderer.SetPosition(i, trailPoints[i]);
+        }
+
+        void ApplyTrailColors(float alpha)
+        {
+            if (!trailRenderer)
+                return;
+
+            Color start = trailStartColor;
+            Color end = trailEndColor;
+            start.a *= Mathf.Clamp01(alpha);
+            end.a *= Mathf.Clamp01(alpha);
+            trailRenderer.startColor = start;
+            trailRenderer.endColor = end;
+        }
+
+        void BeginImpactEnd()
+        {
+            if (dying)
+                return;
+
+            AwardNearMissIfNeeded();
+            dying = true;
+            body.linearVelocity = Vector2.zero;
+            Collider2D projectileCollider = GetComponent<Collider2D>();
+            if (projectileCollider)
+                projectileCollider.enabled = false;
+            if (spriteRenderer)
+                spriteRenderer.enabled = false;
+            exhaustPresentation?.StopExhaust();
+            AddTrailPoint(transform.position);
+            StartTrailFadeOrDestroy();
+        }
+
+        void BeginLifetimeEnd()
+        {
+            if (dying)
+                return;
+
+            AwardNearMissIfNeeded();
+            dying = true;
+            body.linearVelocity = Vector2.zero;
+            Collider2D projectileCollider = GetComponent<Collider2D>();
+            if (projectileCollider)
+                projectileCollider.enabled = false;
+            if (spriteRenderer)
+                spriteRenderer.enabled = false;
+            exhaustPresentation?.StopExhaust();
+            AddTrailPoint(transform.position);
+            StartTrailFadeOrDestroy();
+        }
+
+        void StartTrailFadeOrDestroy()
+        {
+            if (!useImpactFade || !trailRenderer || trailPoints.Count == 0)
+            {
+                Destroy(gameObject);
+                return;
+            }
+
+            StartCoroutine(FadeTrailRoutine());
+        }
+
+        IEnumerator FadeTrailRoutine()
+        {
+            float elapsed = 0f;
+            float duration = Mathf.Max(0.01f, impactFadeTime);
+            while (elapsed < duration)
+            {
+                elapsed += Time.deltaTime;
+                ApplyTrailColors(1f - Mathf.Clamp01(elapsed / duration));
+                yield return null;
+            }
+
+            Destroy(gameObject);
         }
 
         void CheckNearMiss()

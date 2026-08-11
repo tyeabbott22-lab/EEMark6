@@ -53,6 +53,18 @@ namespace ExtraterrestrialExhaust.Combat
             ApplyLook();
         }
 
+        public void StopExhaust(bool clear = true)
+        {
+            if (!particles)
+                return;
+
+            ParticleSystem.EmissionModule emission = particles.emission;
+            emission.rateOverTime = 0f;
+            if (clear)
+                particles.Clear(true);
+            particles.Stop(true, ParticleSystemStopBehavior.StopEmitting);
+        }
+
         void EnsureParticles()
         {
             if (particles)

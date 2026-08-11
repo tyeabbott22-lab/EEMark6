@@ -37,7 +37,7 @@ The player foundation is intentionally split into three responsibilities:
 | `PlayerCharacter` | Composition root exposing the playable character's core systems and shared gameplay-eligibility contract, including game-state gating. |
 | `PlayerRespawnController` | Reproduces the EE5 current-room reload on death, with an explicit in-place respawn fallback for reusable rooms. |
 | `PlayerWeapon` / `PlayerWeaponPresentation` | Handles player firing, cooldowns, fire-rate boosts, recoil, aim line, and the immediate EE5-style muzzle punctuation without coupling VFX to damage rules. |
-| `PlayerProjectile` / `ProjectileExhaustPresentation` | Shared projectile movement, lifetime, owner filtering, damage impacts, source-specific speed/tint overrides, and EE5-style team-colored exhaust. |
+| `PlayerProjectile` / `ProjectileExhaustPresentation` | Shared projectile movement, owner filtering, damage impacts, six-point EE5 trail, hard-stop/fade cleanup, source-specific speed/tint overrides, and team-colored exhaust. |
 | `PlayerFlightPresentation` | Drives particle-backed exhaust, EE5-style asymmetric rotation boost flames, optional sprite-frame sequencing, and one-shot squash feedback without touching physics. |
 | `PlayerDamageFeedback` | Converts damage events into the EE5 alternating red/yellow hit flash and clears transient state on death/disable. |
 | `PlayerCameraFollow` | Provides EE5-style velocity lead, speed zoom, starfield parallax, coherent shake, enemy-death feedback, and wall-impact feedback. |
