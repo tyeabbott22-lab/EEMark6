@@ -165,6 +165,7 @@ MonoBehaviour:
   stabilizationAngle: 0
   visual: {fileID: 0}
   allowFlip: 1
+  enforceEe5Profile: 1
 --- !u!114 &5795851938182831067
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -244,8 +245,9 @@ MonoBehaviour:
   gameState: {fileID: 0}
   projectilePrefab: {fileID: 8335205200750898339, guid: 0f75bc740062bf24fa349acba5d18d38, type: 3}
   firePoint: {fileID: 1741130577600143745}
-  fireCooldown: 0.12
-  recoilForce: 2
+  enforceEe5Profile: 1
+  fireCooldown: 1
+  recoilForce: 12
   drawAimLine: 1
   aimLineMaxDistance: 120
   aimLineWidth: 0.035

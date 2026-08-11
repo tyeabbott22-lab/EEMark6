@@ -15,6 +15,11 @@ namespace ExtraterrestrialExhaust.Player
         [SerializeField] Transform rightExhaust;
         [SerializeField] PlayerFlightStateMachine stateMachine;
         [SerializeField] PlayerFlightMotor flightMotor;
+        [SerializeField] SpriteRenderer visualRenderer;
+        [SerializeField] Sprite[] flightFrames;
+        [SerializeField] Sprite[] thrustFrames;
+        [SerializeField, Min(0.1f)] float animationFramesPerSecond = 8f;
+        [SerializeField, Min(0.1f)] float thrustFramesPerSecond = 14f;
         [SerializeField] AudioSource thrustAudio;
         [SerializeField] AudioClip thrustClip;
         [SerializeField, Min(0f)] float exhaustLength = 0.55f;
@@ -24,8 +29,13 @@ namespace ExtraterrestrialExhaust.Player
         [SerializeField, Min(0f)] float squashReturnSpeed = 14f;
 
         PlayerFlightInput input;
+        ParticleSystem leftExhaustParticles;
+        ParticleSystem rightExhaustParticles;
         Vector3 visualBaseScale;
         float squashTimer;
+        Sprite[] currentFrames;
+        int frameIndex;
+        float frameTimer;
 
         void Awake()
         {
@@ -34,9 +44,24 @@ namespace ExtraterrestrialExhaust.Player
             flightMotor = flightMotor ? flightMotor : GetComponent<PlayerFlightMotor>();
             visual = visual ? visual : transform.Find("Craft Visual");
             visual = visual ? visual : transform;
+            visualRenderer = visualRenderer ? visualRenderer : visual.GetComponent<SpriteRenderer>();
             visualBaseScale = visual.localScale;
             EnsureExhaust(ref leftExhaust, "Left Exhaust", -0.28f);
             EnsureExhaust(ref rightExhaust, "Right Exhaust", 0.28f);
+            EnsureParticleExhaust(ref leftExhaustParticles, "Left Exhaust Particles", leftExhaust);
+            EnsureParticleExhaust(ref rightExhaustParticles, "Right Exhaust Particles", rightExhaust);
+        }
+
+        void OnEnable()
+        {
+            if (flightMotor)
+                flightMotor.Flipped += HandleFlipped;
+        }
+
+        void OnDisable()
+        {
+            if (flightMotor)
+                flightMotor.Flipped -= HandleFlipped;
         }
 
         void Update()
@@ -44,9 +69,10 @@ namespace ExtraterrestrialExhaust.Player
             if (stateMachine && !stateMachine.AcceptsPlayerInput)
             {
                 squashTimer = 0f;
-                AnimateExhaust(leftExhaust, 0f);
-                AnimateExhaust(rightExhaust, 0f);
+                AnimateExhaust(leftExhaust, leftExhaustParticles, 0f);
+                AnimateExhaust(rightExhaust, rightExhaustParticles, 0f);
                 UpdateThrustAudio(false);
+                UpdateSpriteAnimation(false);
                 return;
             }
 
@@ -71,9 +97,10 @@ namespace ExtraterrestrialExhaust.Player
                     leftExhaustAmount = Mathf.Max(leftExhaustAmount, turningAmount);
             }
 
-            AnimateExhaust(leftExhaust, leftExhaustAmount);
-            AnimateExhaust(rightExhaust, rightExhaustAmount);
+            AnimateExhaust(leftExhaust, leftExhaustParticles, leftExhaustAmount);
+            AnimateExhaust(rightExhaust, rightExhaustParticles, rightExhaustAmount);
             UpdateThrustAudio(!stabilizing && (thrust > 0.01f || turn > 0.01f));
+            UpdateSpriteAnimation(!stabilizing && thrust > 0.01f);
 
             Vector3 targetScale = visualBaseScale;
             if (flightMotor && !flightMotor.FacingRight)
@@ -101,8 +128,8 @@ namespace ExtraterrestrialExhaust.Player
         public void ResetPresentation()
         {
             squashTimer = 0f;
-            AnimateExhaust(leftExhaust, 0f);
-            AnimateExhaust(rightExhaust, 0f);
+            AnimateExhaust(leftExhaust, leftExhaustParticles, 0f);
+            AnimateExhaust(rightExhaust, rightExhaustParticles, 0f);
             UpdateThrustAudio(false);
 
             if (!visual)
@@ -112,6 +139,14 @@ namespace ExtraterrestrialExhaust.Player
             if (flightMotor && !flightMotor.FacingRight)
                 targetScale.x = -Mathf.Abs(targetScale.x);
             visual.localScale = targetScale;
+        }
+
+        void HandleFlipped(bool facingRight)
+        {
+            // EE5 couples the visual flip to a short squash pulse. Keeping the
+            // event on the motor prevents update-order drift between input and
+            // presentation when a flip is triggered by a non-keyboard device.
+            squashTimer = squashDuration;
         }
 
         void EnsureExhaust(ref Transform exhaust, string name, float xPosition)
@@ -137,13 +172,121 @@ namespace ExtraterrestrialExhaust.Player
             }
         }
 
-        void AnimateExhaust(Transform exhaust, float amount)
+        void EnsureParticleExhaust(
+            ref ParticleSystem particles,
+            string name,
+            Transform exhaust)
+        {
+            if (!particles)
+            {
+                GameObject particleObject = new GameObject(name);
+                particleObject.transform.SetParent(exhaust, false);
+                particles = particleObject.AddComponent<ParticleSystem>();
+            }
+
+            ParticleSystem.MainModule main = particles.main;
+            main.loop = true;
+            main.playOnAwake = false;
+            main.simulationSpace = ParticleSystemSimulationSpace.Local;
+            main.startLifetime = new ParticleSystem.MinMaxCurve(0.16f, 0.34f);
+            main.startSpeed = 0f;
+            main.startSize = new ParticleSystem.MinMaxCurve(0.035f, 0.09f);
+            main.startColor = new ParticleSystem.MinMaxGradient(
+                new Color(0.25f, 0.92f, 1f, 0.82f),
+                new Color(0.62f, 0.12f, 1f, 0.2f));
+            main.maxParticles = 90;
+
+            ParticleSystem.EmissionModule emission = particles.emission;
+            emission.enabled = true;
+            emission.rateOverTime = 0f;
+
+            ParticleSystem.ShapeModule shape = particles.shape;
+            shape.enabled = true;
+            shape.shapeType = ParticleSystemShapeType.Circle;
+            shape.radius = 0.035f;
+
+            ParticleSystem.VelocityOverLifetimeModule velocity = particles.velocityOverLifetime;
+            velocity.enabled = true;
+            velocity.space = ParticleSystemSimulationSpace.Local;
+            velocity.x = new ParticleSystem.MinMaxCurve(-0.12f, 0.12f);
+            velocity.y = new ParticleSystem.MinMaxCurve(-1.5f, -0.55f);
+
+            ParticleSystem.ColorOverLifetimeModule color = particles.colorOverLifetime;
+            color.enabled = true;
+            Gradient gradient = new Gradient();
+            gradient.SetKeys(
+                new[]
+                {
+                    new GradientColorKey(Color.white, 0f),
+                    new GradientColorKey(new Color(0.18f, 0.78f, 1f), 0.35f),
+                    new GradientColorKey(new Color(0.56f, 0.08f, 1f), 1f)
+                },
+                new[]
+                {
+                    new GradientAlphaKey(0.85f, 0f),
+                    new GradientAlphaKey(0.45f, 0.45f),
+                    new GradientAlphaKey(0f, 1f)
+                });
+            color.color = gradient;
+
+            ParticleSystemRenderer renderer = particles.GetComponent<ParticleSystemRenderer>();
+            renderer.renderMode = ParticleSystemRenderMode.Billboard;
+            renderer.sortingOrder = 8;
+            renderer.material = new Material(Shader.Find("Sprites/Default"));
+            particles.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        }
+
+        void AnimateExhaust(Transform exhaust, ParticleSystem particles, float amount)
         {
             LineRenderer line = exhaust.GetComponent<LineRenderer>();
             line.enabled = amount > 0.01f;
             line.SetPosition(0, Vector3.zero);
             line.SetPosition(1, Vector3.down * Mathf.Lerp(0.08f, exhaustLength, amount));
             line.startWidth = Mathf.Lerp(0.04f, 0.14f, amount);
+
+            if (!particles)
+                return;
+
+            ParticleSystem.EmissionModule emission = particles.emission;
+            emission.rateOverTime = Mathf.Lerp(0f, 24f, amount);
+            if (amount > 0.01f)
+            {
+                if (!particles.isPlaying)
+                    particles.Play(true);
+            }
+            else if (particles.isPlaying)
+            {
+                particles.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            }
+        }
+
+        void UpdateSpriteAnimation(bool thrusting)
+        {
+            Sprite[] frames = thrusting && thrustFrames != null && thrustFrames.Length > 0
+                ? thrustFrames
+                : flightFrames;
+            if (visualRenderer == null || frames == null || frames.Length == 0)
+                return;
+
+            if (currentFrames != frames)
+            {
+                currentFrames = frames;
+                frameIndex = 0;
+                frameTimer = 0f;
+                visualRenderer.sprite = currentFrames[0];
+            }
+
+            if (frames.Length <= 1)
+                return;
+
+            frameTimer += Time.deltaTime;
+            float frameDuration = 1f / (thrusting ? thrustFramesPerSecond : animationFramesPerSecond);
+            if (frameTimer < frameDuration)
+                return;
+
+            frameTimer -= frameDuration;
+            frameIndex = (frameIndex + 1) % frames.Length;
+            visualRenderer.sprite = frames[frameIndex];
         }
 
         void UpdateThrustAudio(bool thrusting)

@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using ExtraterrestrialExhaust.CameraSystem;
 using ExtraterrestrialExhaust.Core;
@@ -31,6 +32,7 @@ namespace ExtraterrestrialExhaust.Player
         public Rigidbody2D Body => body;
         public Transform Visual => visual;
         public bool FacingRight => facingRight;
+        public event Action<bool> Flipped;
 
         void Awake()
         {
@@ -116,6 +118,7 @@ namespace ExtraterrestrialExhaust.Player
             scale.x = Mathf.Abs(scale.x) * (facingRight ? 1f : -1f);
             visual.localScale = scale;
             PlayerCameraFollow.Instance?.ZoomForPlayerFlip();
+            Flipped?.Invoke(facingRight);
         }
     }
 }

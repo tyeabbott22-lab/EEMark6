@@ -37,6 +37,11 @@ namespace ExtraterrestrialExhaust.Core
         public const float CameraZoomSmooth = 10f;
         public const float CameraFlipZoomOut = 1.4f;
         public const float CameraFlipZoomDuration = 0.45f;
+        public const float CameraFarParallaxStrength = 0.06f;
+        public const float CameraMidParallaxStrength = 0.14f;
+        public const float CameraNearParallaxStrength = 0.24f;
+        public const float KeyReleasePulseDuration = 0.28f;
+        public const float KeyReleasePulseScale = 1.28f;
         public const string WallTag = "Wall";
     }
 }

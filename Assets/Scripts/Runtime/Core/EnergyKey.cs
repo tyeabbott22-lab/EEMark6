@@ -58,6 +58,8 @@ namespace ExtraterrestrialExhaust.Core
         [SerializeField, Range(0f, 0.5f)] float pulseAmount = 0.08f;
         [SerializeField] Color lockedColor = new Color(0.45f, 0.45f, 0.5f, 0.55f);
         [SerializeField] Color availableColor = new Color(1f, 0.85f, 0.15f, 1f);
+        [SerializeField, Min(0f)] float releasePulseDuration = 0.28f;
+        [SerializeField, Min(1f)] float releasePulseScale = 1.28f;
 
         EnergyKeyState state = EnergyKeyState.AttachedToEnemy;
         Rigidbody2D body;
@@ -70,6 +72,7 @@ namespace ExtraterrestrialExhaust.Core
         float phase;
         float currentRadiusX;
         float currentRadiusY;
+        float releasePulseRemaining;
 
         public EnergyKeyState State => state;
         public bool IsAvailable => state == EnergyKeyState.OrbitingPlayer;
@@ -107,6 +110,21 @@ namespace ExtraterrestrialExhaust.Core
             {
                 transform.Rotate(0f, 0f, rotateSpeed * Time.deltaTime);
                 float pulse = 1f + Mathf.Sin(Time.time * pulseSpeed) * pulseAmount;
+                if (releasePulseRemaining > 0f)
+                {
+                    releasePulseRemaining = Mathf.Max(
+                        0f,
+                        releasePulseRemaining - Time.deltaTime);
+                    float releaseT = releasePulseDuration > 0f
+                        ? 1f - releasePulseRemaining / releasePulseDuration
+                        : 1f;
+                    float releaseScale = Mathf.Lerp(
+                        releasePulseScale,
+                        1f,
+                        Mathf.SmoothStep(0f, 1f, releaseT));
+                    pulse *= releaseScale;
+                }
+
                 transform.localScale = baseScale * pulse;
             }
 
@@ -303,6 +321,8 @@ namespace ExtraterrestrialExhaust.Core
 
             EnergyKeyState previousState = state;
             state = nextState;
+            if (nextState == EnergyKeyState.OrbitingPlayer)
+                releasePulseRemaining = releasePulseDuration;
             StateChanged?.Invoke(previousState, nextState);
         }
     }

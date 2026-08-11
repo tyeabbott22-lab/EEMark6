@@ -50,11 +50,11 @@ namespace ExtraterrestrialExhaust.Editor
             InputActionAsset inputAsset = AssetDatabase.LoadAssetAtPath<InputActionAsset>(InputAssetPath);
             PlayerProjectile projectilePrefab = CreateProjectilePrefab();
 
-            Transform backdrop = CreateBackdrop();
+            Transform[] backdrops = CreateBackdrop();
             GameStateMachine gameState = CreateGameStateMachine(inputAsset);
             new GameObject("Score System").AddComponent<ScoreSystem>();
             PlayerCharacter player = CreatePlayer(inputAsset, projectilePrefab);
-            CreateCamera(player, backdrop);
+            CreateCamera(player, backdrops);
             EnemyController meleeEnemy = CreateEnemy(
                 projectilePrefab,
                 "Purple Melee Hunter",
@@ -93,17 +93,50 @@ namespace ExtraterrestrialExhaust.Editor
             Debug.Log($"Built {ScenePath}. Use W/S to thrust or stabilize and A/D to rotate.");
         }
 
-        static Transform CreateBackdrop()
+        static Transform[] CreateBackdrop()
         {
-            GameObject backdrop = new GameObject("Starfield Backdrop");
-            backdrop.transform.position = new Vector3(0f, 0f, 4f);
-            backdrop.transform.localScale = Vector3.one * 4f;
+            GameObject backdropRoot = new GameObject("Starfield Backdrop");
+            backdropRoot.transform.position = new Vector3(0f, 0f, 4f);
 
-            SpriteRenderer renderer = backdrop.AddComponent<SpriteRenderer>();
+            return new[]
+            {
+                CreateBackdropLayer(
+                    backdropRoot.transform,
+                    "Far Stars",
+                    Vector3.one * 4f,
+                    new Color(0.32f, 0.4f, 0.7f, 0.35f),
+                    -120),
+                CreateBackdropLayer(
+                    backdropRoot.transform,
+                    "Mid Stars",
+                    Vector3.one * 4.7f,
+                    new Color(0.45f, 0.55f, 0.9f, 0.42f),
+                    -110),
+                CreateBackdropLayer(
+                    backdropRoot.transform,
+                    "Near Stars",
+                    Vector3.one * 5.4f,
+                    new Color(0.65f, 0.75f, 1f, 0.28f),
+                    -100)
+            };
+        }
+
+        static Transform CreateBackdropLayer(
+            Transform parent,
+            string objectName,
+            Vector3 scale,
+            Color color,
+            int sortingOrder)
+        {
+            GameObject layer = new GameObject(objectName);
+            layer.transform.SetParent(parent, false);
+            layer.transform.localScale = scale;
+
+            SpriteRenderer renderer = layer.AddComponent<SpriteRenderer>();
             renderer.sprite = LoadFirstSprite(StarfieldSpritePath);
-            renderer.sortingOrder = -100;
-            renderer.color = new Color(0.55f, 0.62f, 0.8f, 1f);
-            return backdrop.transform;
+            renderer.sortingOrder = sortingOrder;
+            renderer.color = color;
+            return layer.transform;
         }
 
         static GameStateMachine CreateGameStateMachine(InputActionAsset inputAsset)
@@ -211,6 +244,16 @@ namespace ExtraterrestrialExhaust.Editor
             serializedWeapon.ApplyModifiedPropertiesWithoutUndo();
 
             CreateCraftVisual(player.transform);
+            Transform craftVisual = player.transform.Find("Craft Visual");
+            serializedPresentation = new SerializedObject(presentation);
+            serializedPresentation.FindProperty("visual").objectReferenceValue = craftVisual;
+            serializedPresentation.FindProperty("visualRenderer").objectReferenceValue =
+                craftVisual ? craftVisual.GetComponent<SpriteRenderer>() : null;
+            SetSpriteArray(serializedPresentation, "flightFrames", LoadSprites(ShipSpritePath));
+            SetSpriteArray(serializedPresentation, "thrustFrames", LoadSprites(ShipSpritePath));
+            serializedPresentation.FindProperty("animationFramesPerSecond").floatValue = 8f;
+            serializedPresentation.FindProperty("thrustFramesPerSecond").floatValue = 14f;
+            serializedPresentation.ApplyModifiedPropertiesWithoutUndo();
             PlayerDamageFeedback damageFeedback = player.AddComponent<PlayerDamageFeedback>();
             SerializedObject serializedDamageFeedback = new SerializedObject(damageFeedback);
             // Match EE5's alternating red/yellow damage readout instead of a
@@ -553,6 +596,8 @@ namespace ExtraterrestrialExhaust.Editor
             serializedKey.FindProperty("enemyOrbitSpeed").floatValue = 4f;
             serializedKey.FindProperty("enemyOrbitSharpness").floatValue = 8f;
             serializedKey.FindProperty("playerFollowSharpness").floatValue = 14f;
+            serializedKey.FindProperty("releasePulseDuration").floatValue = Ee5SliceProfile.KeyReleasePulseDuration;
+            serializedKey.FindProperty("releasePulseScale").floatValue = Ee5SliceProfile.KeyReleasePulseScale;
             serializedKey.ApplyModifiedPropertiesWithoutUndo();
             SpriteRenderer keySprite = key.AddComponent<SpriteRenderer>();
             keySprite.sprite = LoadFirstSprite(KeySpritePath);
@@ -670,7 +715,7 @@ namespace ExtraterrestrialExhaust.Editor
             line.material = new Material(Shader.Find("Sprites/Default"));
         }
 
-        static void CreateCamera(PlayerCharacter target, Transform parallaxBackdrop)
+        static void CreateCamera(PlayerCharacter target, Transform[] parallaxBackdrops)
         {
             GameObject cameraObject = new GameObject("Main Camera");
             cameraObject.tag = "MainCamera";
@@ -704,12 +749,18 @@ namespace ExtraterrestrialExhaust.Editor
             serializedFollow.FindProperty("flipZoomOut").floatValue = Ee5SliceProfile.CameraFlipZoomOut;
             serializedFollow.FindProperty("flipZoomDuration").floatValue = Ee5SliceProfile.CameraFlipZoomDuration;
             SerializedProperty parallaxLayers = serializedFollow.FindProperty("parallaxLayers");
-            parallaxLayers.arraySize = parallaxBackdrop ? 1 : 0;
-            if (parallaxBackdrop)
+            parallaxLayers.arraySize = parallaxBackdrops?.Length ?? 0;
+            float[] parallaxStrengths =
             {
-                SerializedProperty layer = parallaxLayers.GetArrayElementAtIndex(0);
-                layer.FindPropertyRelative("transform").objectReferenceValue = parallaxBackdrop;
-                layer.FindPropertyRelative("strength").floatValue = 0.18f;
+                Ee5SliceProfile.CameraFarParallaxStrength,
+                Ee5SliceProfile.CameraMidParallaxStrength,
+                Ee5SliceProfile.CameraNearParallaxStrength
+            };
+            for (int i = 0; i < parallaxLayers.arraySize; i++)
+            {
+                SerializedProperty layer = parallaxLayers.GetArrayElementAtIndex(i);
+                layer.FindPropertyRelative("transform").objectReferenceValue = parallaxBackdrops[i];
+                layer.FindPropertyRelative("strength").floatValue = parallaxStrengths[Mathf.Min(i, parallaxStrengths.Length - 1)];
             }
             serializedFollow.ApplyModifiedPropertiesWithoutUndo();
         }

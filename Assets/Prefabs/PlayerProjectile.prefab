@@ -170,12 +170,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b4a7cd1e586f82d4686879262e9d78eb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: ExtraterrestrialExhaust.Runtime::ExtraterrestrialExhaust.Combat.PlayerProjectile
-  speed: 45
+  speed: 30
   lifetime: 2
   damage: 1
   knockback: 0
   destroyOnUnrecognizedCollision: 1
   team: 0
+  enforceEe5Profile: 1
 --- !u!120 &5670916375576476274
 LineRenderer:
   serializedVersion: 3
