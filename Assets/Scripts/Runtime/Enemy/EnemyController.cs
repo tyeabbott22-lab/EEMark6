@@ -1,8 +1,8 @@
 using UnityEngine;
 using System;
 using ExtraterrestrialExhaust.Combat;
+using ExtraterrestrialExhaust.Core;
 using ExtraterrestrialExhaust.Player;
-using ExtraterrestrialExhaust.CameraSystem;
 
 namespace ExtraterrestrialExhaust.Enemy
 {
@@ -238,7 +238,9 @@ namespace ExtraterrestrialExhaust.Enemy
             body.linearVelocity = Vector2.zero;
             body.simulated = false;
             Defeated?.Invoke(this);
-            PlayerCameraFollow.Instance?.Shake(0.12f, 0.14f);
+            // EE5 briefly slows the world on a confirmed defeat. The game
+            // state machine owns time so this remains compatible with pause.
+            FindFirstObjectByType<GameStateMachine>()?.TriggerEnemyDefeatSlowdown();
 
             foreach (Collider2D collider in GetComponentsInChildren<Collider2D>(true))
                 collider.enabled = false;

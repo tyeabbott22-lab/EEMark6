@@ -29,7 +29,7 @@ The player foundation is intentionally split into three responsibilities:
 | `PlayerFlightInput` | Converts Unity Input System actions into a frame-independent flight command. |
 | `PlayerFlightMotor` | Applies movement and stabilization forces to the player's `Rigidbody2D`. |
 | `PlayerFlightStateMachine` | Controls whether flight simulation is active, scripted, or disabled. |
-| `GameStateMachine` | Coordinates application flow such as playing, pausing, and game over. |
+| `GameStateMachine` | Coordinates playing, pausing, game over, and the short EE5 defeat slowdown without scattering global time writes. |
 | `HealthComponent` | Shared health and damage contract for players, enemies, and hazards. |
 | `ProjectileTeam` | Prevents player fire from harming the player and enemy fire from harming enemy allies. |
 | `PlayerCharacter` | Composition root exposing the playable character's core systems and shared gameplay-eligibility contract, including game-state gating. |

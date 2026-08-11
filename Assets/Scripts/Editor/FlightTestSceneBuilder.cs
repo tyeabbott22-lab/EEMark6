@@ -108,6 +108,9 @@ namespace ExtraterrestrialExhaust.Editor
             stateMachine.ConfigureInputAsset(inputAsset);
             SerializedObject serialized = new SerializedObject(stateMachine);
             serialized.FindProperty("initialState").enumValueIndex = (int)GameState.Playing;
+            serialized.FindProperty("enableEnemyDefeatSlowdown").boolValue = true;
+            serialized.FindProperty("enemyDefeatTimeScale").floatValue = 0.16f;
+            serialized.FindProperty("enemyDefeatSlowdownDuration").floatValue = 0.07f;
             serialized.ApplyModifiedPropertiesWithoutUndo();
         }
 

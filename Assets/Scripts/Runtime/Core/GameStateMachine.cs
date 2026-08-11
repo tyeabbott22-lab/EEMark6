@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -15,12 +16,16 @@ namespace ExtraterrestrialExhaust.Core
         [SerializeField] InputActionAsset inputActions;
         [SerializeField] string pauseActionName = "Player/Pause";
         [SerializeField] bool allowPause = true;
+        [SerializeField] bool enableEnemyDefeatSlowdown = true;
+        [SerializeField, Range(0.05f, 1f)] float enemyDefeatTimeScale = 0.16f;
+        [SerializeField, Min(0f)] float enemyDefeatSlowdownDuration = 0.07f;
 
         public GameState CurrentState { get; private set; }
         public bool IsPlaying => CurrentState == GameState.Playing;
         public event Action<GameState, GameState> StateChanged;
 
         InputAction pauseAction;
+        Coroutine enemyDefeatSlowdownRoutine;
 
         void Awake()
         {
@@ -78,6 +83,24 @@ namespace ExtraterrestrialExhaust.Core
         }
 
         /// <summary>
+        /// Reproduces the short EE5 defeat hit-stop without letting an enemy or
+        /// camera script write directly to global time. Pause and game-over
+        /// transitions remain authoritative when the pulse ends.
+        /// </summary>
+        public void TriggerEnemyDefeatSlowdown()
+        {
+            if (!enableEnemyDefeatSlowdown
+                || CurrentState != GameState.Playing
+                || enemyDefeatSlowdownDuration <= 0f)
+                return;
+
+            if (enemyDefeatSlowdownRoutine != null)
+                StopCoroutine(enemyDefeatSlowdownRoutine);
+
+            enemyDefeatSlowdownRoutine = StartCoroutine(EnemyDefeatSlowdownRoutine());
+        }
+
+        /// <summary>
         /// Editor-generated scenes bind the shared Input System asset here so
         /// pause remains a project-level flow concern rather than a keyboard
         /// lookup hidden inside the state machine.
@@ -99,6 +122,15 @@ namespace ExtraterrestrialExhaust.Core
             pauseAction = inputActions != null
                 ? inputActions.FindAction(pauseActionName, false)
                 : null;
+        }
+
+        IEnumerator EnemyDefeatSlowdownRoutine()
+        {
+            Time.timeScale = Mathf.Min(Time.timeScale, enemyDefeatTimeScale);
+            yield return new WaitForSecondsRealtime(enemyDefeatSlowdownDuration);
+
+            enemyDefeatSlowdownRoutine = null;
+            ApplyTimeScale(CurrentState);
         }
 
         void ApplyTimeScale(GameState state)
