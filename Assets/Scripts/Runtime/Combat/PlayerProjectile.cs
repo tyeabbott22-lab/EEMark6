@@ -27,6 +27,7 @@ namespace ExtraterrestrialExhaust.Combat
         Rigidbody2D body;
         SpriteRenderer spriteRenderer;
         LineRenderer trailRenderer;
+        ProjectileExhaustPresentation exhaustPresentation;
         GameObject owner;
         Vector2 direction;
         float lifetimeRemaining;
@@ -39,6 +40,9 @@ namespace ExtraterrestrialExhaust.Combat
 
             spriteRenderer = GetComponent<SpriteRenderer>();
             trailRenderer = GetComponent<LineRenderer>();
+            exhaustPresentation = GetComponent<ProjectileExhaustPresentation>();
+            if (!exhaustPresentation)
+                exhaustPresentation = gameObject.AddComponent<ProjectileExhaustPresentation>();
             body.gravityScale = 0f;
             body.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
         }
@@ -78,6 +82,8 @@ namespace ExtraterrestrialExhaust.Combat
                 trailRenderer.startColor = color;
                 trailRenderer.endColor = trailEnd;
             }
+
+            exhaustPresentation?.SetColorTheme(color);
         }
 
         public void SetTeam(ProjectileTeam projectileTeam) => team = projectileTeam;
