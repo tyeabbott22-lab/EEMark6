@@ -2,6 +2,7 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using System.Collections.Generic;
 using System.Linq;
+using System.IO;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
@@ -27,21 +28,27 @@ namespace ExtraterrestrialExhaust.Editor
         const string PlayerPrefabPath = "Assets/Prefabs/PlayerCraft.prefab";
         const string EnemyGunnerPrefabPath = "Assets/Prefabs/EnemyGunner.prefab";
         const string EnemyMeleePrefabPath = "Assets/Prefabs/EnemyMelee.prefab";
-        // Keep the source asset filenames compatible with the EE5 wiring,
-        // while giving the builder semantic names so a future asset rename is
-        // a one-line, reviewable change instead of a hunt through scene code.
-        const string PlayerCraftSpriteAssetPath = "Assets/Art/Player/sprSnipe.png";
-        const string PlayerHealthSpriteAssetPath = "Assets/Art/Player/health.png";
-        const string PlayerProjectileSpriteAssetPath = "Assets/Art/Player/bullet.png";
+        // These semantic destinations describe the imported EE5 roles. The
+        // legacy paths remain as fallbacks until the explicit rename menu is
+        // run, so an existing checkout never loses its visual wiring.
+        const string PlayerCraftSpriteAssetPath = "Assets/Art/Player/player_craft.png";
+        const string LegacyPlayerCraftSpriteAssetPath = "Assets/Art/Player/sprSnipe.png";
+        const string PlayerHealthSpriteAssetPath = "Assets/Art/Player/health_sheet.png";
+        const string LegacyPlayerHealthSpriteAssetPath = "Assets/Art/Player/health.png";
+        const string PlayerProjectileSpriteAssetPath = "Assets/Art/Player/player_projectile.png";
+        const string LegacyPlayerProjectileSpriteAssetPath = "Assets/Art/Player/bullet.png";
         const string ThrustAudioPath = "Assets/Audio/Player/sfxThrust.wav";
         const string EnemySpritePath = "Assets/Art/Reference/Enemies/sprAlienWhiteGunner.png";
         const string EnemyIdleSpritePath = "Assets/Art/Reference/Enemies/sprAlienWhiteSleep.png";
         const string EnemyDefeatSpritePath = "Assets/Art/Reference/Enemies/sprAlienWhiteScream.png";
         const string MeleeSpritePath = "Assets/Art/Reference/Enemies/sprPurpleEat.png";
         const string MeleeDefeatSpritePath = "Assets/Art/Reference/Enemies/sprAlienPurpleScream.png";
-        const string EnergyKeySpriteAssetPath = "Assets/Art/Reference/Objectives/keyfinal.png";
-        const string EnergyGateSpriteAssetPath = "Assets/Art/Reference/Objectives/buttonFInal1.png";
-        const string BoundaryWallSpriteAssetPath = "Assets/Art/Reference/Environment/wallFinal.png";
+        const string EnergyKeySpriteAssetPath = "Assets/Art/Reference/Objectives/energy_key.png";
+        const string LegacyEnergyKeySpriteAssetPath = "Assets/Art/Reference/Objectives/keyfinal.png";
+        const string EnergyGateSpriteAssetPath = "Assets/Art/Reference/Objectives/energy_gate.png";
+        const string LegacyEnergyGateSpriteAssetPath = "Assets/Art/Reference/Objectives/buttonFInal1.png";
+        const string BoundaryWallSpriteAssetPath = "Assets/Art/Reference/Environment/boundary_wall.png";
+        const string LegacyBoundaryWallSpriteAssetPath = "Assets/Art/Reference/Environment/wallFinal.png";
         const string StarfieldSpritePath = "Assets/Art/Reference/Environment/sprStars.png";
         const string EnemyBurstSpritePath = "Assets/Art/Reference/Effects/sprExplode.png";
         const string EnemyBurstAudioPath = "Assets/Audio/Reference/sfxExplode.wav";
@@ -94,6 +101,61 @@ namespace ExtraterrestrialExhaust.Editor
             ConfigureBuildSettings();
             Selection.activeGameObject = GameObject.Find("Player Craft");
             Debug.Log($"Built {ScenePath}. Use W/S to thrust or stabilize and A/D to rotate.");
+        }
+
+        [MenuItem("Extraterrestrial Exhaust/Normalize Imported Sprite Names")]
+        public static void NormalizeImportedSpriteNames()
+        {
+            // AssetDatabase.RenameAsset preserves each .meta GUID, which keeps
+            // serialized EE5-derived references intact. This is deliberately a
+            // separate command so importing the project never mutates artwork.
+            int renamed = 0;
+            renamed += RenameImportedAsset(
+                LegacyPlayerCraftSpriteAssetPath,
+                PlayerCraftSpriteAssetPath);
+            renamed += RenameImportedAsset(
+                LegacyPlayerHealthSpriteAssetPath,
+                PlayerHealthSpriteAssetPath);
+            renamed += RenameImportedAsset(
+                LegacyPlayerProjectileSpriteAssetPath,
+                PlayerProjectileSpriteAssetPath);
+            renamed += RenameImportedAsset(
+                LegacyEnergyKeySpriteAssetPath,
+                EnergyKeySpriteAssetPath);
+            renamed += RenameImportedAsset(
+                LegacyEnergyGateSpriteAssetPath,
+                EnergyGateSpriteAssetPath);
+            renamed += RenameImportedAsset(
+                LegacyBoundaryWallSpriteAssetPath,
+                BoundaryWallSpriteAssetPath);
+
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+            Debug.Log(renamed == 0
+                ? "Imported sprite names already use the semantic EE6 paths."
+                : $"Renamed {renamed} imported sprite asset(s); EE5 GUID references were preserved.");
+        }
+
+        static int RenameImportedAsset(string legacyPath, string semanticPath)
+        {
+            if (AssetDatabase.LoadMainAssetAtPath(semanticPath))
+                return 0;
+
+            if (!AssetDatabase.LoadMainAssetAtPath(legacyPath))
+            {
+                Debug.LogWarning($"Skipped sprite rename; source asset was not found: {legacyPath}");
+                return 0;
+            }
+
+            string newName = Path.GetFileNameWithoutExtension(semanticPath);
+            string error = AssetDatabase.RenameAsset(legacyPath, newName);
+            if (!string.IsNullOrEmpty(error))
+            {
+                Debug.LogError($"Could not rename {legacyPath}: {error}");
+                return 0;
+            }
+
+            return 1;
         }
 
         static Transform[] CreateBackdrop()
@@ -252,8 +314,14 @@ namespace ExtraterrestrialExhaust.Editor
             serializedPresentation.FindProperty("visual").objectReferenceValue = craftVisual;
             serializedPresentation.FindProperty("visualRenderer").objectReferenceValue =
                 craftVisual ? craftVisual.GetComponent<SpriteRenderer>() : null;
-            SetSpriteArray(serializedPresentation, "flightFrames", LoadSprites(PlayerCraftSpriteAssetPath));
-            SetSpriteArray(serializedPresentation, "thrustFrames", LoadSprites(PlayerCraftSpriteAssetPath));
+            SetSpriteArray(
+                serializedPresentation,
+                "flightFrames",
+                LoadSprites(PlayerCraftSpriteAssetPath, LegacyPlayerCraftSpriteAssetPath));
+            SetSpriteArray(
+                serializedPresentation,
+                "thrustFrames",
+                LoadSprites(PlayerCraftSpriteAssetPath, LegacyPlayerCraftSpriteAssetPath));
             serializedPresentation.FindProperty("animationFramesPerSecond").floatValue = 8f;
             serializedPresentation.FindProperty("thrustFramesPerSecond").floatValue = 14f;
             serializedPresentation.ApplyModifiedPropertiesWithoutUndo();
@@ -284,10 +352,9 @@ namespace ExtraterrestrialExhaust.Editor
 
             SpriteRenderer renderer = displayObject.AddComponent<SpriteRenderer>();
             renderer.sortingOrder = 30;
-            Sprite[] sprites = AssetDatabase.LoadAllAssetsAtPath(PlayerHealthSpriteAssetPath)
-                .OfType<Sprite>()
-                .OrderBy(sprite => sprite.name)
-                .ToArray();
+            Sprite[] sprites = LoadSprites(
+                PlayerHealthSpriteAssetPath,
+                LegacyPlayerHealthSpriteAssetPath);
 
             PlayerHealthDisplay display = character.gameObject.AddComponent<PlayerHealthDisplay>();
             SerializedObject serialized = new SerializedObject(display);
@@ -340,7 +407,9 @@ namespace ExtraterrestrialExhaust.Editor
             SpriteRenderer sprite = projectile.GetComponent<SpriteRenderer>();
             if (!sprite)
                 sprite = projectile.AddComponent<SpriteRenderer>();
-            sprite.sprite = AssetDatabase.LoadAssetAtPath<Sprite>(PlayerProjectileSpriteAssetPath);
+            sprite.sprite = LoadFirstSprite(
+                PlayerProjectileSpriteAssetPath,
+                LegacyPlayerProjectileSpriteAssetPath);
             sprite.sortingOrder = 21;
 
             LineRenderer line = projectile.GetComponent<LineRenderer>();
@@ -551,10 +620,9 @@ namespace ExtraterrestrialExhaust.Editor
 
             SpriteRenderer renderer = displayObject.AddComponent<SpriteRenderer>();
             renderer.sortingOrder = 30;
-            Sprite[] sprites = AssetDatabase.LoadAllAssetsAtPath(PlayerHealthSpriteAssetPath)
-                .OfType<Sprite>()
-                .OrderBy(sprite => sprite.name)
-                .ToArray();
+            Sprite[] sprites = LoadSprites(
+                PlayerHealthSpriteAssetPath,
+                LegacyPlayerHealthSpriteAssetPath);
 
             EnemyHealthDisplay display = enemy.gameObject.AddComponent<EnemyHealthDisplay>();
             SerializedObject serialized = new SerializedObject(display);
@@ -613,7 +681,9 @@ namespace ExtraterrestrialExhaust.Editor
             serializedKey.FindProperty("releasePulseScale").floatValue = Ee5SliceProfile.KeyReleasePulseScale;
             serializedKey.ApplyModifiedPropertiesWithoutUndo();
             SpriteRenderer keySprite = key.AddComponent<SpriteRenderer>();
-            keySprite.sprite = LoadFirstSprite(EnergyKeySpriteAssetPath);
+            keySprite.sprite = LoadFirstSprite(
+                EnergyKeySpriteAssetPath,
+                LegacyEnergyKeySpriteAssetPath);
             keySprite.sortingOrder = 10;
             key.transform.localScale = Vector3.one * 0.7f;
             CreateSquareOutline(key.transform, Vector2.one * 0.5f, new Color(1f, 0.8f, 0.1f));
@@ -743,7 +813,9 @@ namespace ExtraterrestrialExhaust.Editor
             visual.transform.localScale = Vector3.one * 1.5f;
 
             SpriteRenderer sprite = visual.AddComponent<SpriteRenderer>();
-            sprite.sprite = AssetDatabase.LoadAssetAtPath<Sprite>(PlayerCraftSpriteAssetPath);
+            sprite.sprite = LoadFirstSprite(
+                PlayerCraftSpriteAssetPath,
+                LegacyPlayerCraftSpriteAssetPath);
             sprite.sortingOrder = 10;
 
             LineRenderer line = visual.AddComponent<LineRenderer>();
@@ -925,7 +997,9 @@ namespace ExtraterrestrialExhaust.Editor
             serialized.ApplyModifiedPropertiesWithoutUndo();
 
             SpriteRenderer renderer = pickup.AddComponent<SpriteRenderer>();
-            renderer.sprite = LoadFirstSprite(PlayerHealthSpriteAssetPath);
+            renderer.sprite = LoadFirstSprite(
+                PlayerHealthSpriteAssetPath,
+                LegacyPlayerHealthSpriteAssetPath);
             renderer.color = new Color(0.2f, 1f, 0.45f, 1f);
             renderer.sortingOrder = 12;
             CreateCircleOutline(pickup.transform, 0.42f, new Color(0.2f, 1f, 0.45f, 0.65f), 28, 0.05f);
@@ -957,7 +1031,9 @@ namespace ExtraterrestrialExhaust.Editor
             serialized.ApplyModifiedPropertiesWithoutUndo();
 
             SpriteRenderer renderer = pickup.AddComponent<SpriteRenderer>();
-            renderer.sprite = LoadFirstSprite(PlayerProjectileSpriteAssetPath);
+            renderer.sprite = LoadFirstSprite(
+                PlayerProjectileSpriteAssetPath,
+                LegacyPlayerProjectileSpriteAssetPath);
             renderer.color = new Color(0.2f, 0.9f, 1f, 1f);
             renderer.sortingOrder = 12;
             CreateCircleOutline(pickup.transform, 0.42f, new Color(0.2f, 0.9f, 1f, 0.65f), 28, 0.05f);
@@ -975,16 +1051,18 @@ namespace ExtraterrestrialExhaust.Editor
 
         static void CreateWallVisual(Transform parent, Vector2 size)
         {
-            Sprite wallSprite = LoadFirstSprite(BoundaryWallSpriteAssetPath);
+            Sprite wallSprite = LoadFirstSprite(
+                BoundaryWallSpriteAssetPath,
+                LegacyBoundaryWallSpriteAssetPath);
             if (!wallSprite)
             {
                 CreateSquareOutline(parent, size, new Color(0.3f, 0.35f, 0.6f));
                 return;
             }
 
-            // wallFinal is the authored EE5 wall strip: its visible artwork is
-            // offset inside a large transparent sprite. Keep the art and the
-            // collider aligned while allowing the builder to size the boundary.
+            // The authored EE5 wall strip has visible artwork offset inside a
+            // large transparent sprite. Keep the art and collider aligned
+            // while allowing the builder to size the boundary.
             const float artworkCenterOffset = 6.2f;
             const float artworkAcrossScale = 1.45f;
             bool vertical = size.y >= size.x;
@@ -1014,7 +1092,9 @@ namespace ExtraterrestrialExhaust.Editor
 
         static void CreateGateVisual(Transform parent)
         {
-            Sprite gateSprite = LoadFirstSprite(EnergyGateSpriteAssetPath);
+            Sprite gateSprite = LoadFirstSprite(
+                EnergyGateSpriteAssetPath,
+                LegacyEnergyGateSpriteAssetPath);
             if (!gateSprite)
                 return;
 
@@ -1085,12 +1165,29 @@ namespace ExtraterrestrialExhaust.Editor
                 .FirstOrDefault();
         }
 
+        static Sprite LoadFirstSprite(string semanticPath, string legacyPath)
+        {
+            return LoadFirstSprite(ResolveAssetPath(semanticPath, legacyPath));
+        }
+
         static Sprite[] LoadSprites(string assetPath)
         {
             return AssetDatabase.LoadAllAssetsAtPath(assetPath)
                 .OfType<Sprite>()
                 .OrderBy(sprite => sprite.name)
                 .ToArray();
+        }
+
+        static Sprite[] LoadSprites(string semanticPath, string legacyPath)
+        {
+            return LoadSprites(ResolveAssetPath(semanticPath, legacyPath));
+        }
+
+        static string ResolveAssetPath(string semanticPath, string legacyPath)
+        {
+            return AssetDatabase.LoadMainAssetAtPath(semanticPath)
+                ? semanticPath
+                : legacyPath;
         }
 
         static void SetSpriteArray(SerializedObject serialized, string propertyName, Sprite[] sprites)
