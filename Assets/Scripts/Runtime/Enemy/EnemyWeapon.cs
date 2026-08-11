@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using ExtraterrestrialExhaust.Combat;
 using ExtraterrestrialExhaust.Player;
@@ -29,6 +30,9 @@ namespace ExtraterrestrialExhaust.Enemy
         [SerializeField] int telegraphSortingOrder = 75;
         [SerializeField] PlayerCharacter target;
         [SerializeField] GameStateMachine gameState;
+
+        public Transform FirePoint => firePoint;
+        public event Action<Vector2, Vector2> Fired;
 
         float cooldownRemaining;
         EnemyController controller;
@@ -110,6 +114,7 @@ namespace ExtraterrestrialExhaust.Enemy
             projectile.SetTint(projectileTint);
             projectile.Launch(direction, gameObject, projectileSpeed);
             cooldownRemaining = fireCooldown;
+            Fired?.Invoke(origin.position, direction);
         }
 
         void HandleStateChanged(EnemyController source, EnemyState nextState)

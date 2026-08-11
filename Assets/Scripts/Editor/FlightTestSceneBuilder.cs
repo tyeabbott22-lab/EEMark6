@@ -519,7 +519,7 @@ namespace ExtraterrestrialExhaust.Editor
             serializedController.FindProperty("wakeDistance").floatValue = 6f;
             serializedController.FindProperty("wakeDuration").floatValue = 1.35f;
             serializedController.FindProperty("requireLineOfSightToWake").boolValue = true;
-            serializedController.FindProperty("wakeSignalDistanceMultiplier").floatValue = 4f;
+            serializedController.FindProperty("wakeSignalDistanceMultiplier").floatValue = 1f;
             serializedController.FindProperty("wakeSignalChargeDuration").floatValue = 1.15f;
             serializedController.FindProperty("wakeSignalChargeDecay").floatValue = 1.8f;
             serializedController.FindProperty("wakeFinalWarningDuration").floatValue = 0.35f;
@@ -587,6 +587,23 @@ namespace ExtraterrestrialExhaust.Editor
                     new Color(0.1f, 1f, 0.3f, 0.5f);
                 serializedWeapon.FindProperty("telegraphSortingOrder").intValue = 75;
                 serializedWeapon.ApplyModifiedPropertiesWithoutUndo();
+
+                EnemyWeaponPresentation weaponPresentation = enemy.AddComponent<EnemyWeaponPresentation>();
+                SerializedObject serializedWeaponPresentation = new SerializedObject(weaponPresentation);
+                serializedWeaponPresentation.FindProperty("firePoint").objectReferenceValue = firePoint.transform;
+                serializedWeaponPresentation.FindProperty("flashDuration").floatValue = 0.09f;
+                serializedWeaponPresentation.FindProperty("flashLength").floatValue = 0.28f;
+                serializedWeaponPresentation.FindProperty("flashWidth").floatValue = 0.095f;
+                serializedWeaponPresentation.FindProperty("sideFlashLength").floatValue = 0.18f;
+                serializedWeaponPresentation.FindProperty("sideFlashWidth").floatValue = 0.1f;
+                serializedWeaponPresentation.FindProperty("flashColor").colorValue =
+                    new Color(0.45f, 1f, 0.55f, 1f);
+                serializedWeaponPresentation.FindProperty("flashEdgeColor").colorValue =
+                    new Color(0.05f, 1f, 0.16f, 0f);
+                serializedWeaponPresentation.FindProperty("sortingOrder").intValue = 76;
+                serializedWeaponPresentation.FindProperty("cameraShakeStrength").floatValue = 0.014f;
+                serializedWeaponPresentation.FindProperty("cameraShakeDuration").floatValue = 0.04f;
+                serializedWeaponPresentation.ApplyModifiedPropertiesWithoutUndo();
             }
 
             LineRenderer line = enemy.AddComponent<LineRenderer>();
