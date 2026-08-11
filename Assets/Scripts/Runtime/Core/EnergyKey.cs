@@ -232,7 +232,7 @@ namespace ExtraterrestrialExhaust.Core
                 return;
 
             targetGate.DisableGate();
-            FindFirstObjectByType<ScoreSystem>()?.AddScore(50, ScoreReason.GateDeactivated);
+            FindFirstObjectByType<ScoreSystem>()?.Award(ScoreReason.GateDeactivated);
             SetState(EnergyKeyState.Consumed);
             Destroy(gameObject);
         }
@@ -282,7 +282,7 @@ namespace ExtraterrestrialExhaust.Core
             player = otherPlayer;
             SetState(EnergyKeyState.FollowingPlayer);
             keyCollider.enabled = false;
-            FindFirstObjectByType<ScoreSystem>()?.AddScore(50, ScoreReason.ObjectiveCollected);
+            FindFirstObjectByType<ScoreSystem>()?.Award(ScoreReason.ObjectiveCollected);
             UpdateAvailabilityVisual();
         }
 

@@ -61,12 +61,12 @@ namespace ExtraterrestrialExhaust.Core
             if (!damage.Source || !damage.Source.GetComponentInParent<PlayerCharacter>())
                 return;
 
-            scoreSystem?.AddScore(75, ScoreReason.EnemyDamaged);
+            scoreSystem?.Award(ScoreReason.EnemyDamaged);
         }
 
         void HandleEnemyDefeated(EnemyController defeatedEnemy)
         {
-            scoreSystem?.AddScore(100, ScoreReason.EnemyDefeated);
+            scoreSystem?.Award(ScoreReason.EnemyDefeated);
             foreach (EnemyController enemy in enemies)
                 if (enemy && enemy.State != EnemyState.Defeated)
                     return;

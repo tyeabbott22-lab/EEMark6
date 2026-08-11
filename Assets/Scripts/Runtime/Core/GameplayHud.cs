@@ -66,7 +66,10 @@ namespace ExtraterrestrialExhaust.Core
         void OnEnable()
         {
             if (scoreSystem)
+            {
                 scoreSystem.ScoreChanged += HandleScoreChanged;
+                scoreSystem.ComboBroken += HandleComboBroken;
+            }
             if (gameState)
                 gameState.StateChanged += HandleStateChanged;
             if (objectiveDirector)
@@ -84,7 +87,10 @@ namespace ExtraterrestrialExhaust.Core
         void OnDisable()
         {
             if (scoreSystem)
+            {
                 scoreSystem.ScoreChanged -= HandleScoreChanged;
+                scoreSystem.ComboBroken -= HandleComboBroken;
+            }
             if (gameState)
                 gameState.StateChanged -= HandleStateChanged;
             if (objectiveDirector)
@@ -122,8 +128,13 @@ namespace ExtraterrestrialExhaust.Core
         {
             Refresh();
             if (awarded > 0)
-                ShowActionCallout($"+{awarded:000}  {GetScoreReasonLabel(reason)}", GetScoreReasonColor(reason));
+                ShowActionCallout(
+                    $"+{awarded:000}  {GetScoreReasonLabel(reason)}  X{scoreSystem.CurrentMultiplier:0.0}",
+                    GetScoreReasonColor(reason));
         }
+        void HandleComboBroken() => ShowActionCallout(
+            "COMBO LOST",
+            new Color(1f, 0.16f, 0.1f, 1f));
         void HandleHealthChanged(float currentHealth) => Refresh();
         void HandlePlayerDied() => ShowActionCallout("HULL LOST", new Color(1f, 0.14f, 0.1f, 1f));
         void HandleStateChanged(GameState previous, GameState next)
@@ -305,8 +316,11 @@ namespace ExtraterrestrialExhaust.Core
             string objective = objectiveDirector
                 ? objectiveDirector.CurrentObjective
                 : ResolveFallbackObjective();
+            string chain = scoreSystem && scoreSystem.ComboCredits > 0
+                ? $"CHAIN  {scoreSystem.ComboCredits:00}  X{scoreSystem.CurrentMultiplier:0.0}  HOLD {scoreSystem.ComboTimeRemaining:0.0}"
+                : "CHAIN  READY";
 
-            statusLabel.text = $"SCORE  {score:0000}\nOBJECTIVE  {objective}";
+            statusLabel.text = $"SCORE  {score:0000}\n{chain}\nOBJECTIVE  {objective}";
         }
 
         void RefreshHealthLabel()
@@ -336,6 +350,8 @@ namespace ExtraterrestrialExhaust.Core
             {
                 case ScoreReason.Speed:
                     return "SPEED";
+                case ScoreReason.Flip:
+                    return "FLIP";
                 case ScoreReason.EnemyDamaged:
                     return "DAMAGE";
                 case ScoreReason.EnemyDefeated:
@@ -359,6 +375,8 @@ namespace ExtraterrestrialExhaust.Core
             {
                 case ScoreReason.Speed:
                     return new Color(0.35f, 0.75f, 1f, 1f);
+                case ScoreReason.Flip:
+                    return new Color(0.75f, 0.4f, 1f, 1f);
                 case ScoreReason.EnemyDamaged:
                     return new Color(1f, 0.58f, 0.16f, 1f);
                 case ScoreReason.EnemyDefeated:

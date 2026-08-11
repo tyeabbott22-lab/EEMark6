@@ -198,7 +198,7 @@ namespace ExtraterrestrialExhaust.Core
             portalPresentation?.SetCaptureProgress(1f);
             portalPresentation?.CompleteCapture();
             player.FlightState.TrySetState(PlayerFlightState.Disabled);
-            FindFirstObjectByType<ScoreSystem>()?.AddScore(500, ScoreReason.LevelCompleted);
+            FindFirstObjectByType<ScoreSystem>()?.Award(ScoreReason.LevelCompleted);
             gameState?.EndGame();
             capturing = false;
         }
