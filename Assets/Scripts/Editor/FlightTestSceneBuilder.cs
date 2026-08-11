@@ -151,7 +151,14 @@ namespace ExtraterrestrialExhaust.Editor
             PlayerFlightInput input = player.GetComponent<PlayerFlightInput>();
             if (inputAsset)
                 input.ConfigureInputAsset(inputAsset);
-            player.AddComponent<PlayerRespawnController>();
+            PlayerRespawnController recovery = player.AddComponent<PlayerRespawnController>();
+            SerializedObject serializedRecovery = new SerializedObject(recovery);
+            // EE5 reloads the authored room on death, resetting the encounter
+            // and objective state instead of leaving a defeated room running.
+            serializedRecovery.FindProperty("reloadSceneOnDeath").boolValue = true;
+            serializedRecovery.FindProperty("reloadDelay").floatValue = 0f;
+            serializedRecovery.FindProperty("respawnAutomatically").boolValue = false;
+            serializedRecovery.ApplyModifiedPropertiesWithoutUndo();
 
             PlayerWeaponInput weaponInput = player.AddComponent<PlayerWeaponInput>();
             if (inputAsset)

@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using ExtraterrestrialExhaust.Combat;
 
 namespace ExtraterrestrialExhaust.Player
@@ -12,6 +13,8 @@ namespace ExtraterrestrialExhaust.Player
     public sealed class PlayerRespawnController : MonoBehaviour
     {
         [SerializeField] Transform respawnPoint;
+        [SerializeField] bool reloadSceneOnDeath;
+        [SerializeField, Min(0f)] float reloadDelay;
         [SerializeField, Min(0f)] float respawnDelay = 1f;
         [SerializeField] bool respawnAutomatically = true;
 
@@ -21,6 +24,7 @@ namespace ExtraterrestrialExhaust.Player
         Coroutine respawnRoutine;
         Vector3 initialPosition;
         Quaternion initialRotation;
+        bool sceneReloadRequested;
 
         public bool IsRespawning => respawnRoutine != null;
 
@@ -50,7 +54,34 @@ namespace ExtraterrestrialExhaust.Player
             character.FlightState.TrySetState(PlayerFlightState.Disabled);
             StopBody();
 
+            if (reloadSceneOnDeath)
+            {
+                if (!sceneReloadRequested)
+                    respawnRoutine = StartCoroutine(ReloadSceneRoutine());
+                return;
+            }
+
             if (respawnAutomatically && respawnRoutine == null)
+                respawnRoutine = StartCoroutine(RespawnRoutine());
+        }
+
+        IEnumerator ReloadSceneRoutine()
+        {
+            sceneReloadRequested = true;
+            yield return new WaitForSecondsRealtime(reloadDelay);
+
+            Scene activeScene = SceneManager.GetActiveScene();
+            AsyncOperation load = activeScene.buildIndex >= 0
+                ? SceneManager.LoadSceneAsync(activeScene.buildIndex)
+                : SceneManager.LoadSceneAsync(activeScene.path);
+
+            if (load != null)
+                yield break;
+
+            Debug.LogError("Player death could not reload the active scene; falling back to in-place recovery.", this);
+            sceneReloadRequested = false;
+            respawnRoutine = null;
+            if (respawnAutomatically)
                 respawnRoutine = StartCoroutine(RespawnRoutine());
         }
 
