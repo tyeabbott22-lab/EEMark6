@@ -661,9 +661,37 @@ namespace ExtraterrestrialExhaust.Editor
             label.horizontalOverflow = HorizontalWrapMode.Overflow;
             label.verticalOverflow = VerticalWrapMode.Overflow;
 
+            GameObject bannerObject = new GameObject("Objective Banner");
+            bannerObject.transform.SetParent(canvasObject.transform, false);
+            RectTransform bannerRect = bannerObject.AddComponent<RectTransform>();
+            bannerRect.anchorMin = new Vector2(0.5f, 0.5f);
+            bannerRect.anchorMax = new Vector2(0.5f, 0.5f);
+            bannerRect.pivot = new Vector2(0.5f, 0.5f);
+            bannerRect.anchoredPosition = new Vector2(0f, 120f);
+            bannerRect.sizeDelta = new Vector2(920f, 120f);
+
+            Text bannerLabel = bannerObject.AddComponent<Text>();
+            bannerLabel.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            bannerLabel.fontSize = 34;
+            bannerLabel.fontStyle = FontStyle.Bold;
+            bannerLabel.alignment = TextAnchor.MiddleCenter;
+            bannerLabel.color = new Color(0.65f, 0.95f, 1f, 1f);
+            bannerLabel.horizontalOverflow = HorizontalWrapMode.Overflow;
+            bannerLabel.verticalOverflow = VerticalWrapMode.Overflow;
+            Outline bannerOutline = bannerObject.AddComponent<Outline>();
+            bannerOutline.effectColor = new Color(0.02f, 0.04f, 0.12f, 0.9f);
+            bannerOutline.effectDistance = new Vector2(2f, -2f);
+            CanvasGroup bannerGroup = bannerObject.AddComponent<CanvasGroup>();
+            bannerGroup.alpha = 0f;
+            bannerGroup.interactable = false;
+            bannerGroup.blocksRaycasts = false;
+
             GameplayHud hud = canvasObject.AddComponent<GameplayHud>();
             SerializedObject serialized = new SerializedObject(hud);
             serialized.FindProperty("statusLabel").objectReferenceValue = label;
+            serialized.FindProperty("objectiveBannerLabel").objectReferenceValue = bannerLabel;
+            serialized.FindProperty("objectiveBannerGroup").objectReferenceValue = bannerGroup;
+            serialized.FindProperty("objectiveBannerDuration").floatValue = 1.35f;
             serialized.FindProperty("objectiveDirector").objectReferenceValue = objectiveDirector;
             serialized.ApplyModifiedPropertiesWithoutUndo();
         }
@@ -797,6 +825,24 @@ namespace ExtraterrestrialExhaust.Editor
             CreateWall("Right Wall", new Vector2(8f, 0f), new Vector2(0.5f, 14f));
             CreateWall("Floor", new Vector2(0f, -6f), new Vector2(16f, 0.5f));
             CreateWall("Ceiling", new Vector2(0f, 6f), new Vector2(16f, 0.5f));
+
+            // EE5's realScene reads as a room rather than a blank box: the
+            // shelves create readable flight lanes, break line of sight, and
+            // give the wake telegraph and gunner pressure somewhere to matter.
+            // They stay off the authored key, gate, and exit landmarks so the
+            // objective route remains direct and testable.
+            CreateWall(
+                "Upper Crater Shelf",
+                new Vector2(0.8f, 4.15f),
+                new Vector2(4.2f, 0.35f));
+            CreateWall(
+                "Lower Crater Shelf",
+                new Vector2(-0.6f, -4.15f),
+                new Vector2(4.8f, 0.35f));
+            CreateWall(
+                "Extraction Spine",
+                new Vector2(6.2f, 2.35f),
+                new Vector2(0.35f, 2.5f));
         }
 
         static void CreateEnvironmentalPressure()
