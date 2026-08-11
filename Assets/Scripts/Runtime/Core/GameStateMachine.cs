@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace ExtraterrestrialExhaust.Core
 {
@@ -11,15 +12,37 @@ namespace ExtraterrestrialExhaust.Core
     {
         [SerializeField] GameState initialState = GameState.Boot;
         [SerializeField] bool pauseTimeWhenPaused = true;
+        [SerializeField] InputActionAsset inputActions;
+        [SerializeField] string pauseActionName = "Player/Pause";
+        [SerializeField] bool allowPause = true;
 
         public GameState CurrentState { get; private set; }
         public bool IsPlaying => CurrentState == GameState.Playing;
         public event Action<GameState, GameState> StateChanged;
 
+        InputAction pauseAction;
+
         void Awake()
         {
+            ResolvePauseAction();
             CurrentState = initialState;
             ApplyTimeScale(CurrentState);
+        }
+
+        void OnEnable()
+        {
+            pauseAction?.Enable();
+        }
+
+        void OnDisable()
+        {
+            pauseAction?.Disable();
+        }
+
+        void Update()
+        {
+            if (allowPause && pauseAction != null && pauseAction.WasPressedThisFrame())
+                TogglePause();
         }
 
         void OnDestroy()
@@ -45,6 +68,38 @@ namespace ExtraterrestrialExhaust.Core
         public void PauseGame() => TrySetState(GameState.Paused);
         public void ResumeGame() => TrySetState(GameState.Playing);
         public void EndGame() => TrySetState(GameState.GameOver);
+
+        public void TogglePause()
+        {
+            if (CurrentState == GameState.Playing)
+                PauseGame();
+            else if (CurrentState == GameState.Paused)
+                ResumeGame();
+        }
+
+        /// <summary>
+        /// Editor-generated scenes bind the shared Input System asset here so
+        /// pause remains a project-level flow concern rather than a keyboard
+        /// lookup hidden inside the state machine.
+        /// </summary>
+        public void ConfigureInputAsset(InputActionAsset asset, string actionName = "Player/Pause")
+        {
+            if (pauseAction != null)
+                pauseAction.Disable();
+
+            inputActions = asset;
+            pauseActionName = actionName;
+            ResolvePauseAction();
+            if (isActiveAndEnabled)
+                pauseAction?.Enable();
+        }
+
+        void ResolvePauseAction()
+        {
+            pauseAction = inputActions != null
+                ? inputActions.FindAction(pauseActionName, false)
+                : null;
+        }
 
         void ApplyTimeScale(GameState state)
         {

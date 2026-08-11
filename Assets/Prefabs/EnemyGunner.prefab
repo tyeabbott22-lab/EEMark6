@@ -104,13 +104,13 @@ GameObject:
   - component: {fileID: 6535076997974277917}
   - component: {fileID: 4438453854456393944}
   - component: {fileID: 1349090994070017921}
-  - component: {fileID: 480658875923039310}
   - component: {fileID: 2350252198390172321}
   - component: {fileID: 4788798763645463918}
   - component: {fileID: 4113744527410234587}
   - component: {fileID: 5744559809413890993}
   - component: {fileID: 7000646251338252815}
   - component: {fileID: 4374971525420444491}
+  - component: {fileID: 8133764985460096379}
   - component: {fileID: 407800770754282219}
   m_Layer: 0
   m_Name: EnemyGunner
@@ -230,7 +230,7 @@ MonoBehaviour:
   wakeDistance: 6
   wakeDuration: 1.35
   attackRange: 7
-  chaseSpeed: 2
+  chaseSpeed: 2.7
   target: {fileID: 0}
   wallTag: Wall
   wallBuffer: 0.03
@@ -249,25 +249,10 @@ MonoBehaviour:
   orbitWhileAttacking: 1
   orbitRadius: 1.5
   orbitMoveSpeed: 2
-  orbitAngularSpeed: 100
+  orbitAngularSpeed: 135
   orbitDirection: 1
-  faceTurnSpeed: 5
+  faceTurnSpeed: 7.4
   keepSpriteUpright: 1
---- !u!114 &480658875923039310
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1505159076451898056}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7aeab605e57945b449d11996045ff10a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: ExtraterrestrialExhaust.Runtime::ExtraterrestrialExhaust.Enemy.EnemyContactDamage
-  damage: 1
-  cooldown: 0.75
-  knockback: 8
 --- !u!114 &2350252198390172321
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -296,9 +281,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: ExtraterrestrialExhaust.Runtime::ExtraterrestrialExhaust.Enemy.EnemyWeapon
   projectilePrefab: {fileID: 8335205200750898339, guid: 0f75bc740062bf24fa349acba5d18d38, type: 3}
   firePoint: {fileID: 4802847836105849160}
-  fireCooldown: 1.25
+  fireCooldown: 0.5
   attackRange: 7
-  projectileSpeed: 45
+  projectileSpeed: 9.5
   projectileKnockback: 2.5
   projectileTint: {r: 0.05, g: 1, b: 0.16, a: 1}
   target: {fileID: 0}
@@ -546,6 +531,24 @@ MonoBehaviour:
   showOnHitDuration: 0.6
   fadeSpeed: 6
   rotationSpeed: 90
+--- !u!114 &8133764985460096379
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1505159076451898056}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c68d4e5f7a8344c6a3c11b7d9e2f0a81, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ExtraterrestrialExhaust.Runtime::ExtraterrestrialExhaust.Enemy.EnemyWakePresentation
+  wakeLine: {fileID: 0}
+  chargingColor: {r: 0.45, g: 0.1, b: 1, a: 0.22}
+  readyColor: {r: 0.08, g: 1, b: 0.34, a: 0.9}
+  minWidth: 0.014
+  maxWidth: 0.11
+  sortingOrder: 16
 --- !u!114 &407800770754282219
 MonoBehaviour:
   m_ObjectHideFlags: 0

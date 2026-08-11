@@ -110,6 +110,7 @@ GameObject:
   - component: {fileID: 7017483417484020897}
   - component: {fileID: 5644033262398542700}
   - component: {fileID: 7137304193204804403}
+  - component: {fileID: 8461192364777570676}
   - component: {fileID: 6118973959935921239}
   m_Layer: 0
   m_Name: EnemyMelee
@@ -228,7 +229,7 @@ MonoBehaviour:
   wakeDistance: 6
   wakeDuration: 1.35
   attackRange: 0.8
-  chaseSpeed: 3
+  chaseSpeed: 2.8
   target: {fileID: 0}
   wallTag: Wall
   wallBuffer: 0.03
@@ -249,7 +250,7 @@ MonoBehaviour:
   orbitMoveSpeed: 2
   orbitAngularSpeed: 100
   orbitDirection: 1
-  faceTurnSpeed: 5
+  faceTurnSpeed: 7.6
   keepSpriteUpright: 1
 --- !u!114 &77499968659203883
 MonoBehaviour:
@@ -264,8 +265,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: ExtraterrestrialExhaust.Runtime::ExtraterrestrialExhaust.Enemy.EnemyContactDamage
   damage: 1
-  cooldown: 0.75
-  knockback: 8
+  cooldown: 0.64
+  knockback: 9
 --- !u!114 &3834188701432701328
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -535,6 +536,24 @@ MonoBehaviour:
   showOnHitDuration: 0.66
   fadeSpeed: 6
   rotationSpeed: 270
+--- !u!114 &8461192364777570676
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7141126235640449532}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c68d4e5f7a8344c6a3c11b7d9e2f0a81, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ExtraterrestrialExhaust.Runtime::ExtraterrestrialExhaust.Enemy.EnemyWakePresentation
+  wakeLine: {fileID: 0}
+  chargingColor: {r: 0.45, g: 0.1, b: 1, a: 0.22}
+  readyColor: {r: 0.08, g: 1, b: 0.34, a: 0.9}
+  minWidth: 0.014
+  maxWidth: 0.11
+  sortingOrder: 16
 --- !u!114 &6118973959935921239
 MonoBehaviour:
   m_ObjectHideFlags: 0

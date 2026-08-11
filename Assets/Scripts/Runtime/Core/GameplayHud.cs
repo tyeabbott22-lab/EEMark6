@@ -66,6 +66,12 @@ namespace ExtraterrestrialExhaust.Core
                 return;
 
             int score = scoreSystem ? scoreSystem.CurrentScore : 0;
+            if (gameState && gameState.CurrentState == GameState.Paused)
+            {
+                statusLabel.text = $"SCORE  {score:0000}\nPAUSED  PRESS ESC TO RESUME";
+                return;
+            }
+
             if (gameState && gameState.CurrentState == GameState.GameOver)
             {
                 statusLabel.text = $"SCORE  {score:0000}\nEXTRACTION COMPLETE";

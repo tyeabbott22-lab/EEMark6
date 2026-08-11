@@ -51,7 +51,7 @@ namespace ExtraterrestrialExhaust.Editor
             PlayerProjectile projectilePrefab = CreateProjectilePrefab();
 
             CreateBackdrop();
-            CreateGameStateMachine();
+            CreateGameStateMachine(inputAsset);
             new GameObject("Score System").AddComponent<ScoreSystem>();
             PlayerCharacter player = CreatePlayer(inputAsset, projectilePrefab);
             CreateCamera(player);
@@ -101,10 +101,11 @@ namespace ExtraterrestrialExhaust.Editor
             renderer.color = new Color(0.55f, 0.62f, 0.8f, 1f);
         }
 
-        static void CreateGameStateMachine()
+        static void CreateGameStateMachine(InputActionAsset inputAsset)
         {
             GameObject game = new GameObject("Game State");
             GameStateMachine stateMachine = game.AddComponent<GameStateMachine>();
+            stateMachine.ConfigureInputAsset(inputAsset);
             SerializedObject serialized = new SerializedObject(stateMachine);
             serialized.FindProperty("initialState").enumValueIndex = (int)GameState.Playing;
             serialized.ApplyModifiedPropertiesWithoutUndo();
