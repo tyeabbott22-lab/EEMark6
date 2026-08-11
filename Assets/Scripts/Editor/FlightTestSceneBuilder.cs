@@ -51,7 +51,7 @@ namespace ExtraterrestrialExhaust.Editor
             PlayerProjectile projectilePrefab = CreateProjectilePrefab();
 
             Transform backdrop = CreateBackdrop();
-            CreateGameStateMachine(inputAsset);
+            GameStateMachine gameState = CreateGameStateMachine(inputAsset);
             new GameObject("Score System").AddComponent<ScoreSystem>();
             PlayerCharacter player = CreatePlayer(inputAsset, projectilePrefab);
             CreateCamera(player, backdrop);
@@ -73,8 +73,11 @@ namespace ExtraterrestrialExhaust.Editor
                 EnemySpritePath,
                 EnemyIdleSpritePath,
                 EnemyDefeatSpritePath);
-            CreateEncounterAndExit(meleeEnemy, gunnerEnemy);
-            CreateHud();
+            SliceObjectiveDirector objectiveDirector = CreateEncounterAndExit(
+                gameState,
+                meleeEnemy,
+                gunnerEnemy);
+            CreateHud(objectiveDirector);
 
             CreateArenaBoundaries();
 
@@ -102,7 +105,7 @@ namespace ExtraterrestrialExhaust.Editor
             return backdrop.transform;
         }
 
-        static void CreateGameStateMachine(InputActionAsset inputAsset)
+        static GameStateMachine CreateGameStateMachine(InputActionAsset inputAsset)
         {
             GameObject game = new GameObject("Game State");
             GameStateMachine stateMachine = game.AddComponent<GameStateMachine>();
@@ -113,6 +116,7 @@ namespace ExtraterrestrialExhaust.Editor
             serialized.FindProperty("enemyDefeatTimeScale").floatValue = 0.16f;
             serialized.FindProperty("enemyDefeatSlowdownDuration").floatValue = 0.07f;
             serialized.ApplyModifiedPropertiesWithoutUndo();
+            return stateMachine;
         }
 
         static PlayerCharacter CreatePlayer(InputActionAsset inputAsset, PlayerProjectile projectilePrefab)
@@ -509,7 +513,8 @@ namespace ExtraterrestrialExhaust.Editor
             serialized.ApplyModifiedPropertiesWithoutUndo();
         }
 
-        static void CreateEncounterAndExit(
+        static SliceObjectiveDirector CreateEncounterAndExit(
+            GameStateMachine gameState,
             EnemyController meleeEnemy,
             EnemyController gunnerEnemy)
         {
@@ -569,9 +574,20 @@ namespace ExtraterrestrialExhaust.Editor
             serializedPortal.FindProperty("ringSegments").intValue = 80;
             serializedPortal.ApplyModifiedPropertiesWithoutUndo();
             CreateSquareOutline(exit.transform, Vector2.one * 0.9f, new Color(0.2f, 1f, 0.85f));
+
+            GameObject objectiveObject = new GameObject("Slice Objective Flow");
+            SliceObjectiveDirector objectiveDirector = objectiveObject.AddComponent<SliceObjectiveDirector>();
+            SerializedObject serializedObjective = new SerializedObject(objectiveDirector);
+            serializedObjective.FindProperty("encounter").objectReferenceValue = encounter;
+            serializedObjective.FindProperty("energyKey").objectReferenceValue = energyKey;
+            serializedObjective.FindProperty("gate").objectReferenceValue = energyGate;
+            serializedObjective.FindProperty("exit").objectReferenceValue = levelExit;
+            serializedObjective.FindProperty("gameState").objectReferenceValue = gameState;
+            serializedObjective.ApplyModifiedPropertiesWithoutUndo();
+            return objectiveDirector;
         }
 
-        static void CreateHud()
+        static void CreateHud(SliceObjectiveDirector objectiveDirector)
         {
             GameObject canvasObject = new GameObject("Gameplay HUD");
             Canvas canvas = canvasObject.AddComponent<Canvas>();
@@ -599,6 +615,7 @@ namespace ExtraterrestrialExhaust.Editor
             GameplayHud hud = canvasObject.AddComponent<GameplayHud>();
             SerializedObject serialized = new SerializedObject(hud);
             serialized.FindProperty("statusLabel").objectReferenceValue = label;
+            serialized.FindProperty("objectiveDirector").objectReferenceValue = objectiveDirector;
             serialized.ApplyModifiedPropertiesWithoutUndo();
         }
 

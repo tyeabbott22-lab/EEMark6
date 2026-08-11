@@ -14,6 +14,7 @@ namespace ExtraterrestrialExhaust.Core
         [SerializeField] EnergyKey energyKey;
         [SerializeField] LevelExit exit;
         [SerializeField] GameStateMachine gameState;
+        [SerializeField] SliceObjectiveDirector objectiveDirector;
 
         float nextRefreshTime;
 
@@ -29,6 +30,8 @@ namespace ExtraterrestrialExhaust.Core
                 exit = FindFirstObjectByType<LevelExit>();
             if (!gameState)
                 gameState = FindFirstObjectByType<GameStateMachine>();
+            if (!objectiveDirector)
+                objectiveDirector = FindFirstObjectByType<SliceObjectiveDirector>();
         }
 
         void OnEnable()
@@ -37,6 +40,8 @@ namespace ExtraterrestrialExhaust.Core
                 scoreSystem.ScoreChanged += HandleScoreChanged;
             if (gameState)
                 gameState.StateChanged += HandleStateChanged;
+            if (objectiveDirector)
+                objectiveDirector.ObjectiveChanged += HandleObjectiveChanged;
             Refresh();
         }
 
@@ -46,6 +51,8 @@ namespace ExtraterrestrialExhaust.Core
                 scoreSystem.ScoreChanged -= HandleScoreChanged;
             if (gameState)
                 gameState.StateChanged -= HandleStateChanged;
+            if (objectiveDirector)
+                objectiveDirector.ObjectiveChanged -= HandleObjectiveChanged;
         }
 
         void Update()
@@ -59,6 +66,7 @@ namespace ExtraterrestrialExhaust.Core
 
         void HandleScoreChanged(int score, int awarded, ScoreReason reason) => Refresh();
         void HandleStateChanged(GameState previous, GameState next) => Refresh();
+        void HandleObjectiveChanged(SliceObjectiveState previous, SliceObjectiveState next) => Refresh();
 
         void Refresh()
         {
@@ -78,25 +86,22 @@ namespace ExtraterrestrialExhaust.Core
                 return;
             }
 
-            string objective = "CLEAR ENCOUNTER";
-            if (exit && exit.IsUnlocked)
-            {
-                objective = "REACH EXTRACTION";
-            }
-            else if (energyKey && energyKey.IsCollected)
-            {
-                objective = "OPEN EXTRACTION GATE";
-            }
-            else if (energyKey && energyKey.IsAvailable)
-            {
-                objective = "COLLECT ENERGY KEY";
-            }
-            else if (encounter && encounter.IsComplete)
-            {
-                objective = "COLLECT ENERGY KEY";
-            }
+            string objective = objectiveDirector
+                ? objectiveDirector.CurrentObjective
+                : ResolveFallbackObjective();
 
             statusLabel.text = $"SCORE  {score:0000}\nOBJECTIVE  {objective}";
+        }
+
+        string ResolveFallbackObjective()
+        {
+            if (exit && exit.IsUnlocked)
+                return "REACH EXTRACTION";
+            if (energyKey && energyKey.IsCollected)
+                return "OPEN EXTRACTION GATE";
+            if (energyKey && energyKey.IsAvailable)
+                return "COLLECT ENERGY KEY";
+            return "CLEAR ENCOUNTER";
         }
     }
 }

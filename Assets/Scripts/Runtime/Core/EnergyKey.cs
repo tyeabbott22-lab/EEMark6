@@ -1,9 +1,19 @@
+using System;
 using UnityEngine;
 using ExtraterrestrialExhaust.Enemy;
 using ExtraterrestrialExhaust.Player;
 
 namespace ExtraterrestrialExhaust.Core
 {
+    public enum EnergyKeyState
+    {
+        AttachedToEnemy,
+        OrbitingPlayer,
+        FollowingPlayer,
+        FlyingToGate,
+        Consumed
+    }
+
     /// <summary>
     /// EE5-style objective key: orbit an encounter carrier, release when that
     /// carrier is defeated, orbit the player, follow the player, then fly into
@@ -14,15 +24,6 @@ namespace ExtraterrestrialExhaust.Core
     [RequireComponent(typeof(Rigidbody2D))]
     public sealed class EnergyKey : MonoBehaviour
     {
-        enum KeyState
-        {
-            AttachedToEnemy,
-            OrbitingPlayer,
-            FollowingPlayer,
-            FlyingToGate,
-            Consumed
-        }
-
         [Header("References")]
         [SerializeField] EncounterController requiredEncounter;
         [SerializeField] EnemyController enemyTarget;
@@ -58,7 +59,7 @@ namespace ExtraterrestrialExhaust.Core
         [SerializeField] Color lockedColor = new Color(0.45f, 0.45f, 0.5f, 0.55f);
         [SerializeField] Color availableColor = new Color(1f, 0.85f, 0.15f, 1f);
 
-        KeyState state = KeyState.AttachedToEnemy;
+        EnergyKeyState state = EnergyKeyState.AttachedToEnemy;
         Rigidbody2D body;
         Collider2D keyCollider;
         SpriteRenderer spriteRenderer;
@@ -70,8 +71,10 @@ namespace ExtraterrestrialExhaust.Core
         float currentRadiusX;
         float currentRadiusY;
 
-        public bool IsAvailable => state == KeyState.OrbitingPlayer;
-        public bool IsCollected => state == KeyState.FollowingPlayer || state == KeyState.FlyingToGate;
+        public EnergyKeyState State => state;
+        public bool IsAvailable => state == EnergyKeyState.OrbitingPlayer;
+        public bool IsCollected => state == EnergyKeyState.FollowingPlayer || state == EnergyKeyState.FlyingToGate;
+        public event Action<EnergyKeyState, EnergyKeyState> StateChanged;
 
         void Reset() => GetComponent<Collider2D>().isTrigger = true;
 
@@ -100,7 +103,7 @@ namespace ExtraterrestrialExhaust.Core
         {
             ResolvePlayer();
 
-            if (state != KeyState.Consumed)
+            if (state != EnergyKeyState.Consumed)
             {
                 transform.Rotate(0f, 0f, rotateSpeed * Time.deltaTime);
                 float pulse = 1f + Mathf.Sin(Time.time * pulseSpeed) * pulseAmount;
@@ -109,19 +112,19 @@ namespace ExtraterrestrialExhaust.Core
 
             switch (state)
             {
-                case KeyState.AttachedToEnemy:
+                case EnergyKeyState.AttachedToEnemy:
                     FollowEnemyOrbit();
                     if (CanReleaseFromEnemy())
                         ReleaseFromEnemy();
                     break;
-                case KeyState.OrbitingPlayer:
+                case EnergyKeyState.OrbitingPlayer:
                     FollowPlayerOrbit();
                     break;
-                case KeyState.FollowingPlayer:
+                case EnergyKeyState.FollowingPlayer:
                     FollowPlayer();
                     CheckGate();
                     break;
-                case KeyState.FlyingToGate:
+                case EnergyKeyState.FlyingToGate:
                     FlyToGate();
                     break;
             }
@@ -188,7 +191,7 @@ namespace ExtraterrestrialExhaust.Core
 
             if (Vector2.Distance(player.transform.position, targetGate.transform.position) <= gateUnlockRange)
             {
-                state = KeyState.FlyingToGate;
+                SetState(EnergyKeyState.FlyingToGate);
                 keyCollider.enabled = false;
                 UpdateAvailabilityVisual();
             }
@@ -210,13 +213,13 @@ namespace ExtraterrestrialExhaust.Core
 
             targetGate.DisableGate();
             FindFirstObjectByType<ScoreSystem>()?.AddScore(50, ScoreReason.GateDeactivated);
-            state = KeyState.Consumed;
+            SetState(EnergyKeyState.Consumed);
             Destroy(gameObject);
         }
 
         void ReleaseFromEnemy()
         {
-            state = KeyState.OrbitingPlayer;
+            SetState(EnergyKeyState.OrbitingPlayer);
             orbitCenter = player ? (Vector2)player.transform.position : body.position;
 
             Vector2 fromPlayer = body.position - orbitCenter;
@@ -237,7 +240,7 @@ namespace ExtraterrestrialExhaust.Core
             {
                 currentRadiusX = orbitRadiusX;
                 currentRadiusY = orbitRadiusY;
-                phase = Random.Range(0f, Mathf.PI * 2f);
+                phase = UnityEngine.Random.Range(0f, Mathf.PI * 2f);
             }
 
             keyCollider.enabled = true;
@@ -246,7 +249,7 @@ namespace ExtraterrestrialExhaust.Core
 
         void TryCollect(Collider2D other)
         {
-            if (state != KeyState.OrbitingPlayer)
+            if (state != EnergyKeyState.OrbitingPlayer)
                 return;
 
             PlayerCharacter otherPlayer = other.GetComponentInParent<PlayerCharacter>();
@@ -257,7 +260,7 @@ namespace ExtraterrestrialExhaust.Core
                 return;
 
             player = otherPlayer;
-            state = KeyState.FollowingPlayer;
+            SetState(EnergyKeyState.FollowingPlayer);
             keyCollider.enabled = false;
             FindFirstObjectByType<ScoreSystem>()?.AddScore(50, ScoreReason.ObjectiveCollected);
             UpdateAvailabilityVisual();
@@ -280,10 +283,10 @@ namespace ExtraterrestrialExhaust.Core
 
         void UpdateAvailabilityVisual()
         {
-            bool available = state == KeyState.OrbitingPlayer || state == KeyState.FollowingPlayer;
+            bool available = state == EnergyKeyState.OrbitingPlayer || state == EnergyKeyState.FollowingPlayer;
             Color color = available ? availableColor : lockedColor;
             if (keyCollider)
-                keyCollider.enabled = state == KeyState.OrbitingPlayer;
+                keyCollider.enabled = state == EnergyKeyState.OrbitingPlayer;
             if (spriteRenderer)
                 spriteRenderer.color = color;
             if (line)
@@ -291,6 +294,16 @@ namespace ExtraterrestrialExhaust.Core
                 line.startColor = color;
                 line.endColor = color;
             }
+        }
+
+        void SetState(EnergyKeyState nextState)
+        {
+            if (state == nextState)
+                return;
+
+            EnergyKeyState previousState = state;
+            state = nextState;
+            StateChanged?.Invoke(previousState, nextState);
         }
     }
 }
