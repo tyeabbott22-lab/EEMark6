@@ -31,6 +31,7 @@ namespace ExtraterrestrialExhaust.Core
             new Keyframe(1f, 1f, 2.6f, 0f));
         [SerializeField] AnimationCurve angularProgress = null;
         LineRenderer exitRenderer;
+        ExtractionPortalPresentation portalPresentation;
         bool capturing;
         public bool IsCapturing => capturing;
         // EE5's door state is the extraction gate. Once the delivered key has
@@ -47,6 +48,7 @@ namespace ExtraterrestrialExhaust.Core
             if (!gameState)
                 gameState = FindFirstObjectByType<GameStateMachine>();
             exitRenderer = GetComponent<LineRenderer>();
+            portalPresentation = GetComponent<ExtractionPortalPresentation>();
             UpdateVisual();
         }
 
@@ -91,6 +93,7 @@ namespace ExtraterrestrialExhaust.Core
         IEnumerator CapturePlayer(PlayerCharacter player)
         {
             capturing = true;
+            portalPresentation?.BeginCapture();
             player.FlightState.TrySetState(PlayerFlightState.Scripted);
             PlayerCameraFollow.Instance?.Shake(0.12f, captureDuration);
 
@@ -170,11 +173,14 @@ namespace ExtraterrestrialExhaust.Core
                     renderers[i].color = color;
                 }
 
+                portalPresentation?.SetCaptureProgress(t);
+
                 yield return null;
             }
 
             if (!player)
             {
+                portalPresentation?.CancelCapture();
                 capturing = false;
                 yield break;
             }
@@ -189,6 +195,8 @@ namespace ExtraterrestrialExhaust.Core
                 body.simulated = true;
             }
 
+            portalPresentation?.SetCaptureProgress(1f);
+            portalPresentation?.CompleteCapture();
             player.FlightState.TrySetState(PlayerFlightState.Disabled);
             FindFirstObjectByType<ScoreSystem>()?.AddScore(500, ScoreReason.LevelCompleted);
             gameState?.EndGame();

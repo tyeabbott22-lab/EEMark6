@@ -54,6 +54,42 @@ namespace ExtraterrestrialExhaust.Core
         Sprite haloSprite;
         Sprite[] portalFrames;
         float portalTime;
+        float captureProgress;
+        float captureCollapse;
+        float captureCollapseTarget;
+
+        /// <summary>Starts the authored extraction handoff from gameplay into the portal.</summary>
+        public void BeginCapture()
+        {
+            captureProgress = 0f;
+            captureCollapse = 0f;
+            captureCollapseTarget = 0f;
+            if (inwardParticles)
+                inwardParticles.Play();
+            if (rimParticles)
+                rimParticles.Play();
+        }
+
+        /// <summary>Feeds the player spiral progress into the portal presentation.</summary>
+        public void SetCaptureProgress(float progress)
+        {
+            captureProgress = Mathf.Clamp01(progress);
+        }
+
+        /// <summary>Begins the brief portal collapse after the player is absorbed.</summary>
+        public void CompleteCapture()
+        {
+            captureProgress = 1f;
+            captureCollapseTarget = 1f;
+        }
+
+        /// <summary>Restores the idle portal if the capture is interrupted.</summary>
+        public void CancelCapture()
+        {
+            captureProgress = 0f;
+            captureCollapse = 0f;
+            captureCollapseTarget = 0f;
+        }
 
         void Awake()
         {
@@ -94,10 +130,16 @@ namespace ExtraterrestrialExhaust.Core
                 return;
 
             float stateIntensity = levelExit.IsCapturing
-                ? 1.35f
+                ? Mathf.Lerp(1.35f, 2f, Mathf.SmoothStep(0f, 1f, captureProgress))
                 : levelExit.IsUnlocked ? 1f : 0.35f;
             float pulse = 0.94f + Mathf.Sin(Time.time * pulseSpeed) * 0.06f;
             float dt = Time.deltaTime;
+            captureCollapse = Mathf.MoveTowards(
+                captureCollapse,
+                captureCollapseTarget,
+                dt * 5.5f);
+            float collapseScale = Mathf.Lerp(1f, 0.06f, Mathf.SmoothStep(0f, 1f, captureCollapse));
+            generatedRoot.localScale = Vector3.one * collapseScale;
 
             // Separate stream rotation keeps the silhouette alive without
             // making the whole portal look like one rigid spinning ring.
