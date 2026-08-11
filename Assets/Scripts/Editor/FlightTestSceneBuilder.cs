@@ -478,6 +478,20 @@ namespace ExtraterrestrialExhaust.Editor
             serializedProjectile.FindProperty("nearMissDistance").floatValue = 1.35f;
             serializedProjectile.ApplyModifiedPropertiesWithoutUndo();
 
+            ProjectileSpriteTrailPresentation spriteTrail =
+                projectile.GetComponent<ProjectileSpriteTrailPresentation>();
+            if (!spriteTrail)
+                spriteTrail = projectile.AddComponent<ProjectileSpriteTrailPresentation>();
+            SerializedObject serializedSpriteTrail = new SerializedObject(spriteTrail);
+            serializedSpriteTrail.FindProperty("enemyOnly").boolValue = true;
+            serializedSpriteTrail.FindProperty("maxGhosts").intValue = 7;
+            serializedSpriteTrail.FindProperty("spawnInterval").floatValue = 0.025f;
+            serializedSpriteTrail.FindProperty("ghostLifetime").floatValue = 0.18f;
+            serializedSpriteTrail.FindProperty("startAlpha").floatValue = 0.45f;
+            serializedSpriteTrail.FindProperty("endScale").floatValue = 0.72f;
+            serializedSpriteTrail.FindProperty("finalGhostAlphaBonus").floatValue = 0.2f;
+            serializedSpriteTrail.ApplyModifiedPropertiesWithoutUndo();
+
             SpriteRenderer sprite = projectile.GetComponent<SpriteRenderer>();
             if (!sprite)
                 sprite = projectile.AddComponent<SpriteRenderer>();

@@ -14,6 +14,7 @@ GameObject:
   - component: {fileID: 6673850479548223888}
   - component: {fileID: 8335205200750898339}
   - component: {fileID: 5670916375576476274}
+  - component: {fileID: 7585330112937581999}
   m_Layer: 0
   m_Name: PlayerProjectile
   m_TagString: Untagged
@@ -177,6 +178,13 @@ MonoBehaviour:
   destroyOnUnrecognizedCollision: 1
   team: 0
   enforceEe5Profile: 1
+  maxTrailPoints: 6
+  pointSpacing: 0.03
+  useImpactFade: 1
+  impactFadeTime: 0.08
+  trailStartColor: {r: 1, g: 1, b: 1, a: 1}
+  trailEndColor: {r: 1, g: 0.1, b: 0.04, a: 1}
+  nearMissDistance: 1.35
 --- !u!120 &5670916375576476274
 LineRenderer:
   serializedVersion: 3
@@ -226,9 +234,7 @@ LineRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 20
   m_MaskInteraction: 0
-  m_Positions:
-  - {x: -0.3, y: 0, z: 0}
-  - {x: 0.3, y: 0, z: 0}
+  m_Positions: []
   m_Parameters:
     serializedVersion: 3
     widthMultiplier: 1
@@ -237,7 +243,7 @@ LineRenderer:
       m_Curve:
       - serializedVersion: 3
         time: 0
-        value: 0.08
+        value: 0.01
         inSlope: 0
         outSlope: 0
         tangentMode: 0
@@ -246,7 +252,7 @@ LineRenderer:
         outWeight: 0.33333334
       - serializedVersion: 3
         time: 1
-        value: 0.08
+        value: 0.1
         inSlope: 0
         outSlope: 0
         tangentMode: 0
@@ -286,13 +292,32 @@ LineRenderer:
       m_ColorSpace: -1
       m_NumColorKeys: 2
       m_NumAlphaKeys: 2
-    numCornerVertices: 0
-    numCapVertices: 0
+    numCornerVertices: 4
+    numCapVertices: 8
     alignment: 0
     textureMode: 0
     textureScale: {x: 1, y: 1}
     shadowBias: 0.5
     generateLightingData: 0
-  m_UseWorldSpace: 0
+  m_UseWorldSpace: 1
   m_Loop: 0
   m_ApplyActiveColorSpace: 1
+--- !u!114 &7585330112937581999
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2371473992845854369}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a4236b1fa3de4ac09e309078174430a4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ExtraterrestrialExhaust.Runtime::ExtraterrestrialExhaust.Combat.ProjectileSpriteTrailPresentation
+  enemyOnly: 1
+  maxGhosts: 7
+  spawnInterval: 0.025
+  ghostLifetime: 0.18
+  startAlpha: 0.45
+  endScale: 0.72
+  finalGhostAlphaBonus: 0.2

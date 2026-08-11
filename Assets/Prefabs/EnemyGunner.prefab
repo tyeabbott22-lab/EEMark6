@@ -106,6 +106,7 @@ GameObject:
   - component: {fileID: 1349090994070017921}
   - component: {fileID: 2350252198390172321}
   - component: {fileID: 4788798763645463918}
+  - component: {fileID: 8730172679222820623}
   - component: {fileID: 4113744527410234587}
   - component: {fileID: 5744559809413890993}
   - component: {fileID: 7000646251338252815}
@@ -230,7 +231,7 @@ MonoBehaviour:
   wakeDistance: 6
   wakeDuration: 1.35
   requireLineOfSightToWake: 1
-  wakeSignalDistanceMultiplier: 4
+  wakeSignalDistanceMultiplier: 1
   wakeSignalChargeDuration: 1.15
   wakeSignalChargeDecay: 1.8
   wakeFinalWarningDuration: 0.35
@@ -256,6 +257,8 @@ MonoBehaviour:
   orbitMoveSpeed: 2
   orbitAngularSpeed: 135
   orbitDirection: 1
+  nearMissDistance: 1.65
+  nearMissExitDistance: 2.15
   faceTurnSpeed: 7.4
   keepSpriteUpright: 1
 --- !u!114 &2350252198390172321
@@ -291,8 +294,37 @@ MonoBehaviour:
   projectileSpeed: 9.5
   projectileKnockback: 2.5
   projectileTint: {r: 0.05, g: 1, b: 0.16, a: 1}
+  drawAimTelegraph: 1
+  telegraphDuration: 0.18
+  telegraphMinWidth: 0.018
+  telegraphMaxWidth: 0.085
+  telegraphColor: {r: 0.1, g: 1, b: 0.3, a: 0.5}
+  telegraphSortingOrder: 75
   target: {fileID: 0}
   gameState: {fileID: 0}
+--- !u!114 &8730172679222820623
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1505159076451898056}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d9dcae3aa91f4fbbb1e9abebcb0e6f54, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ExtraterrestrialExhaust.Runtime::ExtraterrestrialExhaust.Enemy.EnemyWeaponPresentation
+  firePoint: {fileID: 4802847836105849160}
+  flashDuration: 0.09
+  flashLength: 0.28
+  flashWidth: 0.095
+  sideFlashLength: 0.18
+  sideFlashWidth: 0.1
+  flashColor: {r: 0.45, g: 1, b: 0.55, a: 1}
+  flashEdgeColor: {r: 0.05, g: 1, b: 0.16, a: 0}
+  sortingOrder: 76
+  cameraShakeStrength: 0.014
+  cameraShakeDuration: 0.04
 --- !u!120 &4113744527410234587
 LineRenderer:
   serializedVersion: 3
@@ -509,8 +541,10 @@ MonoBehaviour:
   - {fileID: 2051820542, guid: 041a3df07bad49d43bdcec0175035f35, type: 3}
   - {fileID: 872174722, guid: 041a3df07bad49d43bdcec0175035f35, type: 3}
   animationFramesPerSecond: 10
+  dormantFramesPerSecond: 8
   wakeFramesPerSecond: 14
   defeatDisplayDuration: 0.3
+  pingPongDormantAnimation: 1
   hideAfterDefeat: 1
 --- !u!114 &4374971525420444491
 MonoBehaviour:

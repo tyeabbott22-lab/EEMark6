@@ -229,7 +229,7 @@ MonoBehaviour:
   wakeDistance: 6
   wakeDuration: 1.35
   requireLineOfSightToWake: 1
-  wakeSignalDistanceMultiplier: 4
+  wakeSignalDistanceMultiplier: 1
   wakeSignalChargeDuration: 1.15
   wakeSignalChargeDecay: 1.8
   wakeFinalWarningDuration: 0.35
@@ -255,6 +255,8 @@ MonoBehaviour:
   orbitMoveSpeed: 2
   orbitAngularSpeed: 100
   orbitDirection: 1
+  nearMissDistance: 1.65
+  nearMissExitDistance: 2.15
   faceTurnSpeed: 7.6
   keepSpriteUpright: 1
 --- !u!114 &77499968659203883
@@ -514,8 +516,10 @@ MonoBehaviour:
   - {fileID: 2051820542, guid: d660255f40e7ac84c9cf9a0d7a78322c, type: 3}
   - {fileID: 872174722, guid: d660255f40e7ac84c9cf9a0d7a78322c, type: 3}
   animationFramesPerSecond: 10
+  dormantFramesPerSecond: 8
   wakeFramesPerSecond: 14
   defeatDisplayDuration: 0.3
+  pingPongDormantAnimation: 0
   hideAfterDefeat: 1
 --- !u!114 &7137304193204804403
 MonoBehaviour:

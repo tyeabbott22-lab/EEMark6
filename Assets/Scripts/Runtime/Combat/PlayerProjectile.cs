@@ -39,6 +39,7 @@ namespace ExtraterrestrialExhaust.Combat
         SpriteRenderer spriteRenderer;
         LineRenderer trailRenderer;
         ProjectileExhaustPresentation exhaustPresentation;
+        ProjectileSpriteTrailPresentation spriteTrailPresentation;
         GameObject owner;
         PlayerCharacter nearMissTarget;
         Vector2 direction;
@@ -49,6 +50,8 @@ namespace ExtraterrestrialExhaust.Combat
         bool dying;
         Material trailMaterial;
         readonly List<Vector3> trailPoints = new();
+
+        public ProjectileTeam Team => team;
 
         void Awake()
         {
@@ -61,6 +64,9 @@ namespace ExtraterrestrialExhaust.Combat
             exhaustPresentation = GetComponent<ProjectileExhaustPresentation>();
             if (!exhaustPresentation)
                 exhaustPresentation = gameObject.AddComponent<ProjectileExhaustPresentation>();
+            spriteTrailPresentation = GetComponent<ProjectileSpriteTrailPresentation>();
+            if (!spriteTrailPresentation)
+                spriteTrailPresentation = gameObject.AddComponent<ProjectileSpriteTrailPresentation>();
             ConfigureTrail();
             body.gravityScale = 0f;
             body.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
@@ -266,6 +272,7 @@ namespace ExtraterrestrialExhaust.Combat
                 projectileCollider.enabled = false;
             if (spriteRenderer)
                 spriteRenderer.enabled = false;
+            spriteTrailPresentation?.FinishTrail();
             exhaustPresentation?.StopExhaust();
             AddTrailPoint(transform.position);
             StartTrailFadeOrDestroy();
@@ -284,6 +291,7 @@ namespace ExtraterrestrialExhaust.Combat
                 projectileCollider.enabled = false;
             if (spriteRenderer)
                 spriteRenderer.enabled = false;
+            spriteTrailPresentation?.FinishTrail();
             exhaustPresentation?.StopExhaust();
             AddTrailPoint(transform.position);
             StartTrailFadeOrDestroy();
