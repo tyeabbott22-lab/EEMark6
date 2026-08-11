@@ -77,6 +77,8 @@ namespace ExtraterrestrialExhaust.Core
         public EnergyKeyState State => state;
         public bool IsAvailable => state == EnergyKeyState.OrbitingPlayer;
         public bool IsCollected => state == EnergyKeyState.FollowingPlayer || state == EnergyKeyState.FlyingToGate;
+        public PlayerCharacter CurrentPlayer => player;
+        public EnergyGate TargetGate => targetGate;
         public event Action<EnergyKeyState, EnergyKeyState> StateChanged;
 
         void Reset() => GetComponent<Collider2D>().isTrigger = true;

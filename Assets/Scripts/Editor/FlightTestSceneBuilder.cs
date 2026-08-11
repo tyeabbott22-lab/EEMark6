@@ -661,6 +661,14 @@ namespace ExtraterrestrialExhaust.Editor
             serializedGate.FindProperty("liftDistance").floatValue = 12f;
             serializedGate.FindProperty("liftSpeed").floatValue = 6f;
             serializedGate.ApplyModifiedPropertiesWithoutUndo();
+            EnergyGatePresentation gatePresentation = gate.AddComponent<EnergyGatePresentation>();
+            SerializedObject serializedGatePresentation = new SerializedObject(gatePresentation);
+            serializedGatePresentation.FindProperty("unlockColor").colorValue =
+                new Color(0.2f, 1f, 0.85f, 1f);
+            serializedGatePresentation.FindProperty("burstScale").floatValue = 1.35f;
+            serializedGatePresentation.FindProperty("cameraShakeStrength").floatValue = 0.08f;
+            serializedGatePresentation.FindProperty("cameraShakeDuration").floatValue = 0.24f;
+            serializedGatePresentation.ApplyModifiedPropertiesWithoutUndo();
             CreateSquareOutline(gate.transform, new Vector2(0.35f, 3.8f), new Color(0.2f, 0.55f, 1f));
             CreateGateVisual(gate.transform);
 
@@ -680,6 +688,17 @@ namespace ExtraterrestrialExhaust.Editor
             serializedKey.FindProperty("releasePulseDuration").floatValue = Ee5SliceProfile.KeyReleasePulseDuration;
             serializedKey.FindProperty("releasePulseScale").floatValue = Ee5SliceProfile.KeyReleasePulseScale;
             serializedKey.ApplyModifiedPropertiesWithoutUndo();
+            EnergyKeyPresentation keyPresentation = key.AddComponent<EnergyKeyPresentation>();
+            SerializedObject serializedKeyPresentation = new SerializedObject(keyPresentation);
+            serializedKeyPresentation.FindProperty("availableColor").colorValue =
+                new Color(1f, 0.85f, 0.15f, 1f);
+            serializedKeyPresentation.FindProperty("tetherColor").colorValue =
+                new Color(1f, 0.92f, 0.3f, 0.7f);
+            serializedKeyPresentation.FindProperty("tetherWidth").floatValue = 0.035f;
+            serializedKeyPresentation.FindProperty("tetherPulseSpeed").floatValue = 7f;
+            serializedKeyPresentation.FindProperty("tetherMinAlpha").floatValue = 0.2f;
+            serializedKeyPresentation.FindProperty("tetherMaxAlpha").floatValue = 0.72f;
+            serializedKeyPresentation.ApplyModifiedPropertiesWithoutUndo();
             SpriteRenderer keySprite = key.AddComponent<SpriteRenderer>();
             keySprite.sprite = LoadFirstSprite(
                 EnergyKeySpriteAssetPath,
