@@ -31,6 +31,8 @@ namespace ExtraterrestrialExhaust.Player
         [SerializeField] Color boostedExhaustStartColor = new Color(0.75f, 1f, 1f, 1f);
         [SerializeField] Color boostedExhaustEndColor = new Color(0.12f, 0.4f, 1f, 0f);
 
+        [Header("Exhaust Anchors")]
+        [SerializeField, Min(0f)] float exhaustSideOffset = 0.28f;
         [SerializeField, Min(0f)] float exhaustLength = 0.55f;
         [SerializeField, Min(0f)] float turnExhaustAmount = 1f;
         [SerializeField] Vector2 squashScale = new Vector2(1.25f, 0.75f);
@@ -41,6 +43,10 @@ namespace ExtraterrestrialExhaust.Player
         ParticleSystem leftExhaustParticles;
         ParticleSystem rightExhaustParticles;
         Vector3 visualBaseScale;
+        Vector3 leftExhaustBaseLocalPosition;
+        Vector3 rightExhaustBaseLocalPosition;
+        bool exhaustBaseFacingRight = true;
+        bool exhaustAnchorsCached;
         float squashTimer;
         Sprite[] currentFrames;
         int frameIndex;
@@ -56,10 +62,12 @@ namespace ExtraterrestrialExhaust.Player
             visual = visual ? visual : transform;
             visualRenderer = visualRenderer ? visualRenderer : visual.GetComponent<SpriteRenderer>();
             visualBaseScale = visual.localScale;
-            EnsureExhaust(ref leftExhaust, "Left Exhaust", -0.28f);
-            EnsureExhaust(ref rightExhaust, "Right Exhaust", 0.28f);
+            EnsureExhaust(ref leftExhaust, "Left Exhaust", -Mathf.Abs(exhaustSideOffset));
+            EnsureExhaust(ref rightExhaust, "Right Exhaust", Mathf.Abs(exhaustSideOffset));
             EnsureParticleExhaust(ref leftExhaustParticles, "Left Exhaust Particles", leftExhaust);
             EnsureParticleExhaust(ref rightExhaustParticles, "Right Exhaust Particles", rightExhaust);
+            CacheExhaustAnchors();
+            SyncExhaustAnchors();
         }
 
         void OnEnable()
@@ -87,6 +95,8 @@ namespace ExtraterrestrialExhaust.Player
 
         void Update()
         {
+            SyncExhaustAnchors();
+
             if (stateMachine && !stateMachine.AcceptsPlayerInput)
             {
                 squashTimer = 0f;
@@ -163,6 +173,8 @@ namespace ExtraterrestrialExhaust.Player
         public void ResetPresentation()
         {
             squashTimer = 0f;
+            ResetSpriteAnimation();
+            SyncExhaustAnchors();
             AnimateExhaust(leftExhaust, leftExhaustParticles, 0f, false);
             AnimateExhaust(rightExhaust, rightExhaustParticles, 0f, false);
             UpdateThrustAudio(false);
@@ -183,7 +195,43 @@ namespace ExtraterrestrialExhaust.Player
             // event on the motor prevents update-order drift between input and
             // presentation when a flip is triggered by a non-keyboard device.
             squashTimer = squashDuration;
+            SyncExhaustAnchors();
             RefreshExhaustPresentation();
+        }
+
+        void CacheExhaustAnchors()
+        {
+            leftExhaustBaseLocalPosition = leftExhaust
+                ? leftExhaust.localPosition
+                : Vector3.zero;
+            rightExhaustBaseLocalPosition = rightExhaust
+                ? rightExhaust.localPosition
+                : Vector3.zero;
+            exhaustBaseFacingRight = !flightMotor || flightMotor.FacingRight;
+            exhaustAnchorsCached = true;
+        }
+
+        void SyncExhaustAnchors()
+        {
+            if (!exhaustAnchorsCached || !flightMotor)
+                return;
+
+            bool mirrored = flightMotor.FacingRight != exhaustBaseFacingRight;
+            float mirrorSign = mirrored ? -1f : 1f;
+
+            if (leftExhaust && (!visual || !leftExhaust.IsChildOf(visual)))
+            {
+                Vector3 position = leftExhaustBaseLocalPosition;
+                position.x = leftExhaustBaseLocalPosition.x * mirrorSign;
+                leftExhaust.localPosition = position;
+            }
+
+            if (rightExhaust && (!visual || !rightExhaust.IsChildOf(visual)))
+            {
+                Vector3 position = rightExhaustBaseLocalPosition;
+                position.x = rightExhaustBaseLocalPosition.x * mirrorSign;
+                rightExhaust.localPosition = position;
+            }
         }
 
         void RefreshExhaustPresentation()
@@ -414,6 +462,13 @@ namespace ExtraterrestrialExhaust.Player
             frameTimer -= frameDuration;
             frameIndex = (frameIndex + 1) % frames.Length;
             visualRenderer.sprite = frames[frameIndex];
+        }
+
+        void ResetSpriteAnimation()
+        {
+            currentFrames = null;
+            frameIndex = 0;
+            frameTimer = 0f;
         }
 
         void UpdateThrustAudio(bool thrusting)

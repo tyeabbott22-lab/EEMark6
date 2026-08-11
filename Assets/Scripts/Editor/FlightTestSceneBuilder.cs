@@ -341,6 +341,7 @@ namespace ExtraterrestrialExhaust.Editor
                 new Color(0.75f, 1f, 1f, 1f);
             serializedPresentation.FindProperty("boostedExhaustEndColor").colorValue =
                 new Color(0.12f, 0.4f, 1f, 0f);
+            serializedPresentation.FindProperty("exhaustSideOffset").floatValue = 0.28f;
             serializedPresentation.FindProperty("exhaustLength").floatValue = 0.55f;
             serializedPresentation.FindProperty("turnExhaustAmount").floatValue = 1f;
             serializedPresentation.FindProperty("squashScale").vector2Value = new Vector2(1.25f, 0.75f);
