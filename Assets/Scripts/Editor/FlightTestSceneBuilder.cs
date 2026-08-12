@@ -80,13 +80,15 @@ namespace ExtraterrestrialExhaust.Editor
 
             EnsureTag("StopperZone");
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
-            InputActionAsset inputAsset = AssetDatabase.LoadAssetAtPath<InputActionAsset>(InputAssetPath);
-            PlayerProjectile projectilePrefab = CreateProjectilePrefab();
+            try
+            {
+                InputActionAsset inputAsset = AssetDatabase.LoadAssetAtPath<InputActionAsset>(InputAssetPath);
+                PlayerProjectile projectilePrefab = CreateProjectilePrefab();
 
-            Transform[] backdrops = CreateBackdrop();
-            GameStateMachine gameState = CreateGameStateMachine(inputAsset);
-            GameObject scoreObject = new GameObject("Score System");
-            ScoreSystem scoreSystem = scoreObject.AddComponent<ScoreSystem>();
+                Transform[] backdrops = CreateBackdrop();
+                GameStateMachine gameState = CreateGameStateMachine(inputAsset);
+                GameObject scoreObject = new GameObject("Score System");
+                ScoreSystem scoreSystem = scoreObject.AddComponent<ScoreSystem>();
             SerializedObject serializedScore = new SerializedObject(scoreSystem);
             serializedScore.FindProperty("speedCreditThreshold").floatValue = 11f;
             serializedScore.FindProperty("speedCreditCooldown").floatValue = 0.45f;
@@ -150,8 +152,19 @@ namespace ExtraterrestrialExhaust.Editor
 
             EditorSceneManager.SaveScene(scene, ScenePath);
             ConfigureBuildSettings();
-            Selection.activeGameObject = GameObject.Find("Player Craft");
-            Debug.Log($"Built {ScenePath}. Use W/S to thrust or stabilize and A/D to rotate.");
+                Selection.activeGameObject = GameObject.Find("Player Craft");
+                Debug.Log($"Built {ScenePath}. Use W/S to thrust or stabilize and A/D to rotate.");
+            }
+            catch (System.Exception exception)
+            {
+                // A Unity-version API or imported asset can fail midway
+                // through composition. Restore the backed-up scene instead of
+                // leaving the editor on an unsaved empty scene and make the
+                // real cause visible in the Console.
+                Debug.LogException(exception);
+                if (File.Exists(ScenePath))
+                    EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            }
         }
 
         [MenuItem("Extraterrestrial Exhaust/Rebuild Flight Test Scene (Full Repair + Validate)")]
@@ -3156,7 +3169,7 @@ namespace ExtraterrestrialExhaust.Editor
             rect.sizeDelta = new Vector2(560f, 100f);
 
             Text label = labelObject.AddComponent<Text>();
-            label.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            label.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             label.fontSize = 24;
             label.lineSpacing = 1.1f;
             label.color = Color.white;
@@ -3173,7 +3186,7 @@ namespace ExtraterrestrialExhaust.Editor
             healthRect.sizeDelta = new Vector2(260f, 48f);
 
             Text healthLabel = healthObject.AddComponent<Text>();
-            healthLabel.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            healthLabel.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             healthLabel.fontSize = 22;
             healthLabel.fontStyle = FontStyle.Bold;
             healthLabel.alignment = TextAnchor.UpperRight;
@@ -3194,7 +3207,7 @@ namespace ExtraterrestrialExhaust.Editor
             actionCalloutRect.sizeDelta = new Vector2(700f, 48f);
 
             Text actionCalloutLabel = actionCalloutObject.AddComponent<Text>();
-            actionCalloutLabel.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            actionCalloutLabel.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             actionCalloutLabel.fontSize = 20;
             actionCalloutLabel.fontStyle = FontStyle.Bold;
             actionCalloutLabel.alignment = TextAnchor.UpperCenter;
@@ -3219,7 +3232,7 @@ namespace ExtraterrestrialExhaust.Editor
             bannerRect.sizeDelta = new Vector2(920f, 120f);
 
             Text bannerLabel = bannerObject.AddComponent<Text>();
-            bannerLabel.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            bannerLabel.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             bannerLabel.fontSize = 34;
             bannerLabel.fontStyle = FontStyle.Bold;
             bannerLabel.alignment = TextAnchor.MiddleCenter;

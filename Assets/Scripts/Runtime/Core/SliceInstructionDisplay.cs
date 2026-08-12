@@ -143,7 +143,7 @@ namespace ExtraterrestrialExhaust.Core
             textRect.offsetMax = new Vector2(-28f, -18f);
 
             messageLabel = textObject.GetComponent<Text>();
-            messageLabel.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            messageLabel.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             messageLabel.fontSize = 34;
             messageLabel.fontStyle = FontStyle.Bold;
             messageLabel.alignment = TextAnchor.MiddleCenter;
