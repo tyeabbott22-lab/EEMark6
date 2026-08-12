@@ -134,34 +134,46 @@ namespace ExtraterrestrialExhaust.Editor
             serializedScore.FindProperty("maximumMultiplier").floatValue = 50f;
             serializedScore.FindProperty("gameState").objectReferenceValue = gameState;
             serializedScore.ApplyModifiedPropertiesWithoutUndo();
-            PlayerCharacter player = CreatePlayer(
-                inputAsset,
-                projectilePrefab,
-                gameState,
-                preservePrefabs);
+            PlayerCharacter player = preservePrefabs
+                ? CreatePrefabBackedPlayer(inputAsset, projectilePrefab, gameState)
+                : CreatePlayer(inputAsset, projectilePrefab, gameState, false);
             CreateCamera(player, backdrops);
-            EnemyController meleeEnemy = CreateEnemy(
-                gameState,
-                projectilePrefab,
-                "Purple Melee Hunter",
-                Ee5SliceProfile.VerticalSliceMeleeSpawn,
-                false,
-                EnemyMeleePrefabPath,
-                MeleeSpritePath,
-                MeleeIdleSpritePath,
-                MeleeDefeatSpritePath,
-                preservePrefabs);
-            EnemyController gunnerEnemy = CreateEnemy(
-                gameState,
-                projectilePrefab,
-                "White Gunner",
-                Ee5SliceProfile.VerticalSliceGunnerSpawn,
-                true,
-                EnemyGunnerPrefabPath,
-                EnemySpritePath,
-                EnemyIdleSpritePath,
-                EnemyDefeatSpritePath,
-                preservePrefabs);
+            EnemyController meleeEnemy = preservePrefabs
+                ? CreatePrefabBackedEnemy(
+                    gameState,
+                    projectilePrefab,
+                    "Purple Melee Hunter",
+                    Ee5SliceProfile.VerticalSliceMeleeSpawn,
+                    EnemyMeleePrefabPath)
+                : CreateEnemy(
+                    gameState,
+                    projectilePrefab,
+                    "Purple Melee Hunter",
+                    Ee5SliceProfile.VerticalSliceMeleeSpawn,
+                    false,
+                    EnemyMeleePrefabPath,
+                    MeleeSpritePath,
+                    MeleeIdleSpritePath,
+                    MeleeDefeatSpritePath,
+                    false);
+            EnemyController gunnerEnemy = preservePrefabs
+                ? CreatePrefabBackedEnemy(
+                    gameState,
+                    projectilePrefab,
+                    "White Gunner",
+                    Ee5SliceProfile.VerticalSliceGunnerSpawn,
+                    EnemyGunnerPrefabPath)
+                : CreateEnemy(
+                    gameState,
+                    projectilePrefab,
+                    "White Gunner",
+                    Ee5SliceProfile.VerticalSliceGunnerSpawn,
+                    true,
+                    EnemyGunnerPrefabPath,
+                    EnemySpritePath,
+                    EnemyIdleSpritePath,
+                    EnemyDefeatSpritePath,
+                    false);
             SliceObjectiveDirector objectiveDirector = CreateEncounterAndExit(
                 gameState,
                 meleeEnemy,
@@ -183,7 +195,7 @@ namespace ExtraterrestrialExhaust.Editor
             ConfigureBuildSettings();
                 Selection.activeGameObject = GameObject.Find("Player Craft");
                 Debug.Log(
-                    $"Built {ScenePath}{(preservePrefabs ? " without rewriting prefabs" : "")}. "
+                    $"Built {ScenePath}{(preservePrefabs ? " from existing prefabs without rewriting them" : "")}. "
                     + "Controls: W/Space thrust, A/D or Q/E rotate, S/C stabilize, X flip.");
             }
             catch (System.Exception exception)
@@ -2516,6 +2528,131 @@ namespace ExtraterrestrialExhaust.Editor
                 Ee5SliceProfile.EnemyDefeatSlowdownDuration;
             serialized.ApplyModifiedPropertiesWithoutUndo();
             return stateMachine;
+        }
+
+        /// <summary>
+        /// Instantiates the authored player prefab for the safe rebuild path.
+        /// Scene wiring is applied to the instance only, so inspector tuning
+        /// such as Rigidbody damping survives into the playable checkpoint.
+        /// </summary>
+        static PlayerCharacter CreatePrefabBackedPlayer(
+            InputActionAsset inputAsset,
+            PlayerProjectile projectilePrefab,
+            GameStateMachine gameState)
+        {
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PlayerPrefabPath);
+            if (!prefab)
+                throw new System.InvalidOperationException(
+                    $"Could not preserve prefabs because {PlayerPrefabPath} is missing.");
+
+            GameObject player = PrefabUtility.InstantiatePrefab(prefab) as GameObject;
+            if (!player)
+                throw new System.InvalidOperationException(
+                    $"Could not instantiate the authored player prefab at {PlayerPrefabPath}.");
+
+            player.name = "Player Craft";
+            player.tag = "Player";
+            player.transform.position = Ee5SliceProfile.VerticalSlicePlayerSpawn;
+
+            PlayerCharacter character = RequireComponent<PlayerCharacter>(player, PlayerPrefabPath);
+            PlayerFlightInput input = RequireComponent<PlayerFlightInput>(player, PlayerPrefabPath);
+            input.ConfigureInputAsset(inputAsset);
+            SetSerializedObjectReference(input, "gameState", gameState);
+            SetSerializedFloat(input, "turnDeadzone", Ee5SliceProfile.PlayerTurnDeadzone);
+            SetSerializedFloat(input, "thrustDeadzone", Ee5SliceProfile.PlayerThrustDeadzone);
+
+            PlayerWeaponInput weaponInput = RequireComponent<PlayerWeaponInput>(player, PlayerPrefabPath);
+            weaponInput.ConfigureInputAsset(inputAsset);
+            SetSerializedObjectReference(weaponInput, "gameState", gameState);
+
+            PlayerWeapon weapon = RequireComponent<PlayerWeapon>(player, PlayerPrefabPath);
+            SetSerializedObjectReference(weapon, "gameState", gameState);
+            SetSerializedObjectReference(weapon, "projectilePrefab", projectilePrefab);
+
+            // Do not normalize the Rigidbody damping here. It is deliberately
+            // authored on PlayerCraft.prefab and the runtime motor now honors
+            // that value instead of replacing it during Awake.
+            return character;
+        }
+
+        /// <summary>
+        /// Instantiates an authored enemy prefab without running the repair
+        /// path. The controller still owns runtime role recovery, while the
+        /// scene supplies only references that cannot live inside a prefab.
+        /// </summary>
+        static EnemyController CreatePrefabBackedEnemy(
+            GameStateMachine gameState,
+            PlayerProjectile projectilePrefab,
+            string objectName,
+            Vector2 position,
+            string prefabPath)
+        {
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
+            if (!prefab)
+                throw new System.InvalidOperationException(
+                    $"Could not preserve prefabs because {prefabPath} is missing.");
+
+            GameObject enemy = PrefabUtility.InstantiatePrefab(prefab) as GameObject;
+            if (!enemy)
+                throw new System.InvalidOperationException(
+                    $"Could not instantiate the authored enemy prefab at {prefabPath}.");
+
+            enemy.name = objectName;
+            enemy.transform.position = position;
+
+            EnemyController controller = RequireComponent<EnemyController>(enemy, prefabPath);
+            SetSerializedObjectReference(controller, "gameState", gameState);
+
+            EnemyWeapon weapon = enemy.GetComponent<EnemyWeapon>();
+            if (weapon)
+            {
+                SetSerializedObjectReference(weapon, "gameState", gameState);
+                SetSerializedObjectReference(weapon, "projectilePrefab", projectilePrefab);
+            }
+
+            return controller;
+        }
+
+        static T RequireComponent<T>(GameObject root, string assetPath)
+            where T : Component
+        {
+            T component = root.GetComponent<T>();
+            if (component)
+                return component;
+
+            throw new System.InvalidOperationException(
+                $"{assetPath} is missing required {typeof(T).Name}.");
+        }
+
+        static void SetSerializedObjectReference(
+            Component component,
+            string propertyName,
+            UnityEngine.Object value)
+        {
+            if (!component)
+                return;
+
+            SerializedObject serialized = new SerializedObject(component);
+            SerializedProperty property = serialized.FindProperty(propertyName);
+            if (property == null)
+                return;
+
+            property.objectReferenceValue = value;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        static void SetSerializedFloat(Component component, string propertyName, float value)
+        {
+            if (!component)
+                return;
+
+            SerializedObject serialized = new SerializedObject(component);
+            SerializedProperty property = serialized.FindProperty(propertyName);
+            if (property == null)
+                return;
+
+            property.floatValue = value;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
         }
 
         static PlayerCharacter CreatePlayer(

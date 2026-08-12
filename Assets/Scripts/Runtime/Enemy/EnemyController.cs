@@ -202,10 +202,9 @@ namespace ExtraterrestrialExhaust.Enemy
             rootScale.x = Mathf.Sign(authoredScaleX) * Mathf.Max(0.0001f, Mathf.Abs(rootScale.x));
             transform.localScale = rootScale;
 
-            // The EE5 enemy prefabs all use the same deliberate five-degree
-            // turn response. Runtime repair keeps a stale inspector override
-            // from reintroducing a twitchy melee presentation.
-            faceTurnSpeed = Ee5SliceProfile.EnemyFaceTurnSpeed;
+            // Keep faceTurnSpeed authored on the prefab/scene. The builder
+            // writes the EE5 baseline for generated actors, while prefab-backed
+            // FlightTest instances must retain deliberate inspector tuning.
 
             // EE5's ranged gunner aims from local negative X. The purple
             // melee hunter keeps the authored controller basis and relies on
