@@ -7,6 +7,7 @@ TagManager:
   - Player
   - Wall
   - Enemy
+  - StopperZone
   layers:
   - Default
   - TransparentFX
