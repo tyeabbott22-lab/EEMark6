@@ -2415,7 +2415,7 @@ namespace ExtraterrestrialExhaust.Editor
             Camera camera = cameraObject.AddComponent<Camera>();
             camera.orthographic = true;
             camera.orthographicSize = Ee5SliceProfile.CameraOrthographicSize;
-            camera.backgroundColor = new Color(0.015f, 0.02f, 0.06f);
+            camera.backgroundColor = Ee5SliceProfile.CameraBackgroundColor;
             camera.clearFlags = CameraClearFlags.SolidColor;
             PlayerCameraFollow follow = cameraObject.AddComponent<PlayerCameraFollow>();
             SerializedObject serializedFollow = new SerializedObject(follow);

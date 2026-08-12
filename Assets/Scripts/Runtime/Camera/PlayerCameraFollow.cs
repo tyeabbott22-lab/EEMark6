@@ -75,6 +75,16 @@ namespace ExtraterrestrialExhaust.CameraSystem
 
         void ApplyEe5Profile()
         {
+            if (cameraComponent && cameraComponent.orthographic)
+            {
+                // Enforce the authored room frame at runtime as well as in the
+                // builder. This keeps an older serialized FlightTest scene from
+                // launching with the broader prototype view.
+                cameraComponent.orthographicSize = Ee5SliceProfile.CameraOrthographicSize;
+                cameraComponent.backgroundColor = Ee5SliceProfile.CameraBackgroundColor;
+                cameraComponent.clearFlags = CameraClearFlags.SolidColor;
+            }
+
             followSpeed = Ee5SliceProfile.CameraFollowSpeed;
             velocityLead = Ee5SliceProfile.CameraVelocityLead;
             maxLeadDistance = Ee5SliceProfile.CameraMaxLeadDistance;

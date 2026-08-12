@@ -1,3 +1,5 @@
+using UnityEngine;
+
 namespace ExtraterrestrialExhaust.Core
 {
     /// <summary>
@@ -85,6 +87,8 @@ namespace ExtraterrestrialExhaust.Core
         // room framing in the profile so a builder pass cannot drift back to
         // the broader prototype camera by accident.
         public const float CameraOrthographicSize = 4f;
+        public static readonly Color CameraBackgroundColor =
+            new Color(0.015f, 0.012f, 0.035f, 1f);
         public const float CameraVelocityLead = 0.24f;
         public const float CameraMaxLeadDistance = 3.75f;
         public const float CameraFacingLead = 1.15f;
