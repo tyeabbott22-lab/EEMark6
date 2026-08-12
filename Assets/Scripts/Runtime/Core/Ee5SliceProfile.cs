@@ -39,6 +39,11 @@ namespace ExtraterrestrialExhaust.Core
         // upright during ordinary flight without stealing an intentional flip.
         public const float UprightAssistSpeed = 36f;
         public const float UprightAssistAngularBrake = 30f;
+        // Give the EE5 torque impulse a short handoff window after Q/E or A/D
+        // is released. Without this, the neutral assist begins on the very
+        // next physics tick and makes a deliberate turn feel sticky at its
+        // release point.
+        public const float UprightAssistReleaseDelay = 0.08f;
         // Do not let the neutral correction catch a craft halfway through an
         // intentional spin. Once residual rotation is calm, the assist can
         // settle the final tilt without making a flip feel sticky.

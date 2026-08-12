@@ -31,6 +31,8 @@ namespace ExtraterrestrialExhaust.Player
         [SerializeField, Min(0f)] float uprightAssistSpeed = Ee5SliceProfile.UprightAssistSpeed;
         [SerializeField, Min(0f)] float uprightAssistAngularBrake = Ee5SliceProfile.UprightAssistAngularBrake;
         [SerializeField, Min(0f)] float uprightAssistMaxAngularSpeed = Ee5SliceProfile.UprightAssistMaxAngularSpeed;
+        [Tooltip("Delay before neutral upright correction engages after turn input is released, preserving the authored torque handoff.")]
+        [SerializeField, Min(0f)] float uprightAssistReleaseDelay = Ee5SliceProfile.UprightAssistReleaseDelay;
         [Tooltip("Removes only velocity directed into a contacted surface, preserving EE5-style tangential follow-through.")]
         [SerializeField] bool removeVelocityIntoColliders = true;
 
@@ -46,6 +48,7 @@ namespace ExtraterrestrialExhaust.Player
         bool inStopperZone;
         RigidbodyConstraints2D constraintsBeforeStopper;
         bool savedStopperConstraints;
+        float turnReleaseTimer;
         readonly ContactPoint2D[] contactBuffer = new ContactPoint2D[8];
 
         public Rigidbody2D Body => body;
@@ -84,6 +87,7 @@ namespace ExtraterrestrialExhaust.Player
             uprightAssistSpeed = Ee5SliceProfile.UprightAssistSpeed;
             uprightAssistAngularBrake = Ee5SliceProfile.UprightAssistAngularBrake;
             uprightAssistMaxAngularSpeed = Ee5SliceProfile.UprightAssistMaxAngularSpeed;
+            uprightAssistReleaseDelay = Ee5SliceProfile.UprightAssistReleaseDelay;
             removeVelocityIntoColliders = Ee5SliceProfile.PlayerRemoveVelocityIntoColliders;
 
             body.mass = Ee5SliceProfile.PlayerMass;
@@ -116,6 +120,7 @@ namespace ExtraterrestrialExhaust.Player
                 // source while those state machines are in control.
                 body.linearVelocity = Vector2.zero;
                 body.angularVelocity = 0f;
+                turnReleaseTimer = 0f;
                 return;
             }
 
@@ -125,6 +130,7 @@ namespace ExtraterrestrialExhaust.Player
                 // kills rotation and new input but deliberately preserves the
                 // craft's linear momentum while it coasts through the strip.
                 body.angularVelocity = 0f;
+                turnReleaseTimer = 0f;
                 return;
             }
 
@@ -136,13 +142,20 @@ namespace ExtraterrestrialExhaust.Player
             // “hit C/S, settle” feel.
             if (input.Move.y < -0.2f)
             {
+                turnReleaseTimer = 0f;
                 Stabilize();
                 return;
             }
 
+            bool turning = Mathf.Abs(input.Move.x) >= 0.01f;
+            if (turning)
+                turnReleaseTimer = 0f;
+            else
+                turnReleaseTimer += Time.fixedDeltaTime;
+
             ApplyRotation(input.Move.x);
 
-            if (Mathf.Abs(input.Move.x) < 0.01f)
+            if (!turning && turnReleaseTimer >= uprightAssistReleaseDelay)
                 ApplyNeutralUprightAssist();
 
             if (input.Move.y > 0.2f)
