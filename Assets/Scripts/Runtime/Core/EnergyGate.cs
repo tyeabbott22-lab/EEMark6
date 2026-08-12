@@ -43,7 +43,10 @@ namespace ExtraterrestrialExhaust.Core
                 return;
 
             disabled = true;
-            gateCollider.enabled = false;
+            // EE5's DoorController opens by moving the wall; it does not
+            // turn the collider off at the key impact. Keep the collider on
+            // while the authored lift is visible so the physical route and
+            // the presentation cannot disagree during the handoff.
             Disabled?.Invoke();
             StartCoroutine(LiftRoutine());
         }
@@ -60,6 +63,8 @@ namespace ExtraterrestrialExhaust.Core
             }
 
             transform.position = targetPosition;
+            if (gateCollider)
+                gateCollider.enabled = false;
             UpdateVisual(disabledColor);
         }
 
