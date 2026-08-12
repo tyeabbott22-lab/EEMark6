@@ -329,8 +329,14 @@ namespace ExtraterrestrialExhaust.Combat
 
             if (!nearMissTarget)
                 nearMissTarget = FindFirstObjectByType<PlayerCharacter>();
-            if (!nearMissTarget || !nearMissTarget.Health || !nearMissTarget.Health.IsAlive)
+            if (!nearMissTarget
+                || !nearMissTarget.Health
+                || !nearMissTarget.Health.IsAlive
+                || !nearMissTarget.CanReceiveGameplayInput)
+            {
+                nearPlayer = false;
                 return;
+            }
 
             float distance = Vector2.Distance(transform.position, nearMissTarget.transform.position);
             if (distance <= nearMissDistance)
@@ -344,7 +350,12 @@ namespace ExtraterrestrialExhaust.Combat
 
         void AwardNearMissIfNeeded()
         {
-            if (team != ProjectileTeam.Enemy || nearMissAwarded || hitPlayer || !nearPlayer)
+            if (team != ProjectileTeam.Enemy
+                || nearMissAwarded
+                || hitPlayer
+                || !nearPlayer
+                || !nearMissTarget
+                || !nearMissTarget.CanReceiveGameplayInput)
                 return;
 
             nearMissAwarded = true;

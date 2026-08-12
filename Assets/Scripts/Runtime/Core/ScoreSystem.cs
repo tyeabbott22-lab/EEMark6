@@ -78,7 +78,8 @@ namespace ExtraterrestrialExhaust.Core
         void Update()
         {
             ResolveReferences();
-            UpdateComboTimer();
+            if (!gameState || gameState.IsPlaying)
+                UpdateComboTimer();
 
             if (!player || !player.CanReceiveGameplayInput
                 || (gameState && !gameState.IsPlaying)
@@ -103,7 +104,11 @@ namespace ExtraterrestrialExhaust.Core
 
         public void AddScore(int points, ScoreReason reason)
         {
-            if (points <= 0)
+            // Completion is awarded immediately before the state transitions
+            // to GameOver; every other score beat belongs to active play.
+            if (points <= 0
+                || (gameState && !gameState.IsPlaying
+                    && reason != ScoreReason.LevelCompleted))
                 return;
 
             BeginOrContinueCombo();
