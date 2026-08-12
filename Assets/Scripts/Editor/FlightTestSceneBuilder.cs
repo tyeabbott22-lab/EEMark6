@@ -1073,7 +1073,10 @@ namespace ExtraterrestrialExhaust.Editor
             serializedController.FindProperty("wakeDistance").floatValue = 6f;
             serializedController.FindProperty("wakeDuration").floatValue = 1.35f;
             serializedController.FindProperty("requireLineOfSightToWake").boolValue = true;
-            serializedController.FindProperty("wakeSignalDistanceMultiplier").floatValue = 1f;
+            // The line is visible before activation, matching EE5's four-times
+            // wake-line envelope; the state machine still wakes only at 6 units.
+            serializedController.FindProperty("wakeSignalDistanceMultiplier").floatValue =
+                Ee5SliceProfile.EnemyWakeSignalDistanceMultiplier;
             serializedController.FindProperty("wakeSignalChargeDuration").floatValue = 1.15f;
             serializedController.FindProperty("wakeSignalChargeDecay").floatValue = 1.8f;
             serializedController.FindProperty("wakeFinalWarningDuration").floatValue = 0.35f;

@@ -23,7 +23,9 @@ namespace ExtraterrestrialExhaust.Enemy
         // EE5's intro line begins at the same authored six-unit trigger as
         // the wake sequence. The detection leash can remain wider, but the
         // telegraph should not advertise enemies across the whole room.
-        [SerializeField, Min(1f)] float wakeSignalDistanceMultiplier = 1f;
+        // The signal is intentionally visible well before the six-unit wake
+        // trigger. Existing authored prefabs are migrated by the scene builder.
+        [SerializeField, Min(1f)] float wakeSignalDistanceMultiplier = 4f;
         [SerializeField, Min(0.01f)] float wakeSignalChargeDuration = 1.15f;
         [SerializeField, Min(0f)] float wakeSignalChargeDecay = 1.8f;
         [SerializeField, Min(0f)] float wakeFinalWarningDuration = 0.35f;

@@ -22,6 +22,11 @@ namespace ExtraterrestrialExhaust.Core
         public const float PlayerRecoilForce = 12f;
         public const float PlayerProjectileSpeed = 30f;
 
+        // EE5 separates the readable wake-line envelope from the enemy's
+        // actual six-unit activation trigger. The telegraph can enter the
+        // frame early while the enemy remains dormant until WakeDistance.
+        public const float EnemyWakeSignalDistanceMultiplier = 4f;
+
         public const float CameraFollowSpeed = 12f;
         public const float CameraVelocityLead = 0.24f;
         public const float CameraMaxLeadDistance = 3.75f;
