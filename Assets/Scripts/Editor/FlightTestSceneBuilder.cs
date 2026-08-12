@@ -756,6 +756,18 @@ namespace ExtraterrestrialExhaust.Editor
                         serializedWeapon,
                         "projectileLifetime",
                         Ee5SliceProfile.EnemyGunnerProjectileLifetime);
+                    changed |= SetBool(
+                        serializedWeapon,
+                        "requireTargetWithinAttackRange",
+                        Ee5SliceProfile.EnemyGunnerRequiresAttackRange);
+                    changed |= SetBool(
+                        serializedWeapon,
+                        "requireLineOfSightToFire",
+                        Ee5SliceProfile.EnemyGunnerRequiresLineOfSightToFire);
+                    changed |= SetBool(
+                        serializedWeapon,
+                        "drawAimTelegraph",
+                        Ee5SliceProfile.EnemyGunnerDrawAimTelegraph);
                     serializedWeapon.ApplyModifiedPropertiesWithoutUndo();
                 }
             }
@@ -875,6 +887,27 @@ namespace ExtraterrestrialExhaust.Editor
                         issues.Add($"{prefabPath} projectileSpeed={projectileSpeed}");
                     if (!Mathf.Approximately(projectileLifetime, Ee5SliceProfile.EnemyGunnerProjectileLifetime))
                         issues.Add($"{prefabPath} projectileLifetime={projectileLifetime}");
+                    SerializedProperty requiresRange =
+                        serializedWeapon.FindProperty("requireTargetWithinAttackRange");
+                    SerializedProperty requiresLineOfSight =
+                        serializedWeapon.FindProperty("requireLineOfSightToFire");
+                    SerializedProperty drawTelegraph =
+                        serializedWeapon.FindProperty("drawAimTelegraph");
+                    if (requiresRange == null
+                        || requiresRange.boolValue != Ee5SliceProfile.EnemyGunnerRequiresAttackRange)
+                    {
+                        issues.Add($"{prefabPath} requireTargetWithinAttackRange is not EE5-compatible");
+                    }
+                    if (requiresLineOfSight == null
+                        || requiresLineOfSight.boolValue != Ee5SliceProfile.EnemyGunnerRequiresLineOfSightToFire)
+                    {
+                        issues.Add($"{prefabPath} requireLineOfSightToFire is not EE5-compatible");
+                    }
+                    if (drawTelegraph == null
+                        || drawTelegraph.boolValue != Ee5SliceProfile.EnemyGunnerDrawAimTelegraph)
+                    {
+                        issues.Add($"{prefabPath} drawAimTelegraph is not EE5-compatible");
+                    }
                 }
             }
 
@@ -1671,13 +1704,18 @@ namespace ExtraterrestrialExhaust.Editor
                 serializedWeapon.FindProperty("projectilePrefab").objectReferenceValue = projectilePrefab;
                 serializedWeapon.FindProperty("firePoint").objectReferenceValue = firePoint.transform;
                 serializedWeapon.FindProperty("attackRange").floatValue = 7f;
+                serializedWeapon.FindProperty("requireTargetWithinAttackRange").boolValue =
+                    Ee5SliceProfile.EnemyGunnerRequiresAttackRange;
+                serializedWeapon.FindProperty("requireLineOfSightToFire").boolValue =
+                    Ee5SliceProfile.EnemyGunnerRequiresLineOfSightToFire;
                 serializedWeapon.FindProperty("fireCooldown").floatValue = Ee5SliceProfile.EnemyGunnerFireCooldown;
                 serializedWeapon.FindProperty("projectileSpeed").floatValue = Ee5SliceProfile.EnemyGunnerProjectileSpeed;
                 serializedWeapon.FindProperty("projectileLifetime").floatValue =
                     Ee5SliceProfile.EnemyGunnerProjectileLifetime;
                 serializedWeapon.FindProperty("projectileKnockback").floatValue = 2.5f;
                 serializedWeapon.FindProperty("projectileTint").colorValue = new Color(0.05f, 1f, 0.16f, 1f);
-                serializedWeapon.FindProperty("drawAimTelegraph").boolValue = true;
+                serializedWeapon.FindProperty("drawAimTelegraph").boolValue =
+                    Ee5SliceProfile.EnemyGunnerDrawAimTelegraph;
                 serializedWeapon.FindProperty("telegraphDuration").floatValue = 0.18f;
                 serializedWeapon.FindProperty("telegraphMinWidth").floatValue = 0.018f;
                 serializedWeapon.FindProperty("telegraphMaxWidth").floatValue = 0.085f;

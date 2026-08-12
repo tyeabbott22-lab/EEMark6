@@ -18,13 +18,18 @@ namespace ExtraterrestrialExhaust.Enemy
         // travel speed to six units. Keep this cadence deliberate: it gives the
         // player the same readable dodge window as the realScene slice.
         [SerializeField, Min(0.05f)] float fireCooldown = 1f;
+        // Kept as an opt-in experiment. EE5's ranged gunner fires after its
+        // intro regardless of distance; the projectile itself remains
+        // collision-bound by arena walls.
         [SerializeField, Min(0f)] float attackRange = 7f;
+        [SerializeField] bool requireTargetWithinAttackRange;
+        [SerializeField] bool requireLineOfSightToFire;
         [SerializeField, Min(0f)] float projectileSpeed = 6f;
         [SerializeField, Min(0.01f)] float projectileLifetime = Ee5SliceProfile.EnemyGunnerProjectileLifetime;
         [SerializeField, Min(0f)] float projectileKnockback = 2.5f;
         [SerializeField] Color projectileTint = new Color(0.05f, 1f, 0.16f, 1f);
         [Header("Attack Telegraph")]
-        [SerializeField] bool drawAimTelegraph = true;
+        [SerializeField] bool drawAimTelegraph = Ee5SliceProfile.EnemyGunnerDrawAimTelegraph;
         [SerializeField, Min(0f)] float telegraphDuration = 0.18f;
         [SerializeField, Min(0f)] float telegraphMinWidth = 0.018f;
         [SerializeField, Min(0f)] float telegraphMaxWidth = 0.085f;
@@ -41,6 +46,7 @@ namespace ExtraterrestrialExhaust.Enemy
         LineRenderer telegraph;
         Material telegraphMaterial;
         readonly RaycastHit2D[] lineOfSightHits = new RaycastHit2D[16];
+        bool hasEnteredCombat;
 
         void Awake()
         {
@@ -79,7 +85,7 @@ namespace ExtraterrestrialExhaust.Enemy
                 HideTelegraph();
                 return;
             }
-            if (controller && !controller.CanAttack)
+            if (controller && !controller.IsCombatActive)
             {
                 HideTelegraph();
                 return;
@@ -95,13 +101,13 @@ namespace ExtraterrestrialExhaust.Enemy
             }
 
             Vector2 toTarget = (Vector2)target.transform.position - (Vector2)transform.position;
-            if (toTarget.magnitude > attackRange)
+            if (requireTargetWithinAttackRange && toTarget.magnitude > attackRange)
             {
                 HideTelegraph();
                 return;
             }
 
-            if (!HasLineOfSight(out Vector2 aimEnd))
+            if (requireLineOfSightToFire && !HasLineOfSight(out _))
             {
                 HideTelegraph();
                 return;
@@ -135,11 +141,22 @@ namespace ExtraterrestrialExhaust.Enemy
 
         void HandleStateChanged(EnemyController source, EnemyState nextState)
         {
-            if (nextState == EnemyState.Attacking)
+            if (nextState == EnemyState.Dormant)
             {
-                // EE5 does not fire on the same frame an enemy wakes into its
-                // attack state. Give the player one readable cadence beat.
-                cooldownRemaining = Mathf.Max(cooldownRemaining, fireCooldown);
+                hasEnteredCombat = false;
+                HideTelegraph();
+                return;
+            }
+
+            if (nextState == EnemyState.Chasing || nextState == EnemyState.Attacking)
+            {
+                if (!hasEnteredCombat)
+                {
+                    // EE5 does not fire on the same frame an enemy finishes
+                    // its intro. Give the player one readable cadence beat.
+                    cooldownRemaining = Mathf.Max(cooldownRemaining, fireCooldown);
+                    hasEnteredCombat = true;
+                }
                 return;
             }
 

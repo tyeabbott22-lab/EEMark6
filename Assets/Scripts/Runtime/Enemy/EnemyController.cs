@@ -95,6 +95,7 @@ namespace ExtraterrestrialExhaust.Enemy
         public EnemyState State { get; private set; }
         public PlayerCharacter Target => target;
         public bool CanAttack => State == EnemyState.Attacking;
+        public bool IsCombatActive => State == EnemyState.Chasing || State == EnemyState.Attacking;
         public float WakeProgress => State == EnemyState.Waking && wakeTotalDuration > 0f
             ? Mathf.Clamp01(wakeTimer / Mathf.Max(0.01f, wakeTotalDuration))
             : 0f;
