@@ -27,7 +27,7 @@ The player foundation is intentionally split into three responsibilities:
 | System | Responsibility |
 | --- | --- |
 | `PlayerFlightInput` | Converts Unity Input System actions into a frame-independent flight command. |
-| `PlayerFlightMotor` | Applies movement and stabilization forces to the player's `Rigidbody2D`. |
+| `PlayerFlightMotor` | Applies movement and stabilization forces to the player's `Rigidbody2D`, including the EE5 stopper-zone control lock and tangential wall slide behavior. |
 | `PlayerFlightStateMachine` | Controls whether flight simulation is active, scripted, or disabled. |
 | `GameStateMachine` | Coordinates playing, pausing, game over, and the short EE5 defeat slowdown without scattering global time writes. |
 | `HealthComponent` | Shared health and damage contract for players, enemies, and hazards. |
@@ -51,7 +51,7 @@ The player foundation is intentionally split into three responsibilities:
 | `EnemyWakePresentation` | Renders the controller-owned blocked/clear wake telegraph with a final warning flash so activation is readable before combat begins. |
 | `EnemyHealthDisplay` | Presents the imported six-frame health sheet briefly at spawn and after damage, scaled to each enemy's max health. |
 | `EnemyDeathPresentation` / `EnemyDeathBurst` | Plays the imported EE5 defeat animation and audio independently from enemy cleanup. |
-| `EnemyContactDamage` | Applies close-range melee damage through the shared contract; ranged enemies stay ranged. |
+| `EnemyContactDamage` | Applies the EE5 close-pass contact damage contract to authored enemy bodies without coupling damage to their attack state. |
 | `EnemyWeapon` | Adds the EE5 white-gunner cadence, wall-aware line of sight, and readable pre-shot telegraph without coupling enemies to player weapons. |
 | `EncounterController` / `LevelExit` | Define the explicit combat roster while the EE5 carrier-key-gate-extraction sequence owns exit progression. |
 | `ExtractionPortalPresentation` | Provides the layered, pulsing extraction visual without scene-specific prototype dependencies. |
@@ -66,7 +66,7 @@ Gameplay systems should communicate with these public contracts rather than reac
 
 Combat uses `IDamageable` and `DamageInfo`, so weapons do not need to know whether they hit a player, enemy, or destructible object.
 
-The editor menu `Extraterrestrial Exhaust > Build Flight Test Scene` rebuilds the playable FlightTest scene from code and refreshes the reusable `PlayerCraft`, `EnemyMelee`, and `EnemyGunner` prefabs. The two enemy compositions keep close-range contact pressure separate from ranged pressure, matching the distinct roles present in the EE5 scene family. The generated room contains the required encounter, energy key, gate, and extraction landmarks plus deliberately optional hazard, health, and fire-rate beats; none of those optional resources can unlock or complete the objective flow.
+The editor menu `Extraterrestrial Exhaust > Build Flight Test Scene` rebuilds the playable FlightTest scene from code and refreshes the reusable `PlayerCraft`, `EnemyMelee`, and `EnemyGunner` prefabs. The two enemy compositions keep close-range chase pressure separate from ranged projectile pressure while sharing the EE5 contact-damage contract. The generated room contains the required encounter, energy key, gate, extraction, and lower-center stopper landmarks plus deliberately optional hazard, health, and fire-rate beats; none of those optional resources can unlock or complete the objective flow.
 
 `Extraterrestrial Exhaust > Normalize Imported Sprite Names` is a separate, explicit cleanup command for the EE5-derived filenames that are safe to clarify (`sprSnipe`, `health`, `bullet`, `keyfinal`, `buttonFInal1`, `wallFinal`, `sprStars`, and `sprExplode`). It renames them to semantic EE6 roles through Unity's asset database, preserving their GUIDs; the builder also supports the legacy paths until that command is run. Enemy strips remain on their EE5 names because the older variant builders reuse them by color and pose; those require an intentional art inventory pass before renaming.
 
