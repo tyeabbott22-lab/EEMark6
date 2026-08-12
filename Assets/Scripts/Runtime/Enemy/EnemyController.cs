@@ -30,19 +30,19 @@ namespace ExtraterrestrialExhaust.Enemy
 
         [SerializeField, Min(0f)] float detectionRange = 12f;
         [SerializeField, Min(0f)] float wakeDistance = 6f;
-        // EE5's authored buildup is the minimum alert envelope. The actual
-        // wake duration is randomized below so the dormant enemy does not
-        // trigger on a mechanically identical beat every time.
+        // EE5's authored six-unit value is the base trigger for the wider
+        // line-of-sight wake envelope. The actual alert duration is randomized
+        // below so the dormant enemy does not trigger on an identical beat.
         [SerializeField, Min(0f)] float wakeDuration = Ee5SliceProfile.EnemyWakeBuildupDuration;
         [SerializeField, Min(0f)] float wakeIdleDurationMin = Ee5SliceProfile.EnemyWakeIdleDurationMin;
         [SerializeField, Min(0f)] float wakeIdleDurationMax = Ee5SliceProfile.EnemyWakeIdleDurationMax;
         [SerializeField, Min(0f)] float wakeScreamDuration = Ee5SliceProfile.EnemyWakeScreamDuration;
         [SerializeField] bool requireLineOfSightToWake = true;
-        // EE5's intro line begins at the same authored six-unit trigger as
-        // the wake sequence. The detection leash can remain wider, but the
-        // telegraph should not advertise enemies across the whole room.
-        // The signal is intentionally visible well before the six-unit wake
-        // trigger. Existing authored prefabs are migrated by the scene builder.
+        // EE5's intro line uses the authored six-unit base trigger multiplied
+        // by four. The signal can therefore arm across the room while the
+        // enemy remains in its dormant sprite loop; once the line charge is
+        // complete, the idle/scream intro commits and the enemy cannot cancel
+        // it halfway through because the player crossed a wall or moved away.
         [SerializeField, Min(1f)] float wakeSignalDistanceMultiplier = 4f;
         [SerializeField, Min(0.01f)] float wakeSignalChargeDuration = Ee5SliceProfile.EnemyWakeSignalChargeDuration;
         [SerializeField, Min(0f)] float wakeSignalChargeDecay = Ee5SliceProfile.EnemyWakeSignalChargeDecay;
@@ -206,7 +206,12 @@ namespace ExtraterrestrialExhaust.Enemy
 
             if (State == EnemyState.Dormant)
             {
-                if (distance <= wakeDistance
+                // The six-unit value is the base of the EE5 four-times wake
+                // envelope, not a second close-range gate. Starting the
+                // authored intro when the charged signal completes keeps the
+                // line, idle strip, scream strip, and combat handoff in one
+                // deterministic sequence.
+                if (WakeSignalVisible
                     && (!requireLineOfSightToWake || WakeSignalHasClearSight)
                     && WakeSignalChargeProgress >= 0.999f)
                     SetState(EnemyState.Waking);

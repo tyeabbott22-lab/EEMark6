@@ -2228,8 +2228,9 @@ namespace ExtraterrestrialExhaust.Editor
             serializedController.FindProperty("wakeDuration").floatValue =
                 Ee5SliceProfile.EnemyWakeBuildupDuration;
             serializedController.FindProperty("requireLineOfSightToWake").boolValue = true;
-            // The line is visible before activation, matching EE5's four-times
-            // wake-line envelope; the state machine still wakes only at 6 units.
+            // The line arms across EE5's four-times wake envelope. The six-unit
+            // value remains the base trigger; a full clear-sight charge commits
+            // the idle/scream intro before combat begins.
             serializedController.FindProperty("wakeSignalDistanceMultiplier").floatValue =
                 Ee5SliceProfile.EnemyWakeSignalDistanceMultiplier;
             serializedController.FindProperty("wakeIdleDurationMin").floatValue =
