@@ -106,12 +106,21 @@ namespace ExtraterrestrialExhaust.Enemy
             }
 
             HideTelegraph();
-            Fire(toTarget.normalized);
+            Fire();
         }
 
-        void Fire(Vector2 direction)
+        void Fire()
         {
             Transform origin = firePoint ? firePoint : transform;
+            Vector2 direction = target
+                ? ((Vector2)target.transform.position - (Vector2)origin.position).normalized
+                : (Vector2)transform.right;
+            if (direction.sqrMagnitude <= 0.001f)
+                direction = transform.right;
+
+            // The telegraph, projectile, and muzzle event all originate at the
+            // same authored point. This matters when the gunner is rotated or
+            // its fire point sits noticeably to one side of the body.
             PlayerProjectile projectile = Instantiate(projectilePrefab, origin.position, Quaternion.identity);
             projectile.SetTeam(ProjectileTeam.Enemy);
             projectile.SetKnockback(projectileKnockback);
