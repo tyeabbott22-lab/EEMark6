@@ -38,6 +38,7 @@ namespace ExtraterrestrialExhaust.Core
         public const float EnemyGunnerFireCooldown = 1f;
         public const float EnemyGunnerProjectileSpeed = 6f;
         public const float EnemyGunnerProjectileLifetime = 5f;
+        public const float EnemyInvulnerabilityDuration = 0f;
         public const float EnemyContactDamage = 1f;
         public const float EnemyContactCooldown = 0.75f;
         public const float EnemyContactKnockback = 8f;

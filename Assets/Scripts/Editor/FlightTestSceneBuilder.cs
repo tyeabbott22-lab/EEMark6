@@ -624,6 +624,17 @@ namespace ExtraterrestrialExhaust.Editor
 
             bool changed = false;
             EnemyController controller = prefabContents.GetComponent<EnemyController>();
+            HealthComponent health = prefabContents.GetComponent<HealthComponent>();
+            if (health)
+            {
+                SerializedObject serializedHealth = new SerializedObject(health);
+                changed |= SetFloat(
+                    serializedHealth,
+                    "invulnerabilityDuration",
+                    Ee5SliceProfile.EnemyInvulnerabilityDuration);
+                serializedHealth.ApplyModifiedPropertiesWithoutUndo();
+            }
+
             if (controller)
             {
                 SerializedObject serializedController = new SerializedObject(controller);
@@ -715,6 +726,23 @@ namespace ExtraterrestrialExhaust.Editor
             }
 
             EnemyController controller = prefab.GetComponent<EnemyController>();
+            HealthComponent health = prefab.GetComponent<HealthComponent>();
+            if (!health)
+            {
+                issues.Add($"{prefabPath} has no HealthComponent");
+            }
+            else
+            {
+                SerializedObject serializedHealth = new SerializedObject(health);
+                float invulnerability = serializedHealth.FindProperty("invulnerabilityDuration").floatValue;
+                if (!Mathf.Approximately(invulnerability, Ee5SliceProfile.EnemyInvulnerabilityDuration))
+                {
+                    issues.Add(
+                        $"{prefabPath} invulnerabilityDuration={invulnerability} "
+                        + $"(expected {Ee5SliceProfile.EnemyInvulnerabilityDuration})");
+                }
+            }
+
             if (!controller)
             {
                 issues.Add($"{prefabPath} has no EnemyController");
@@ -1383,7 +1411,8 @@ namespace ExtraterrestrialExhaust.Editor
             HealthComponent health = enemy.AddComponent<HealthComponent>();
             SerializedObject serializedHealth = new SerializedObject(health);
             serializedHealth.FindProperty("maxHealth").floatValue = ranged ? 5f : 3f;
-            serializedHealth.FindProperty("invulnerabilityDuration").floatValue = 0.1f;
+            serializedHealth.FindProperty("invulnerabilityDuration").floatValue =
+                Ee5SliceProfile.EnemyInvulnerabilityDuration;
             serializedHealth.ApplyModifiedPropertiesWithoutUndo();
             EnemyController controller = enemy.AddComponent<EnemyController>();
             SerializedObject serializedController = new SerializedObject(controller);
