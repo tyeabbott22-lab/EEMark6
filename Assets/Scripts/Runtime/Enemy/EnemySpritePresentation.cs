@@ -1,4 +1,5 @@
 using UnityEngine;
+using ExtraterrestrialExhaust.Player;
 
 namespace ExtraterrestrialExhaust.Enemy
 {
@@ -22,6 +23,14 @@ namespace ExtraterrestrialExhaust.Enemy
         [SerializeField] bool pingPongDormantAnimation = true;
         [SerializeField] bool hideAfterDefeat = true;
 
+        [Header("Dormant Facing")]
+        [Tooltip("During EE5's dormant/wake intro, mirror this sprite toward the player before combat takes over.")]
+        [SerializeField] bool faceDormantTowardTarget;
+        [Tooltip("The authored sprite points left in its unflipped pose, as the EE5 white gunner does.")]
+        [SerializeField] bool forwardIsLocalNegativeX = true;
+        [Tooltip("Restore the authored sprite flip as soon as the wake presentation hands control to combat.")]
+        [SerializeField] bool restoreFacingAfterWake = true;
+
         EnemyController controller;
         Renderer[] renderers;
         Sprite[] currentFrames;
@@ -35,6 +44,7 @@ namespace ExtraterrestrialExhaust.Enemy
         int wakeFrameIndex;
         int dormantFrameDirection = 1;
         bool wakeAlertStarted;
+        bool authoredFlipX;
 
         void Reset()
         {
@@ -49,6 +59,7 @@ namespace ExtraterrestrialExhaust.Enemy
             if (!spriteRenderer)
                 spriteRenderer = GetComponent<SpriteRenderer>();
             renderers = GetComponentsInChildren<Renderer>(true);
+            authoredFlipX = spriteRenderer && spriteRenderer.flipX;
         }
 
         void OnEnable()
@@ -82,10 +93,12 @@ namespace ExtraterrestrialExhaust.Enemy
 
             if (waking)
             {
+                UpdateDormantFacing();
                 UpdateWakeAnimation();
                 return;
             }
 
+            UpdateDormantFacing();
             bool useDormantTiming = !hasWoken
                 && currentState != EnemyState.Defeated;
             AdvanceRegularAnimation(
@@ -141,6 +154,14 @@ namespace ExtraterrestrialExhaust.Enemy
             else
             {
                 currentFrames = activeSprites;
+            }
+
+            if (restoreFacingAfterWake
+                && state != EnemyState.Dormant
+                && state != EnemyState.Waking
+                && spriteRenderer)
+            {
+                spriteRenderer.flipX = authoredFlipX;
             }
 
             SetRenderersEnabled(true);
@@ -243,7 +264,30 @@ namespace ExtraterrestrialExhaust.Enemy
             frameTimer = 0f;
             dormantFrameDirection = 1;
             currentFrames = activeSprites;
+            if (restoreFacingAfterWake && spriteRenderer)
+                spriteRenderer.flipX = authoredFlipX;
             ApplyFrame();
+        }
+
+        void UpdateDormantFacing()
+        {
+            if (!faceDormantTowardTarget || !spriteRenderer || !controller)
+                return;
+
+            if (currentState != EnemyState.Dormant && currentState != EnemyState.Waking)
+            {
+                if (restoreFacingAfterWake)
+                    spriteRenderer.flipX = authoredFlipX;
+                return;
+            }
+
+            PlayerCharacter target = controller.Target;
+            if (!target)
+                return;
+
+            bool playerIsRight = target.transform.position.x >= transform.position.x;
+            bool flipFromDefault = forwardIsLocalNegativeX ? playerIsRight : !playerIsRight;
+            spriteRenderer.flipX = authoredFlipX ^ flipFromDefault;
         }
 
         void ApplyWakeFrame()

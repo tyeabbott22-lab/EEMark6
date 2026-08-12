@@ -257,6 +257,43 @@ namespace ExtraterrestrialExhaust.Editor
                 prefab);
         }
 
+        [MenuItem("Extraterrestrial Exhaust/Repair Enemy Prefab Profiles")]
+        public static void RepairEnemyPrefabProfiles()
+        {
+            bool meleeRepaired = RepairEnemyPrefabProfile(EnemyMeleePrefabPath, false);
+            bool gunnerRepaired = RepairEnemyPrefabProfile(EnemyGunnerPrefabPath, true);
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+
+            Debug.Log(
+                "Repaired the EE5 enemy prefab profiles. "
+                + $"Purple melee: {meleeRepaired}; white gunner: {gunnerRepaired}. "
+                + "The gunner now mirrors toward the player during its dormant/wake intro, "
+                + "and both prefabs use the four-times wake-line envelope. "
+                + "Rebuild FlightTest afterward to propagate the same profile into the generated scene.");
+        }
+
+        [MenuItem("Extraterrestrial Exhaust/Validate Enemy Prefab Profiles")]
+        public static void ValidateEnemyPrefabProfiles()
+        {
+            List<string> issues = new List<string>();
+            ValidateEnemyPrefabProfile(EnemyMeleePrefabPath, false, issues);
+            ValidateEnemyPrefabProfile(EnemyGunnerPrefabPath, true, issues);
+
+            if (issues.Count == 0)
+            {
+                Debug.Log(
+                    "Enemy prefab profiles match the EE5 intro contract: "
+                    + "four-times wake-line range and role-appropriate dormant facing.");
+                return;
+            }
+
+            Debug.LogWarning(
+                "Enemy prefab profiles need the EE5 intro migration: "
+                + string.Join("; ", issues)
+                + ". Run Extraterrestrial Exhaust > Repair Enemy Prefab Profiles.");
+        }
+
         [MenuItem("Extraterrestrial Exhaust/Repair Active FlightTest Player Profile")]
         public static void RepairActiveFlightTestPlayerProfile()
         {
@@ -516,6 +553,106 @@ namespace ExtraterrestrialExhaust.Editor
                 serializedWeaponPresentation.FindProperty("cameraShakeDuration").floatValue = 0.05f;
                 serializedWeaponPresentation.ApplyModifiedPropertiesWithoutUndo();
             }
+        }
+
+        static bool RepairEnemyPrefabProfile(string prefabPath, bool ranged)
+        {
+            GameObject prefabContents = PrefabUtility.LoadPrefabContents(prefabPath);
+            if (!prefabContents)
+            {
+                Debug.LogError($"Could not open enemy prefab at {prefabPath}.");
+                return false;
+            }
+
+            bool changed = false;
+            EnemyController controller = prefabContents.GetComponent<EnemyController>();
+            if (controller)
+            {
+                SerializedObject serializedController = new SerializedObject(controller);
+                changed |= SetFloat(
+                    serializedController,
+                    "wakeSignalDistanceMultiplier",
+                    Ee5SliceProfile.EnemyWakeSignalDistanceMultiplier);
+                changed |= SetFloat(serializedController, "wakeSignalChargeDuration", 1.15f);
+                changed |= SetFloat(serializedController, "wakeSignalChargeDecay", 1.8f);
+                changed |= SetFloat(serializedController, "wakeFinalWarningDuration", 0.35f);
+                serializedController.ApplyModifiedPropertiesWithoutUndo();
+            }
+
+            EnemySpritePresentation presentation = prefabContents.GetComponent<EnemySpritePresentation>();
+            if (presentation)
+            {
+                SerializedObject serializedPresentation = new SerializedObject(presentation);
+                changed |= SetBool(serializedPresentation, "faceDormantTowardTarget", ranged);
+                changed |= SetBool(serializedPresentation, "forwardIsLocalNegativeX", true);
+                changed |= SetBool(serializedPresentation, "restoreFacingAfterWake", true);
+                serializedPresentation.ApplyModifiedPropertiesWithoutUndo();
+            }
+
+            if (changed)
+                PrefabUtility.SaveAsPrefabAsset(prefabContents, prefabPath);
+            PrefabUtility.UnloadPrefabContents(prefabContents);
+            return changed;
+        }
+
+        static void ValidateEnemyPrefabProfile(string prefabPath, bool ranged, List<string> issues)
+        {
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
+            if (!prefab)
+            {
+                issues.Add($"missing {prefabPath}");
+                return;
+            }
+
+            EnemyController controller = prefab.GetComponent<EnemyController>();
+            if (!controller)
+            {
+                issues.Add($"{prefabPath} has no EnemyController");
+            }
+            else
+            {
+                SerializedObject serializedController = new SerializedObject(controller);
+                float multiplier = serializedController.FindProperty("wakeSignalDistanceMultiplier").floatValue;
+                if (!Mathf.Approximately(multiplier, Ee5SliceProfile.EnemyWakeSignalDistanceMultiplier))
+                    issues.Add($"{prefabPath} wakeSignalDistanceMultiplier={multiplier}");
+            }
+
+            EnemySpritePresentation presentation = prefab.GetComponent<EnemySpritePresentation>();
+            if (!presentation)
+            {
+                issues.Add($"{prefabPath} has no EnemySpritePresentation");
+            }
+            else
+            {
+                SerializedObject serializedPresentation = new SerializedObject(presentation);
+                bool facesTarget = serializedPresentation.FindProperty("faceDormantTowardTarget").boolValue;
+                bool forwardNegativeX = serializedPresentation.FindProperty("forwardIsLocalNegativeX").boolValue;
+                bool restoresFacing = serializedPresentation.FindProperty("restoreFacingAfterWake").boolValue;
+                if (facesTarget != ranged)
+                    issues.Add($"{prefabPath} faceDormantTowardTarget={facesTarget}");
+                if (!forwardNegativeX || !restoresFacing)
+                    issues.Add($"{prefabPath} dormant facing basis is incomplete");
+            }
+        }
+
+        static bool SetFloat(SerializedObject serialized, string propertyName, float value)
+        {
+            SerializedProperty property = serialized.FindProperty(propertyName);
+            if (property == null || Mathf.Approximately(property.floatValue, value))
+                return false;
+
+            property.floatValue = value;
+            return true;
+        }
+
+        static bool SetBool(SerializedObject serialized, string propertyName, bool value)
+        {
+            SerializedProperty property = serialized.FindProperty(propertyName);
+            if (property == null || property.boolValue == value)
+                return false;
+
+            property.boolValue = value;
+            return true;
         }
 
         static List<string> GetGeneratedSceneContractIssues()
@@ -1200,6 +1337,9 @@ namespace ExtraterrestrialExhaust.Editor
             serializedPresentation.FindProperty("wakeFramesPerSecond").floatValue = 14f;
             serializedPresentation.FindProperty("defeatDisplayDuration").floatValue = 0.3f;
             serializedPresentation.FindProperty("pingPongDormantAnimation").boolValue = ranged;
+            serializedPresentation.FindProperty("faceDormantTowardTarget").boolValue = ranged;
+            serializedPresentation.FindProperty("forwardIsLocalNegativeX").boolValue = true;
+            serializedPresentation.FindProperty("restoreFacingAfterWake").boolValue = true;
             serializedPresentation.ApplyModifiedPropertiesWithoutUndo();
             CreateEnemyHealthDisplay(enemy.transform, ranged);
 
