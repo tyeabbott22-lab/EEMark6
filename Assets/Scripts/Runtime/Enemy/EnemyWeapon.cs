@@ -281,21 +281,7 @@ namespace ExtraterrestrialExhaust.Enemy
 
         static bool IsWallCollider(Collider2D other)
         {
-            if (!other)
-                return false;
-
-            if (other.CompareTag("Wall"))
-                return true;
-
-            Transform current = other.transform.parent;
-            while (current)
-            {
-                if (current.CompareTag("Wall"))
-                    return true;
-                current = current.parent;
-            }
-
-            return false;
+            return Ee5SliceProfile.IsWallCollider(other);
         }
     }
 }

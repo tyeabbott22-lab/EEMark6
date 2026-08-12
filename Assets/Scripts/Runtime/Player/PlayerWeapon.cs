@@ -351,22 +351,7 @@ namespace ExtraterrestrialExhaust.Player
 
         bool IsWallAimTarget(Collider2D other)
         {
-            return other.CompareTag("Wall")
-                || HasTagInParents(other.transform, "Wall");
-        }
-
-        static bool HasTagInParents(Transform start, string tagName)
-        {
-            Transform current = start.parent;
-            while (current)
-            {
-                if (current.CompareTag(tagName))
-                    return true;
-
-                current = current.parent;
-            }
-
-            return false;
+            return Ee5SliceProfile.IsWallCollider(other);
         }
 
         Sprite CreateAimLineEndpointSprite()

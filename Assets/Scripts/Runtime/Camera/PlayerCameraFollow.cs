@@ -157,7 +157,7 @@ namespace ExtraterrestrialExhaust.CameraSystem
         {
             if (collision == null || collision.contactCount == 0
                 || string.IsNullOrEmpty(wallTag)
-                || !collision.collider.CompareTag(wallTag)
+                || !Ee5SliceProfile.IsWallCollider(collision.collider, wallTag)
                 || Time.unscaledTime < nextWallSlamShakeTime)
                 return;
 

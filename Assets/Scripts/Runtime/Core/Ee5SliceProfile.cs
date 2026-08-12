@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 namespace ExtraterrestrialExhaust.Core
@@ -169,5 +170,32 @@ namespace ExtraterrestrialExhaust.Core
         public const float KeyReleasePulseDuration = 0.28f;
         public const float KeyReleasePulseScale = 1.28f;
         public const string WallTag = "Wall";
+
+        /// <summary>
+        /// Recognizes the wall identity used by both generated EE6 rooms and
+        /// hand-authored/imported EE5 room pieces. Some EE5 scenes serialized
+        /// the lowercase tag and some colliders inherit the tag from a parent,
+        /// so gameplay code must not depend on one exact object layout.
+        /// </summary>
+        public static bool IsWallCollider(Collider2D collider, string configuredTag = null)
+        {
+            if (!collider)
+                return false;
+
+            Transform current = collider.transform;
+            while (current)
+            {
+                string tag = current.tag;
+                if ((!string.IsNullOrEmpty(configuredTag)
+                        && string.Equals(tag, configuredTag, StringComparison.OrdinalIgnoreCase))
+                    || string.Equals(tag, WallTag, StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(tag, "wall", StringComparison.OrdinalIgnoreCase))
+                    return true;
+
+                current = current.parent;
+            }
+
+            return false;
+        }
     }
 }

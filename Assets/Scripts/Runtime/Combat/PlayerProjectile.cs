@@ -219,7 +219,7 @@ namespace ExtraterrestrialExhaust.Combat
                 return;
             }
 
-            if (destroyOnUnrecognizedCollision || other.CompareTag("Wall"))
+            if (destroyOnUnrecognizedCollision || Ee5SliceProfile.IsWallCollider(other))
             {
                 Vector2 hitPoint = other.ClosestPoint(transform.position);
                 Vector2 impactNormal = ((Vector2)transform.position - hitPoint).normalized;

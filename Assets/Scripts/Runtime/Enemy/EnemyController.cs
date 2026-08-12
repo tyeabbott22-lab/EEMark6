@@ -784,13 +784,7 @@ namespace ExtraterrestrialExhaust.Enemy
 
         bool IsWallCollider(Collider2D hitCollider)
         {
-            if (hitCollider == null)
-                return false;
-
-            string hitTag = hitCollider.tag;
-            return string.Equals(hitTag, wallTag, StringComparison.OrdinalIgnoreCase)
-                || string.Equals(hitTag, "Wall", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(hitTag, "wall", StringComparison.OrdinalIgnoreCase);
+            return Ee5SliceProfile.IsWallCollider(hitCollider, wallTag);
         }
 
         void FaceTarget(Vector2 direction)
