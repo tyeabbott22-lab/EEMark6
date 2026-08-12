@@ -24,6 +24,8 @@ namespace ExtraterrestrialExhaust.Player
         public Vector2 Move { get; private set; }
         public bool WasFlipPressed { get; private set; }
 
+        bool flipRequestLatched;
+
         InputAction ResolvedMoveAction => moveAction != null
             ? moveAction.action
             : inputActions != null ? inputActions.FindAction(moveActionName) : null;
@@ -91,7 +93,20 @@ namespace ExtraterrestrialExhaust.Player
                     Move = new Vector2(Move.x, Mathf.Min(Move.y, -1f));
             }
 
-            WasFlipPressed = canReadInput && ResolvedFlipAction != null && ResolvedFlipAction.WasPressedThisFrame();
+            if (!canReadInput)
+            {
+                flipRequestLatched = false;
+            }
+            else if (ResolvedFlipAction != null && ResolvedFlipAction.WasPressedThisFrame())
+            {
+                // Keep the edge alive until the motor consumes it. Unity does
+                // not guarantee the order of sibling Update methods, and a
+                // one-frame property can otherwise be sampled before this
+                // component has read the action.
+                flipRequestLatched = true;
+            }
+
+            WasFlipPressed = flipRequestLatched;
         }
 
         /// <summary>
@@ -102,7 +117,23 @@ namespace ExtraterrestrialExhaust.Player
         public void ClearInputState()
         {
             Move = Vector2.zero;
+            flipRequestLatched = false;
             WasFlipPressed = false;
+        }
+
+        /// <summary>
+        /// Consumes one flip edge without making presentation depend on script
+        /// execution order. The public property remains available for visual
+        /// systems that need to observe the same frame's request.
+        /// </summary>
+        public bool ConsumeFlipRequest()
+        {
+            if (!flipRequestLatched)
+                return false;
+
+            flipRequestLatched = false;
+            WasFlipPressed = false;
+            return true;
         }
 
         /// <summary>

@@ -138,9 +138,13 @@ namespace ExtraterrestrialExhaust.CameraSystem
                 ? desiredPosition
                 : Vector3.Lerp(transform.position, desiredPosition, followT);
 
-            ApplyParallax(transform.position - previousCameraPosition);
             ApplyZoom(velocity.magnitude);
             ApplyShake();
+            // EE5 computes parallax from the final camera delta, after zoom
+            // and shake have been applied. Keeping that order prevents a
+            // flip/death/wall impulse from leaving the backdrop one frame out
+            // of phase with the camera's actual presentation movement.
+            ApplyParallax(transform.position - previousCameraPosition);
         }
 
         public void Shake(float strength, float duration)
@@ -213,7 +217,7 @@ namespace ExtraterrestrialExhaust.CameraSystem
             cameraComponent.orthographicSize = Mathf.Lerp(
                 cameraComponent.orthographicSize,
                 targetZoom,
-                1f - Mathf.Exp(-zoomSmooth * Time.deltaTime));
+                Mathf.Clamp01(zoomSmooth * Time.deltaTime));
         }
 
         void ApplyParallax(Vector3 cameraDelta)

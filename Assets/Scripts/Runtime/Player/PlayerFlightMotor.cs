@@ -86,7 +86,7 @@ namespace ExtraterrestrialExhaust.Player
             if (allowFlip
                 && !inStopperZone
                 && stateMachine.CurrentState == PlayerFlightState.FreeFlight
-                && input.WasFlipPressed)
+                && input.ConsumeFlipRequest())
                 Flip();
         }
 
