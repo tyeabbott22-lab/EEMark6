@@ -26,6 +26,7 @@ namespace ExtraterrestrialExhaust.Editor
     public static class FlightTestSceneBuilder
     {
         const string ScenePath = "Assets/Scenes/FlightTest.unity";
+        const string SceneBackupPath = "Library/FlightTest.unity.prebuild.bak";
         const string InputAssetPath = "Assets/InputSystem_Actions.inputactions";
         const string ProjectilePrefabPath = "Assets/Prefabs/PlayerProjectile.prefab";
         const string PlayerPrefabPath = "Assets/Prefabs/PlayerCraft.prefab";
@@ -67,6 +68,15 @@ namespace ExtraterrestrialExhaust.Editor
         [MenuItem("Extraterrestrial Exhaust/Build Flight Test Scene")]
         public static void Build()
         {
+            if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
+            {
+                Debug.Log("FlightTest build cancelled before replacing the active scene.");
+                return;
+            }
+
+            if (!BackupExistingFlightTestScene())
+                return;
+
             EnsureTag("StopperZone");
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
             InputActionAsset inputAsset = AssetDatabase.LoadAssetAtPath<InputActionAsset>(InputAssetPath);
@@ -141,6 +151,28 @@ namespace ExtraterrestrialExhaust.Editor
             ConfigureBuildSettings();
             Selection.activeGameObject = GameObject.Find("Player Craft");
             Debug.Log($"Built {ScenePath}. Use W/S to thrust or stabilize and A/D to rotate.");
+        }
+
+        static bool BackupExistingFlightTestScene()
+        {
+            if (!File.Exists(ScenePath))
+                return true;
+
+            try
+            {
+                string directory = Path.GetDirectoryName(SceneBackupPath);
+                if (!string.IsNullOrEmpty(directory))
+                    Directory.CreateDirectory(directory);
+                File.Copy(ScenePath, SceneBackupPath, true);
+                Debug.Log($"Backed up the previous FlightTest scene to {SceneBackupPath}.");
+                return true;
+            }
+            catch (System.Exception exception)
+            {
+                Debug.LogError(
+                    $"FlightTest build cancelled because the previous scene could not be backed up: {exception.Message}");
+                return false;
+            }
         }
 
         [MenuItem("Extraterrestrial Exhaust/Normalize Imported Sprite Names")]

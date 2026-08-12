@@ -29,7 +29,10 @@ namespace ExtraterrestrialExhaust.Core
         void OnEnable()
         {
             if (energyKey)
+            {
                 energyKey.StateChanged += HandleStateChanged;
+                SyncCurrentState();
+            }
         }
 
         void OnDisable()
@@ -83,6 +86,18 @@ namespace ExtraterrestrialExhaust.Core
                     }
                     break;
             }
+        }
+
+        void SyncCurrentState()
+        {
+            // EnergyKey can resolve an already-defeated carrier in OnEnable
+            // before this companion receives its event subscription. Recover
+            // only the persistent approach cue here; transient signal bursts
+            // should remain event-driven and must not replay on scene reload.
+            if (energyKey.State != EnergyKeyState.FlyingToGate || !energyKey.TargetGate)
+                return;
+
+            energyKey.TargetGate.GetComponent<EnergyGatePresentation>()?.BeginKeyApproach();
         }
 
         Transform ResolveTetherTarget()
