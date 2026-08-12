@@ -21,6 +21,12 @@ namespace ExtraterrestrialExhaust.Player
         [SerializeField] PlayerProjectile projectilePrefab;
         [SerializeField] Transform firePoint;
         [SerializeField] bool enforceEe5Profile = true;
+        [Header("Authored Fire Point")]
+        // EE5 keeps this offset authored on the player root rather than asking
+        // the projectile or muzzle presentation to guess where the shot came
+        // from after a visual flip.
+        [SerializeField] bool keepFirePointRightOfOrigin = true;
+        [SerializeField] Vector2 firePointLocalOffset = new Vector2(0.55f, 0f);
         // Match the authored EE5 sniper prefab: deliberate one-second shots
         // and a strong recoil impulse that remains part of the flight rhythm.
         [SerializeField, Min(0.01f)] float fireCooldown = 1f;
@@ -63,6 +69,7 @@ namespace ExtraterrestrialExhaust.Player
                 fireCooldown = Ee5SliceProfile.PlayerFireCooldown;
                 recoilForce = Ee5SliceProfile.PlayerRecoilForce;
             }
+            SyncFirePointToFacing();
             EnsureAimLine();
         }
 
@@ -134,6 +141,7 @@ namespace ExtraterrestrialExhaust.Player
             cooldownRemaining = 0f;
             fireRateMultiplier = 1f;
             fireRateBoostRemaining = 0f;
+            SyncFirePointToFacing();
             HideAimLine();
         }
 
@@ -157,21 +165,36 @@ namespace ExtraterrestrialExhaust.Player
 
         void GetFirePose(out Vector2 spawnPosition, out Vector2 direction)
         {
+            SyncFirePointToFacing();
+
             Transform origin = firePoint ? firePoint : transform;
             spawnPosition = origin.position;
-            direction = origin.right;
-
-            if (!flightMotor)
-                return;
-
-            // The craft visual flips independently of the physics body. Mirror the
-            // fire point in body-local space so shots and recoil follow the visual.
-            Vector3 localOffset = transform.InverseTransformPoint(origin.position);
-            localOffset.x = Mathf.Abs(localOffset.x) * (flightMotor.FacingRight ? 1f : -1f);
-            spawnPosition = transform.TransformPoint(localOffset);
             direction = ((Vector2)spawnPosition - (Vector2)transform.position).normalized;
             if (direction.sqrMagnitude < 0.001f)
-                direction = transform.right * (flightMotor.FacingRight ? 1f : -1f);
+            {
+                bool facingRight = !flightMotor || flightMotor.FacingRight;
+                direction = transform.right * (facingRight ? 1f : -1f);
+            }
+        }
+
+        void SyncFirePointToFacing()
+        {
+            if (!keepFirePointRightOfOrigin || !firePoint || !firePoint.IsChildOf(transform))
+                return;
+
+            // A fire point authored beneath the flipped craft visual already
+            // inherits the mirror. Only root-level points need this correction.
+            if (flightMotor
+                && flightMotor.Visual
+                && flightMotor.Visual != transform
+                && firePoint.IsChildOf(flightMotor.Visual))
+                return;
+
+            bool facingRight = !flightMotor || flightMotor.FacingRight;
+            Vector3 localPosition = firePoint.localPosition;
+            localPosition.x = Mathf.Abs(firePointLocalOffset.x) * (facingRight ? 1f : -1f);
+            localPosition.y = firePointLocalOffset.y;
+            firePoint.localPosition = localPosition;
         }
 
         void EnsureAimLine()

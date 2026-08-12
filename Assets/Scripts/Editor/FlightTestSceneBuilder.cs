@@ -332,6 +332,8 @@ namespace ExtraterrestrialExhaust.Editor
             serializedWeapon.FindProperty("gameState").objectReferenceValue = gameState;
             serializedWeapon.FindProperty("projectilePrefab").objectReferenceValue = projectilePrefab;
             serializedWeapon.FindProperty("enforceEe5Profile").boolValue = true;
+            serializedWeapon.FindProperty("keepFirePointRightOfOrigin").boolValue = true;
+            serializedWeapon.FindProperty("firePointLocalOffset").vector2Value = new Vector2(0.55f, 0f);
             // Match EE5's authored sniper prefab rather than the faster
             // prototype tuning: each shot should be a meaningful flight beat.
             serializedWeapon.FindProperty("fireCooldown").floatValue = Ee5SliceProfile.PlayerFireCooldown;

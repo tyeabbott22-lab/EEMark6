@@ -120,9 +120,10 @@ namespace ExtraterrestrialExhaust.Player
 
             Vector2 direction = flashDirection;
             Vector2 perpendicular = new Vector2(-direction.y, direction.x);
-            Vector2 origin = firePoint ? (Vector2)firePoint.position : flashPosition;
-            if (flashPosition.sqrMagnitude > 0.0001f)
-                origin = flashPosition;
+            // The weapon event carries the authoritative mirrored spawn point.
+            // Do not fall back to the serialized transform: at world origin
+            // that old sentinel made the flash appear on the wrong side.
+            Vector2 origin = flashPosition;
 
             float eased = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(alpha));
             Vector2 tip = origin + direction * (flashLength * eased);
