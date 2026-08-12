@@ -291,6 +291,15 @@ MonoBehaviour:
   boostedParticleEmissionMultiplier: 1.4
   boostedExhaustStartColor: {r: 0.75, g: 1, b: 1, a: 1}
   boostedExhaustEndColor: {r: 0.12, g: 0.4, b: 1, a: 0}
+  exhaustParticlesCollide: 1
+  exhaustCollisionMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  exhaustCollisionDampen: 0.72
+  exhaustCollisionBounce: 0.04
+  exhaustCollisionLifetimeLoss: 1
+  exhaustCollisionRadiusScale: 0.35
+  exhaustSortingOrder: -1
   exhaustSideOffset: 0.28
   exhaustLength: 0.55
   turnExhaustAmount: 1

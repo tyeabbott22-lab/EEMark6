@@ -202,7 +202,7 @@ namespace ExtraterrestrialExhaust.Core
             player.FlightState.TrySetState(PlayerFlightState.Disabled);
             FindFirstObjectByType<ScoreSystem>()?.Award(ScoreReason.LevelCompleted);
             extractionComplete = true;
-            gameState?.EndGame();
+            gameState?.EndGame(GameOverReason.ExtractionComplete);
             capturing = false;
         }
 

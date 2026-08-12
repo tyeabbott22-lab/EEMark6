@@ -21,6 +21,7 @@ namespace ExtraterrestrialExhaust.Core
         [SerializeField, Min(0f)] float enemyDefeatSlowdownDuration = Ee5SliceProfile.EnemyDefeatSlowdownDuration;
 
         public GameState CurrentState { get; private set; }
+        public GameOverReason LastGameOverReason { get; private set; } = GameOverReason.Unknown;
         public bool IsPlaying => CurrentState == GameState.Playing;
         public event Action<GameState, GameState> StateChanged;
 
@@ -82,7 +83,13 @@ namespace ExtraterrestrialExhaust.Core
         public void StartGame() => TrySetState(GameState.Playing);
         public void PauseGame() => TrySetState(GameState.Paused);
         public void ResumeGame() => TrySetState(GameState.Playing);
-        public void EndGame() => TrySetState(GameState.GameOver);
+        public void EndGame() => EndGame(GameOverReason.Unknown);
+
+        public void EndGame(GameOverReason reason)
+        {
+            LastGameOverReason = reason;
+            TrySetState(GameState.GameOver);
+        }
 
         public void TogglePause()
         {

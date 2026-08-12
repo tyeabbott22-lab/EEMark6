@@ -140,8 +140,10 @@ namespace ExtraterrestrialExhaust.Core
         void HandleStateChanged(GameState previous, GameState next)
         {
             Refresh();
-            if (next == GameState.GameOver && (!exit || exit.IsComplete))
-                ShowObjectiveBanner("EXTRACTION COMPLETE");
+            if (next != GameState.GameOver)
+                return;
+
+            ShowObjectiveBanner(GetGameOverLabel());
         }
         void HandleObjectiveChanged(SliceObjectiveState previous, SliceObjectiveState next)
         {
@@ -309,7 +311,7 @@ namespace ExtraterrestrialExhaust.Core
 
             if (gameState && gameState.CurrentState == GameState.GameOver)
             {
-                statusLabel.text = $"SCORE  {score:0000}\nEXTRACTION COMPLETE";
+                statusLabel.text = $"SCORE  {score:0000}\n{GetGameOverLabel()}";
                 return;
             }
 
@@ -424,6 +426,15 @@ namespace ExtraterrestrialExhaust.Core
                 default:
                     return "CLEAR ENCOUNTER";
             }
+        }
+
+        string GetGameOverLabel()
+        {
+            if (gameState && gameState.LastGameOverReason == GameOverReason.ExtractionComplete)
+                return "EXTRACTION COMPLETE";
+            if (gameState && gameState.LastGameOverReason == GameOverReason.HullLost)
+                return "HULL LOST";
+            return "GAME OVER";
         }
     }
 }

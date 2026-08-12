@@ -2,6 +2,7 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using ExtraterrestrialExhaust.Combat;
+using ExtraterrestrialExhaust.Core;
 
 namespace ExtraterrestrialExhaust.Player
 {
@@ -58,6 +59,11 @@ namespace ExtraterrestrialExhaust.Player
 
         void HandleDeath()
         {
+            // EE5 reloads the authored room after hull loss. Marking the
+            // transition first makes the short reload window deterministic:
+            // combat, input, and HUD all know this is failure rather than a
+            // successful extraction. In-place recovery re-enters Playing below.
+            character.GameState?.EndGame(GameOverReason.HullLost);
             character.FlightState.TrySetState(PlayerFlightState.Disabled);
             // A touch/UI hold is not a physical input state. Clear it when a
             // life ends so an in-place recovery never fires on the first frame
@@ -114,6 +120,7 @@ namespace ExtraterrestrialExhaust.Player
             weaponInput?.ClearUIInput();
             weapon?.ResetForRespawn();
             character.Health.ResetHealth();
+            character.GameState?.StartGame();
             character.FlightState.TrySetState(PlayerFlightState.FreeFlight);
             respawnRoutine = null;
         }
