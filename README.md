@@ -43,7 +43,7 @@ The player foundation is intentionally split into three responsibilities:
 | `PlayerCameraFollow` | Provides EE5-style velocity lead, speed zoom, starfield parallax, coherent shake, enemy-death feedback, and wall-impact feedback. |
 | `PlayerHealthDisplay` | Presents the player health sheet briefly at spawn and after damage/healing, then fades it without owning combat rules. |
 | `ContactHazard` / `HazardPresentation` | Optional reusable heat volume with EE5-style knockback, pulse telegraph, damage accent, and ember presentation. |
-| `PlayerCollisionDamage` | Converts high-speed impacts into collision damage. |
+| `PlayerCollisionDamage` | Optional high-speed impact experiment; disabled on the EE5 gold path because ordinary wall contact is not player damage in `realScene`. |
 | `BrittleWall` | Recreates the EE5 thrust-assisted high-speed slam through interior brittle shelves while leaving arena boundaries permanent. |
 | `HealthPickup` / `FireRatePickup` / `PickupPresentation` | Optional recovery and weapon-power beats with authored idle motion and collection confirmation, while remaining non-required room pressure. |
 | `EnemyController` | Provides explicit dormant, waking, chasing, attacking, and defeated states with EE5-style wall steering, ranged orbit movement, and line-of-sight wake charging. |

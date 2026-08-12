@@ -22,6 +22,10 @@ namespace ExtraterrestrialExhaust.Core
         public const float PlayerFireCooldown = 1f;
         public const float PlayerRecoilForce = 12f;
         public const float PlayerProjectileSpeed = 30f;
+        // The EE5 realScene player does not own a generic impact-damage
+        // component. Keep the reusable experiment available, but do not let
+        // ordinary arena-wall contact alter the gold-standard hull loop.
+        public const bool PlayerCollisionDamageEnabled = false;
 
         // EE5 separates the readable wake-line envelope from the enemy's
         // actual six-unit activation trigger. The telegraph can enter the

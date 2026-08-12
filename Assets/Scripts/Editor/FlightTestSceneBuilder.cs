@@ -414,6 +414,14 @@ namespace ExtraterrestrialExhaust.Editor
                 }
             }
 
+            PlayerCollisionDamage collisionDamage = playerObject.GetComponent<PlayerCollisionDamage>();
+            if (collisionDamage && collisionDamage.enabled != Ee5SliceProfile.PlayerCollisionDamageEnabled)
+            {
+                mismatches.Add(
+                    $"PlayerCollisionDamage.enabled={collisionDamage.enabled} "
+                    + $"(expected {Ee5SliceProfile.PlayerCollisionDamageEnabled})");
+            }
+
             PlayerWeapon weapon = playerObject.GetComponent<PlayerWeapon>();
             if (weapon)
             {
@@ -485,6 +493,10 @@ namespace ExtraterrestrialExhaust.Editor
                     stopperTag.stringValue = "StopperZone";
                 serializedMotor.ApplyModifiedPropertiesWithoutUndo();
             }
+
+            PlayerCollisionDamage collisionDamage = playerObject.GetComponent<PlayerCollisionDamage>();
+            if (collisionDamage)
+                collisionDamage.enabled = Ee5SliceProfile.PlayerCollisionDamageEnabled;
 
             HealthComponent health = playerObject.GetComponent<HealthComponent>();
             if (health)
@@ -1197,7 +1209,8 @@ namespace ExtraterrestrialExhaust.Editor
             serializedDamageFeedback.FindProperty("flashDuration").floatValue = 0.4f;
             serializedDamageFeedback.FindProperty("flashInterval").floatValue = 1f / 30f;
             serializedDamageFeedback.ApplyModifiedPropertiesWithoutUndo();
-            player.AddComponent<PlayerCollisionDamage>();
+            PlayerCollisionDamage collisionDamage = player.AddComponent<PlayerCollisionDamage>();
+            collisionDamage.enabled = Ee5SliceProfile.PlayerCollisionDamageEnabled;
             PrefabUtility.SaveAsPrefabAssetAndConnect(
                 player,
                 PlayerPrefabPath,

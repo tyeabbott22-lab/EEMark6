@@ -4,6 +4,11 @@ using ExtraterrestrialExhaust.Player;
 
 namespace ExtraterrestrialExhaust.Combat
 {
+    /// <summary>
+    /// Optional experimental impact damage. It is deliberately disabled by
+    /// the EE5 slice builder because the reference realScene does not damage
+    /// the player for generic wall contact.
+    /// </summary>
     [RequireComponent(typeof(Rigidbody2D))]
     [RequireComponent(typeof(HealthComponent))]
     public sealed class PlayerCollisionDamage : MonoBehaviour
