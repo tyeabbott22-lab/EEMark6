@@ -1,5 +1,6 @@
 using UnityEditor;
 using UnityEditor.SceneManagement;
+using UnityEditorInternal;
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
@@ -64,6 +65,7 @@ namespace ExtraterrestrialExhaust.Editor
         [MenuItem("Extraterrestrial Exhaust/Build Flight Test Scene")]
         public static void Build()
         {
+            EnsureTag("StopperZone");
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
             InputActionAsset inputAsset = AssetDatabase.LoadAssetAtPath<InputActionAsset>(InputAssetPath);
             PlayerProjectile projectilePrefab = CreateProjectilePrefab();
@@ -125,6 +127,7 @@ namespace ExtraterrestrialExhaust.Editor
             CreateInstructionTriggers();
 
             CreateArenaBoundaries();
+            CreateFlightStopperZone();
             CreateEnvironmentalPressure();
 
             // The gold-standard slice is intentionally focused on the EE5 loop:
@@ -459,6 +462,8 @@ namespace ExtraterrestrialExhaust.Editor
                 serializedMotor.FindProperty("stabilizationSpeed").floatValue = Ee5SliceProfile.StabilizationSpeed;
                 serializedMotor.FindProperty("angularDamping").floatValue = Ee5SliceProfile.FlightAngularDamping;
                 serializedMotor.FindProperty("stabilizationAngle").floatValue = 0f;
+                serializedMotor.FindProperty("removeVelocityIntoColliders").boolValue =
+                    Ee5SliceProfile.PlayerRemoveVelocityIntoColliders;
                 serializedMotor.ApplyModifiedPropertiesWithoutUndo();
             }
 
@@ -740,6 +745,9 @@ namespace ExtraterrestrialExhaust.Editor
                 issues.Add("LevelExit");
             if (!UnityEngine.Object.FindFirstObjectByType<GameplayHud>())
                 issues.Add("GameplayHud");
+            GameObject stopper = GameObject.Find("Flight Stopper Zone");
+            if (!stopper || !stopper.GetComponent<BoxCollider2D>())
+                issues.Add("Flight Stopper Zone");
 
             EnemyController[] enemies = UnityEngine.Object.FindObjectsByType<EnemyController>(FindObjectsSortMode.None);
             if (enemies == null || enemies.Length < 2)
@@ -974,6 +982,8 @@ namespace ExtraterrestrialExhaust.Editor
             serializedMotor.FindProperty("stabilizationSpeed").floatValue = Ee5SliceProfile.StabilizationSpeed;
             serializedMotor.FindProperty("angularDamping").floatValue = Ee5SliceProfile.FlightAngularDamping;
             serializedMotor.FindProperty("stabilizationAngle").floatValue = 0f;
+            serializedMotor.FindProperty("removeVelocityIntoColliders").boolValue =
+                Ee5SliceProfile.PlayerRemoveVelocityIntoColliders;
             serializedMotor.ApplyModifiedPropertiesWithoutUndo();
             HealthComponent playerHealth = player.GetComponent<HealthComponent>();
             SerializedObject serializedPlayerHealth = new SerializedObject(playerHealth);
@@ -1939,6 +1949,41 @@ namespace ExtraterrestrialExhaust.Editor
                 "Extraction Spine",
                 new Vector2(6.2f, 2.35f),
                 new Vector2(0.35f, 2.5f));
+        }
+
+        static void CreateFlightStopperZone()
+        {
+            // EE5's lower-center white stopper is a gameplay volume, not a
+            // decorative wall: while inside it, flight input and rotation are
+            // suppressed but existing momentum is allowed to coast through.
+            GameObject zone = new GameObject("Flight Stopper Zone");
+            zone.tag = "StopperZone";
+            zone.transform.position = new Vector3(
+                0f,
+                Ee5SliceProfile.FlightStopperCenterY,
+                0f);
+
+            BoxCollider2D collider = zone.AddComponent<BoxCollider2D>();
+            collider.isTrigger = true;
+            collider.size = new Vector2(
+                Ee5SliceProfile.FlightStopperWidth,
+                Ee5SliceProfile.FlightStopperHeight);
+
+            // Keep the cue understated like EE5's nearly transparent white
+            // strip while still making the volume discoverable in the slice.
+            CreateSquareOutline(
+                zone.transform,
+                collider.size,
+                new Color(0.75f, 0.88f, 1f, 0.32f));
+        }
+
+        static void EnsureTag(string tag)
+        {
+            if (!InternalEditorUtility.tags.Contains(tag))
+            {
+                InternalEditorUtility.AddTag(tag);
+                Debug.Log($"Added required gameplay tag: {tag}");
+            }
         }
 
         static void CreateMoonTerrainBasin()

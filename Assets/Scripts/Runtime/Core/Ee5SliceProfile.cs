@@ -17,6 +17,7 @@ namespace ExtraterrestrialExhaust.Core
         public const float StabilizationSpeed = 720f;
         public const float FlightAngularDamping = 0.85f;
         public const float RotationBoostMultiplier = 0.225f;
+        public const bool PlayerRemoveVelocityIntoColliders = true;
 
         public const float PlayerFireCooldown = 1f;
         public const float PlayerRecoilForce = 12f;
@@ -38,6 +39,10 @@ namespace ExtraterrestrialExhaust.Core
         public const float EnergyKeyCarrierSpawnOffsetY = 1.35f;
         public const float EnergyKeyVisualScale = 1.65f;
         public const float EnergyKeyPlayerFollowSharpness = 12f;
+
+        public const float FlightStopperCenterY = -2f;
+        public const float FlightStopperWidth = 12f;
+        public const float FlightStopperHeight = 2f;
 
         public const float CameraFollowSpeed = 12f;
         public const float CameraVelocityLead = 0.24f;

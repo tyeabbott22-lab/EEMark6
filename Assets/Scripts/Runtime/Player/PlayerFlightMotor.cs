@@ -23,12 +23,15 @@ namespace ExtraterrestrialExhaust.Player
         [SerializeField] Transform visual;
         [SerializeField] bool allowFlip = true;
         [SerializeField] bool enforceEe5Profile = true;
+        [Tooltip("Removes only velocity directed into a contacted surface, preserving EE5-style tangential follow-through.")]
+        [SerializeField] bool removeVelocityIntoColliders = true;
 
         Rigidbody2D body;
         PlayerFlightInput input;
         PlayerFlightStateMachine stateMachine;
         bool facingRight = true;
         bool initialFacingRight = true;
+        readonly ContactPoint2D[] contactBuffer = new ContactPoint2D[8];
 
         public Rigidbody2D Body => body;
         public Transform Visual => visual;
@@ -60,6 +63,7 @@ namespace ExtraterrestrialExhaust.Player
             stabilizationSpeed = Ee5SliceProfile.StabilizationSpeed;
             angularDamping = Ee5SliceProfile.FlightAngularDamping;
             stabilizationAngle = 0f;
+            removeVelocityIntoColliders = Ee5SliceProfile.PlayerRemoveVelocityIntoColliders;
 
             body.mass = Ee5SliceProfile.PlayerMass;
             body.gravityScale = Ee5SliceProfile.PlayerGravityScale;
@@ -94,6 +98,9 @@ namespace ExtraterrestrialExhaust.Player
 
             if (input.Move.y < -0.2f)
                 Stabilize();
+
+            if (removeVelocityIntoColliders)
+                RemoveVelocityIntoColliders();
         }
 
         void ApplyRotation(float inputAmount)
@@ -115,6 +122,23 @@ namespace ExtraterrestrialExhaust.Player
 
             body.MoveRotation(targetAngle);
             body.angularVelocity *= angularDamping;
+        }
+
+        /// <summary>
+        /// EE5 keeps the craft from sticking or ricocheting when it grazes a
+        /// wall: remove only the component moving into each contact normal and
+        /// leave the tangent component available for a controlled slide.
+        /// </summary>
+        void RemoveVelocityIntoColliders()
+        {
+            int contactCount = body.GetContacts(contactBuffer);
+            for (int i = 0; i < contactCount; i++)
+            {
+                Vector2 normal = contactBuffer[i].normal;
+                float intoSurface = Vector2.Dot(body.linearVelocity, normal);
+                if (intoSurface < 0f)
+                    body.linearVelocity -= normal * intoSurface;
+            }
         }
 
         public void Flip()
