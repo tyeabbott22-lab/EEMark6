@@ -35,7 +35,7 @@ namespace ExtraterrestrialExhaust.Enemy
 
             Vector2 enemyPosition = controller.PhysicsPosition;
             Vector2 playerPosition = player.PhysicsPosition;
-            if (Vector2.Distance(enemyPosition, playerPosition) > controller.AttackReach)
+            if (Vector2.Distance(enemyPosition, playerPosition) > controller.ContactDamageReach)
                 return;
 
             Vector2 direction = (playerPosition - enemyPosition).normalized;

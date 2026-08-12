@@ -861,6 +861,10 @@ namespace ExtraterrestrialExhaust.Editor
                     serializedController,
                     "attackExitRange",
                     ranged ? 7f : Ee5SliceProfile.EnemyMeleeAttackExitRange);
+                changed |= SetFloat(
+                    serializedController,
+                    "contactDamageRange",
+                    ranged ? 0f : Ee5SliceProfile.EnemyMeleeContactRange);
                 changed |= SetFloat(serializedController, "targetBuffer", 0.04f);
                 changed |= SetEnum(
                     serializedController,
@@ -1221,6 +1225,12 @@ namespace ExtraterrestrialExhaust.Editor
                     "wanderDurationMax",
                     Ee5SliceProfile.EnemyGunnerWanderDurationMax,
                     $"{prefabPath} wanderDurationMax",
+                    issues);
+                CheckSerializedFloat(
+                    serializedController,
+                    "contactDamageRange",
+                    ranged ? 0f : Ee5SliceProfile.EnemyMeleeContactRange,
+                    $"{prefabPath} contactDamageRange",
                     issues);
                 CheckSerializedBool(
                     serializedController,
@@ -2846,6 +2856,9 @@ namespace ExtraterrestrialExhaust.Editor
             serializedController.FindProperty("attackExitRange").floatValue = ranged
                 ? 7f
                 : Ee5SliceProfile.EnemyMeleeAttackExitRange;
+            serializedController.FindProperty("contactDamageRange").floatValue = ranged
+                ? 0f
+                : Ee5SliceProfile.EnemyMeleeContactRange;
             serializedController.FindProperty("targetBuffer").floatValue = 0.04f;
             // Match the authored EE5 roles: the white gunner moves at 2 and
             // the purple close hunter at 3 units per second.

@@ -88,6 +88,11 @@ namespace ExtraterrestrialExhaust.Core
         // keeps contact damage active without making a dynamic enemy repeatedly
         // push into the player's body and jitter at the attack threshold.
         public const float EnemyMeleeAttackRange = 1.25f;
+        // EE5 deals melee damage on actual contact. The EE6 controller stops
+        // just outside the colliders to avoid dynamic-body tug-of-war, so the
+        // range hit must stay near the combined collider edge rather than
+        // firing from the full state-transition radius.
+        public const float EnemyMeleeContactRange = 0.95f;
         // A small exit band prevents a melee hunter from alternating between
         // Chasing and Attacking when the player hovers exactly on its brake
         // radius. The authored EE5 movement remains the reference; this band

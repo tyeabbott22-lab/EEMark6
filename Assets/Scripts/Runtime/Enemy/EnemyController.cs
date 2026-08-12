@@ -52,6 +52,8 @@ namespace ExtraterrestrialExhaust.Enemy
         [SerializeField, Min(0f)] float attackRange = 1.2f;
         [Tooltip("Melee attack remains latched until this wider radius is crossed, preventing state chatter at the stopping distance.")]
         [SerializeField, Min(0f)] float attackExitRange = Ee5SliceProfile.EnemyMeleeAttackExitRange;
+        [Tooltip("Actual melee damage reach. Keep this below the attack-state brake radius so knockback does not create a chase/attack tug-of-war.")]
+        [SerializeField, Min(0f)] float contactDamageRange = Ee5SliceProfile.EnemyMeleeContactRange;
         [SerializeField, Min(0f)] float chaseSpeed = 2.5f;
         [SerializeField] PlayerCharacter target;
 
@@ -121,6 +123,9 @@ namespace ExtraterrestrialExhaust.Enemy
         public bool ForwardIsLocalNegativeX => forwardIsLocalNegativeX;
         public bool CanAttack => State == EnemyState.Attacking;
         public float AttackReach => attackRange;
+        public float ContactDamageReach => Mathf.Min(
+            Mathf.Max(0f, attackRange),
+            Mathf.Max(0f, contactDamageRange));
         public bool IsCombatActive => State == EnemyState.Chasing || State == EnemyState.Attacking;
         public float WakeProgress => State == EnemyState.Waking && wakeTotalDuration > 0f
             ? Mathf.Clamp01(wakeTimer / Mathf.Max(0.01f, wakeTotalDuration))
@@ -194,6 +199,9 @@ namespace ExtraterrestrialExhaust.Enemy
             // its mirrored root scale above. Derive this role flag here so
             // an older prefab cannot leave the sprite presentation inverted.
             forwardIsLocalNegativeX = movementMode == EnemyMovementMode.Wander;
+            contactDamageRange = movementMode == EnemyMovementMode.Chase
+                ? Ee5SliceProfile.EnemyMeleeContactRange
+                : 0f;
         }
 
         void OnEnable()
