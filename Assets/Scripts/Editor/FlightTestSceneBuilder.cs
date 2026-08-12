@@ -576,6 +576,7 @@ namespace ExtraterrestrialExhaust.Editor
                 changed |= SetFloat(serializedController, "wakeSignalChargeDuration", 1.15f);
                 changed |= SetFloat(serializedController, "wakeSignalChargeDecay", 1.8f);
                 changed |= SetFloat(serializedController, "wakeFinalWarningDuration", 0.35f);
+                changed |= SetBool(serializedController, "forwardIsLocalNegativeX", ranged);
                 serializedController.ApplyModifiedPropertiesWithoutUndo();
             }
 
@@ -615,6 +616,9 @@ namespace ExtraterrestrialExhaust.Editor
                 float multiplier = serializedController.FindProperty("wakeSignalDistanceMultiplier").floatValue;
                 if (!Mathf.Approximately(multiplier, Ee5SliceProfile.EnemyWakeSignalDistanceMultiplier))
                     issues.Add($"{prefabPath} wakeSignalDistanceMultiplier={multiplier}");
+                bool controllerForwardNegativeX = serializedController.FindProperty("forwardIsLocalNegativeX").boolValue;
+                if (controllerForwardNegativeX != ranged)
+                    issues.Add($"{prefabPath} forwardIsLocalNegativeX={controllerForwardNegativeX}");
             }
 
             EnemySpritePresentation presentation = prefab.GetComponent<EnemySpritePresentation>();
@@ -1244,6 +1248,7 @@ namespace ExtraterrestrialExhaust.Editor
             serializedController.FindProperty("nearMissDistance").floatValue = 1.65f;
             serializedController.FindProperty("nearMissExitDistance").floatValue = 2.15f;
             serializedController.FindProperty("faceTurnSpeed").floatValue = ranged ? 7.4f : 7.6f;
+            serializedController.FindProperty("forwardIsLocalNegativeX").boolValue = ranged;
             serializedController.FindProperty("keepSpriteUpright").boolValue = true;
             serializedController.FindProperty("gameState").objectReferenceValue = gameState;
             serializedController.ApplyModifiedPropertiesWithoutUndo();

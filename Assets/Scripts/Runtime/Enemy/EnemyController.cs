@@ -62,6 +62,8 @@ namespace ExtraterrestrialExhaust.Enemy
 
         [Header("Facing")]
         [SerializeField, Min(0f)] float faceTurnSpeed = 5f;
+        [Tooltip("The authored ranged gunner points along local negative X, matching EE5's enemyGun prefab.")]
+        [SerializeField] bool forwardIsLocalNegativeX;
         [SerializeField] bool keepSpriteUpright = true;
         [SerializeField] GameStateMachine gameState;
 
@@ -705,6 +707,8 @@ namespace ExtraterrestrialExhaust.Enemy
                 return;
 
             float targetAngle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
+            if (forwardIsLocalNegativeX)
+                targetAngle += 180f;
             float turnT = 1f - Mathf.Exp(-faceTurnSpeed * Time.fixedDeltaTime);
             body.MoveRotation(Mathf.LerpAngle(body.rotation, targetAngle, turnT));
 
