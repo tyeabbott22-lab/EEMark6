@@ -573,6 +573,10 @@ namespace ExtraterrestrialExhaust.Editor
                     serializedController,
                     "wakeSignalDistanceMultiplier",
                     Ee5SliceProfile.EnemyWakeSignalDistanceMultiplier);
+                changed |= SetFloat(
+                    serializedController,
+                    "chaseSpeed",
+                    ranged ? Ee5SliceProfile.EnemyGunnerChaseSpeed : Ee5SliceProfile.EnemyMeleeChaseSpeed);
                 changed |= SetFloat(serializedController, "wakeSignalChargeDuration", 1.15f);
                 changed |= SetFloat(serializedController, "wakeSignalChargeDecay", 1.8f);
                 changed |= SetFloat(serializedController, "wakeFinalWarningDuration", 0.35f);
@@ -588,6 +592,24 @@ namespace ExtraterrestrialExhaust.Editor
                 changed |= SetBool(serializedPresentation, "forwardIsLocalNegativeX", true);
                 changed |= SetBool(serializedPresentation, "restoreFacingAfterWake", true);
                 serializedPresentation.ApplyModifiedPropertiesWithoutUndo();
+            }
+
+            if (ranged)
+            {
+                EnemyWeapon weapon = prefabContents.GetComponent<EnemyWeapon>();
+                if (weapon)
+                {
+                    SerializedObject serializedWeapon = new SerializedObject(weapon);
+                    changed |= SetFloat(
+                        serializedWeapon,
+                        "fireCooldown",
+                        Ee5SliceProfile.EnemyGunnerFireCooldown);
+                    changed |= SetFloat(
+                        serializedWeapon,
+                        "projectileSpeed",
+                        Ee5SliceProfile.EnemyGunnerProjectileSpeed);
+                    serializedWeapon.ApplyModifiedPropertiesWithoutUndo();
+                }
             }
 
             if (changed)
@@ -619,6 +641,31 @@ namespace ExtraterrestrialExhaust.Editor
                 bool controllerForwardNegativeX = serializedController.FindProperty("forwardIsLocalNegativeX").boolValue;
                 if (controllerForwardNegativeX != ranged)
                     issues.Add($"{prefabPath} forwardIsLocalNegativeX={controllerForwardNegativeX}");
+                float chaseSpeed = serializedController.FindProperty("chaseSpeed").floatValue;
+                float expectedChaseSpeed = ranged
+                    ? Ee5SliceProfile.EnemyGunnerChaseSpeed
+                    : Ee5SliceProfile.EnemyMeleeChaseSpeed;
+                if (!Mathf.Approximately(chaseSpeed, expectedChaseSpeed))
+                    issues.Add($"{prefabPath} chaseSpeed={chaseSpeed}");
+            }
+
+            if (ranged)
+            {
+                EnemyWeapon weapon = prefab.GetComponent<EnemyWeapon>();
+                if (!weapon)
+                {
+                    issues.Add($"{prefabPath} has no EnemyWeapon");
+                }
+                else
+                {
+                    SerializedObject serializedWeapon = new SerializedObject(weapon);
+                    float cooldown = serializedWeapon.FindProperty("fireCooldown").floatValue;
+                    float projectileSpeed = serializedWeapon.FindProperty("projectileSpeed").floatValue;
+                    if (!Mathf.Approximately(cooldown, Ee5SliceProfile.EnemyGunnerFireCooldown))
+                        issues.Add($"{prefabPath} fireCooldown={cooldown}");
+                    if (!Mathf.Approximately(projectileSpeed, Ee5SliceProfile.EnemyGunnerProjectileSpeed))
+                        issues.Add($"{prefabPath} projectileSpeed={projectileSpeed}");
+                }
             }
 
             EnemySpritePresentation presentation = prefab.GetComponent<EnemySpritePresentation>();
@@ -1222,10 +1269,11 @@ namespace ExtraterrestrialExhaust.Editor
             serializedController.FindProperty("wakeSignalChargeDecay").floatValue = 1.8f;
             serializedController.FindProperty("wakeFinalWarningDuration").floatValue = 0.35f;
             serializedController.FindProperty("attackRange").floatValue = ranged ? 7f : 0.8f;
-            // Match the two authored EE5 roles: the purple close bruiser is
-            // slightly slower than the orbiting white gunner, but both remain
-            // fast enough to pressure a moving pilot.
-            serializedController.FindProperty("chaseSpeed").floatValue = ranged ? 2.7f : 2.8f;
+            // Match the authored EE5 roles: the white gunner moves at 2 and
+            // the purple close hunter at 3 units per second.
+            serializedController.FindProperty("chaseSpeed").floatValue = ranged
+                ? Ee5SliceProfile.EnemyGunnerChaseSpeed
+                : Ee5SliceProfile.EnemyMeleeChaseSpeed;
             serializedController.FindProperty("wallTag").stringValue = "Wall";
             serializedController.FindProperty("wallBuffer").floatValue = 0.03f;
             serializedController.FindProperty("steerAroundWalls").boolValue = true;
@@ -1276,8 +1324,8 @@ namespace ExtraterrestrialExhaust.Editor
                 serializedWeapon.FindProperty("projectilePrefab").objectReferenceValue = projectilePrefab;
                 serializedWeapon.FindProperty("firePoint").objectReferenceValue = firePoint.transform;
                 serializedWeapon.FindProperty("attackRange").floatValue = 7f;
-                serializedWeapon.FindProperty("fireCooldown").floatValue = 0.5f;
-                serializedWeapon.FindProperty("projectileSpeed").floatValue = 9.5f;
+                serializedWeapon.FindProperty("fireCooldown").floatValue = Ee5SliceProfile.EnemyGunnerFireCooldown;
+                serializedWeapon.FindProperty("projectileSpeed").floatValue = Ee5SliceProfile.EnemyGunnerProjectileSpeed;
                 serializedWeapon.FindProperty("projectileKnockback").floatValue = 2.5f;
                 serializedWeapon.FindProperty("projectileTint").colorValue = new Color(0.05f, 1f, 0.16f, 1f);
                 serializedWeapon.FindProperty("drawAimTelegraph").boolValue = true;

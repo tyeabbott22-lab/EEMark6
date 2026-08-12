@@ -26,6 +26,10 @@ namespace ExtraterrestrialExhaust.Core
         // actual six-unit activation trigger. The telegraph can enter the
         // frame early while the enemy remains dormant until WakeDistance.
         public const float EnemyWakeSignalDistanceMultiplier = 4f;
+        public const float EnemyGunnerChaseSpeed = 2f;
+        public const float EnemyMeleeChaseSpeed = 3f;
+        public const float EnemyGunnerFireCooldown = 1f;
+        public const float EnemyGunnerProjectileSpeed = 6f;
 
         public const float CameraFollowSpeed = 12f;
         public const float CameraVelocityLead = 0.24f;

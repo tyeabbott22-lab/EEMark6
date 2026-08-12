@@ -14,11 +14,12 @@ namespace ExtraterrestrialExhaust.Enemy
     {
         [SerializeField] PlayerProjectile projectilePrefab;
         [SerializeField] Transform firePoint;
-        // The EE5 white gunner fires at 2 Hz with a readable, deliberate
-        // projectile travel speed. The builder serializes this same profile.
-        [SerializeField, Min(0.05f)] float fireCooldown = 0.5f;
+        // EE5's enemyGun prefab fires once per second and overrides its bullet
+        // travel speed to six units. Keep this cadence deliberate: it gives the
+        // player the same readable dodge window as the realScene slice.
+        [SerializeField, Min(0.05f)] float fireCooldown = 1f;
         [SerializeField, Min(0f)] float attackRange = 7f;
-        [SerializeField, Min(0f)] float projectileSpeed = 9.5f;
+        [SerializeField, Min(0f)] float projectileSpeed = 6f;
         [SerializeField, Min(0f)] float projectileKnockback = 2.5f;
         [SerializeField] Color projectileTint = new Color(0.05f, 1f, 0.16f, 1f);
         [Header("Attack Telegraph")]
