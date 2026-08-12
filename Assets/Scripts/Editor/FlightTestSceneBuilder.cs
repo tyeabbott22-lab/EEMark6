@@ -716,6 +716,8 @@ namespace ExtraterrestrialExhaust.Editor
                 SerializedObject serializedInput = new SerializedObject(flightInput);
                 serializedInput.FindProperty("gameState").objectReferenceValue = gameState;
                 serializedInput.FindProperty("includeEe5KeyboardFallback").boolValue = true;
+                serializedInput.FindProperty("turnDeadzone").floatValue = Ee5SliceProfile.PlayerTurnDeadzone;
+                serializedInput.FindProperty("thrustDeadzone").floatValue = Ee5SliceProfile.PlayerThrustDeadzone;
                 serializedInput.ApplyModifiedPropertiesWithoutUndo();
             }
 
@@ -2544,6 +2546,8 @@ namespace ExtraterrestrialExhaust.Editor
             SerializedObject serializedInput = new SerializedObject(input);
             serializedInput.FindProperty("gameState").objectReferenceValue = gameState;
             serializedInput.FindProperty("includeEe5KeyboardFallback").boolValue = true;
+            serializedInput.FindProperty("turnDeadzone").floatValue = Ee5SliceProfile.PlayerTurnDeadzone;
+            serializedInput.FindProperty("thrustDeadzone").floatValue = Ee5SliceProfile.PlayerThrustDeadzone;
             serializedInput.ApplyModifiedPropertiesWithoutUndo();
             PlayerRespawnController recovery = player.AddComponent<PlayerRespawnController>();
             SerializedObject serializedRecovery = new SerializedObject(recovery);

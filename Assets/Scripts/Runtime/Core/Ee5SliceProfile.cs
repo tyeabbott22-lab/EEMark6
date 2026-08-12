@@ -43,6 +43,11 @@ namespace ExtraterrestrialExhaust.Core
         // intentional spin. Once residual rotation is calm, the assist can
         // settle the final tilt without making a flip feel sticky.
         public const float UprightAssistMaxAngularSpeed = 75f;
+        // The keyboard bindings remain full-strength, while a drifting analog
+        // stick must not become an invisible rotation command. These are input
+        // hygiene values, not a replacement for the authored flight torque.
+        public const float PlayerTurnDeadzone = 0.08f;
+        public const float PlayerThrustDeadzone = 0.04f;
         public const bool PlayerRemoveVelocityIntoColliders = true;
         public const float PlayerBoostedExhaustLengthMultiplier = 1.25f;
         public const float PlayerBoostedExhaustWidthMultiplier = 1.15f;
@@ -75,6 +80,10 @@ namespace ExtraterrestrialExhaust.Core
         public const float EnemyGunnerChaseSpeed = 2f;
         public const float EnemyMeleeChaseSpeed = 3f;
         public const float EnemyFaceTurnSpeed = 5f;
+        // A kinematic melee body should not visibly rotate for sub-degree target
+        // noise after it has reached its attack stop. This is below the authored
+        // five-degree-per-step response and only removes render chatter.
+        public const float EnemyFacingDeadbandDegrees = 0.5f;
         // Enemy art uses flipY to stay upright while the body turns. A small
         // dead band prevents a target hovering on the vertical threshold from
         // toggling the sprite orientation every render frame.

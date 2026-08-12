@@ -21,6 +21,11 @@ namespace ExtraterrestrialExhaust.Player
         [Tooltip("Keeps the realScene Q/E rotation and C stabilization controls available when an imported action asset omits them.")]
         [SerializeField] bool includeEe5KeyboardFallback = true;
 
+        [Header("Analog Hygiene")]
+        [Tooltip("Suppresses controller stick drift without changing full-strength keyboard commands.")]
+        [SerializeField, Range(0f, 0.25f)] float turnDeadzone = Ee5SliceProfile.PlayerTurnDeadzone;
+        [SerializeField, Range(0f, 0.25f)] float thrustDeadzone = Ee5SliceProfile.PlayerThrustDeadzone;
+
         public Vector2 Move { get; private set; }
         public bool WasFlipPressed { get; private set; }
 
@@ -70,6 +75,7 @@ namespace ExtraterrestrialExhaust.Player
             Move = canReadInput && hasMoveAction
                 ? resolvedMoveAction.ReadValue<Vector2>()
                 : Vector2.zero;
+            Move = SanitizeMove(Move);
 
             if (canReadInput && includeEe5KeyboardFallback && Keyboard.current != null)
             {
@@ -91,6 +97,10 @@ namespace ExtraterrestrialExhaust.Player
 
                 if (Keyboard.current.cKey.isPressed)
                     Move = new Vector2(Move.x, Mathf.Min(Move.y, -1f));
+
+                // Re-apply the horizontal deadzone after Q/E is combined with
+                // an action-asset value. Keyboard values remain exactly -1/0/1.
+                Move = SanitizeMove(Move);
             }
 
             if (!canReadInput)
@@ -158,6 +168,23 @@ namespace ExtraterrestrialExhaust.Player
                 ResolvedMoveAction?.Enable();
                 ResolvedFlipAction?.Enable();
             }
+        }
+
+        Vector2 SanitizeMove(Vector2 raw)
+        {
+            return new Vector2(
+                ApplyAxisDeadzone(Mathf.Clamp(raw.x, -1f, 1f), turnDeadzone),
+                ApplyAxisDeadzone(Mathf.Clamp(raw.y, -1f, 1f), thrustDeadzone));
+        }
+
+        static float ApplyAxisDeadzone(float value, float deadzone)
+        {
+            float magnitude = Mathf.Abs(value);
+            if (magnitude <= deadzone)
+                return 0f;
+
+            float remapped = Mathf.InverseLerp(deadzone, 1f, magnitude);
+            return Mathf.Sign(value) * remapped;
         }
     }
 }

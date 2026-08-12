@@ -954,7 +954,11 @@ namespace ExtraterrestrialExhaust.Enemy
             if (forwardIsLocalNegativeX)
                 targetAngle += 180f;
             float turnT = 1f - Mathf.Exp(-faceTurnSpeed * Time.fixedDeltaTime);
-            body.MoveRotation(Mathf.LerpAngle(body.rotation, targetAngle, turnT));
+            float angleError = Mathf.DeltaAngle(body.rotation, targetAngle);
+            if (Mathf.Abs(angleError) > Ee5SliceProfile.EnemyFacingDeadbandDegrees)
+                body.MoveRotation(Mathf.LerpAngle(body.rotation, targetAngle, turnT));
+            else
+                body.MoveRotation(targetAngle);
 
             if (spriteRenderer && keepSpriteUpright)
             {

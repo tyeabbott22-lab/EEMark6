@@ -178,20 +178,24 @@ namespace ExtraterrestrialExhaust.Player
                 return;
 
             float error = Mathf.DeltaAngle(body.rotation, stabilizationAngle);
-            if (Mathf.Abs(error) > uprightAssistWindow)
-                return;
+            bool spinWithinAssistRange = uprightAssistMaxAngularSpeed <= 0f
+                || Mathf.Abs(body.angularVelocity) <= uprightAssistMaxAngularSpeed;
 
-            if (uprightAssistMaxAngularSpeed > 0f
-                && Mathf.Abs(body.angularVelocity) > uprightAssistMaxAngularSpeed)
-                return;
-
-            // Do not apply a hidden flip: this is a close-range settle assist,
-            // not a second stabilization button. Braking the residual spin
-            // and easing the angle independently keeps Q/E responsive.
+            // Do not apply a hidden flip: this is a released-turn settle assist,
+            // not a second stabilization button. Bleed a little residual spin
+            // even outside the angle window, then ease the final tilt only when
+            // the craft is close enough. This keeps Q/E responsive while making
+            // a short accidental tap settle instead of becoming a full flip.
             body.angularVelocity = Mathf.MoveTowards(
                 body.angularVelocity,
                 0f,
-                uprightAssistAngularBrake * Time.fixedDeltaTime);
+                uprightAssistAngularBrake
+                * (spinWithinAssistRange ? 1f : 0.35f)
+                * Time.fixedDeltaTime);
+
+            if (!spinWithinAssistRange || Mathf.Abs(error) > uprightAssistWindow)
+                return;
+
             body.MoveRotation(Mathf.MoveTowardsAngle(
                 body.rotation,
                 stabilizationAngle,
