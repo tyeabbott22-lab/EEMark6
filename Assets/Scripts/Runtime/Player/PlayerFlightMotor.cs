@@ -73,6 +73,12 @@ namespace ExtraterrestrialExhaust.Player
         public bool IsInStopperZone => inStopperZone;
         public PlayerFlightControlMode ControlMode { get; private set; } =
             PlayerFlightControlMode.Scripted;
+        /// <summary>
+        /// The command consumed by the last physics step. Presentation uses
+        /// this instead of raw Update-time input so exhaust never advertises
+        /// thrust while a scripted, stopper, or stabilize branch owns control.
+        /// </summary>
+        public Vector2 AppliedFlightInput { get; private set; }
         public Vector2 CurrentFlightInput => input ? input.Move : Vector2.zero;
         public event Action<bool> Flipped;
 
@@ -132,6 +138,9 @@ namespace ExtraterrestrialExhaust.Player
 
         void FixedUpdate()
         {
+            Vector2 command = input ? input.Move : Vector2.zero;
+            AppliedFlightInput = Vector2.zero;
+
             if (stateMachine.CurrentState != PlayerFlightState.FreeFlight)
             {
                 // Scripted capture and death own the transform explicitly.
@@ -161,16 +170,17 @@ namespace ExtraterrestrialExhaust.Player
             // Keeping this branch early prevents a held turn input from
             // fighting the stabilizer and preserves the reference's clean
             // "hit C/S, settle" feel.
-            if (input.Move.y < -0.2f)
+            if (command.y < -0.2f)
             {
                 turnReleaseTimer = 0f;
                 ControlMode = PlayerFlightControlMode.Stabilizing;
+                AppliedFlightInput = command;
                 Stabilize();
                 return;
             }
 
-            bool turning = Mathf.Abs(input.Move.x) >= 0.01f;
-            bool thrusting = input.Move.y > 0.2f;
+            bool turning = Mathf.Abs(command.x) >= 0.01f;
+            bool thrusting = command.y > 0.2f;
             ControlMode = turning
                 ? (thrusting
                     ? PlayerFlightControlMode.TurningAndThrusting
@@ -183,7 +193,8 @@ namespace ExtraterrestrialExhaust.Player
             else
                 turnReleaseTimer += Time.fixedDeltaTime;
 
-            ApplyRotation(input.Move.x);
+            AppliedFlightInput = command;
+            ApplyRotation(command.x);
 
             if (!turning && turnReleaseTimer >= uprightAssistReleaseDelay)
                 ApplyNeutralUprightAssist();

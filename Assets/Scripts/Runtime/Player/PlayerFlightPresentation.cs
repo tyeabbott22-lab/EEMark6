@@ -169,10 +169,23 @@ namespace ExtraterrestrialExhaust.Player
                 return;
             }
 
-            Vector2 command = input.Move;
-            float thrust = Mathf.Clamp01(Mathf.Max(0f, command.y));
-            float turn = Mathf.Clamp01(Mathf.Abs(command.x));
-            bool stabilizing = command.y < -0.2f;
+            Vector2 command = flightMotor ? flightMotor.AppliedFlightInput : input.Move;
+            PlayerFlightControlMode controlMode = flightMotor
+                ? flightMotor.ControlMode
+                : command.y < -0.2f
+                    ? PlayerFlightControlMode.Stabilizing
+                    : PlayerFlightControlMode.Coasting;
+            bool motorIsTurning = controlMode == PlayerFlightControlMode.Turning
+                || controlMode == PlayerFlightControlMode.TurningAndThrusting;
+            bool motorIsThrusting = controlMode == PlayerFlightControlMode.Thrusting
+                || controlMode == PlayerFlightControlMode.TurningAndThrusting;
+            float thrust = motorIsThrusting
+                ? Mathf.Clamp01(Mathf.Max(0f, command.y))
+                : 0f;
+            float turn = motorIsTurning
+                ? Mathf.Clamp01(Mathf.Abs(command.x))
+                : 0f;
+            bool stabilizing = controlMode == PlayerFlightControlMode.Stabilizing;
             float leftExhaustAmount = stabilizing ? 0f : thrust;
             float rightExhaustAmount = stabilizing ? 0f : thrust;
             bool leftBoosted = false;
@@ -213,7 +226,7 @@ namespace ExtraterrestrialExhaust.Player
             if (flightMotor && !flightMotor.FacingRight)
                 targetScale.x = -Mathf.Abs(targetScale.x);
 
-            if (input.WasFlipPressed || input.Move.y < -0.2f)
+            if (input.WasFlipPressed || stabilizing)
                 squashTimer = squashDuration;
 
             if (squashTimer > 0f)
