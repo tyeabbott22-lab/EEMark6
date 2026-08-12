@@ -18,7 +18,13 @@ namespace ExtraterrestrialExhaust.Enemy
     {
         [SerializeField, Min(0f)] float detectionRange = 12f;
         [SerializeField, Min(0f)] float wakeDistance = 6f;
-        [SerializeField, Min(0f)] float wakeDuration = 1.35f;
+        // EE5's authored buildup is the minimum alert envelope. The actual
+        // wake duration is randomized below so the dormant enemy does not
+        // trigger on a mechanically identical beat every time.
+        [SerializeField, Min(0f)] float wakeDuration = Ee5SliceProfile.EnemyWakeBuildupDuration;
+        [SerializeField, Min(0f)] float wakeIdleDurationMin = Ee5SliceProfile.EnemyWakeIdleDurationMin;
+        [SerializeField, Min(0f)] float wakeIdleDurationMax = Ee5SliceProfile.EnemyWakeIdleDurationMax;
+        [SerializeField, Min(0f)] float wakeScreamDuration = Ee5SliceProfile.EnemyWakeScreamDuration;
         [SerializeField] bool requireLineOfSightToWake = true;
         // EE5's intro line begins at the same authored six-unit trigger as
         // the wake sequence. The detection leash can remain wider, but the
@@ -26,9 +32,9 @@ namespace ExtraterrestrialExhaust.Enemy
         // The signal is intentionally visible well before the six-unit wake
         // trigger. Existing authored prefabs are migrated by the scene builder.
         [SerializeField, Min(1f)] float wakeSignalDistanceMultiplier = 4f;
-        [SerializeField, Min(0.01f)] float wakeSignalChargeDuration = 1.15f;
-        [SerializeField, Min(0f)] float wakeSignalChargeDecay = 1.8f;
-        [SerializeField, Min(0f)] float wakeFinalWarningDuration = 0.35f;
+        [SerializeField, Min(0.01f)] float wakeSignalChargeDuration = Ee5SliceProfile.EnemyWakeSignalChargeDuration;
+        [SerializeField, Min(0f)] float wakeSignalChargeDecay = Ee5SliceProfile.EnemyWakeSignalChargeDecay;
+        [SerializeField, Min(0f)] float wakeFinalWarningDuration = Ee5SliceProfile.EnemyWakeFinalWarningDuration;
         [SerializeField, Min(0f)] float attackRange = 1.2f;
         [SerializeField, Min(0f)] float chaseSpeed = 2.5f;
         [SerializeField] PlayerCharacter target;
@@ -81,6 +87,7 @@ namespace ExtraterrestrialExhaust.Enemy
         Vector2 orbitCenter;
         float orbitAngle;
         float wakeTimer;
+        float wakeTotalDuration;
         float wakeSignalCharge;
         bool nearPlayer;
         bool touchedPlayerDuringNearPass;
@@ -88,8 +95,8 @@ namespace ExtraterrestrialExhaust.Enemy
         public EnemyState State { get; private set; }
         public PlayerCharacter Target => target;
         public bool CanAttack => State == EnemyState.Attacking;
-        public float WakeProgress => State == EnemyState.Waking && wakeDuration > 0f
-            ? Mathf.Clamp01(wakeTimer / wakeDuration)
+        public float WakeProgress => State == EnemyState.Waking && wakeTotalDuration > 0f
+            ? Mathf.Clamp01(wakeTimer / Mathf.Max(0.01f, wakeTotalDuration))
             : 0f;
         public float WakeSignalChargeProgress => wakeSignalChargeDuration > 0f
             ? Mathf.Clamp01(wakeSignalCharge / wakeSignalChargeDuration)
@@ -99,10 +106,11 @@ namespace ExtraterrestrialExhaust.Enemy
         public Vector2 WakeSignalEnd { get; private set; }
         public bool IsWakeFinalWarning => State == EnemyState.Waking
             && wakeFinalWarningDuration > 0f
+            && wakeTotalDuration > 0f
             && WakeProgress >= Mathf.InverseLerp(
                 0f,
-                Mathf.Max(0.01f, wakeDuration),
-                Mathf.Max(0f, wakeDuration - wakeFinalWarningDuration));
+                Mathf.Max(0.01f, wakeTotalDuration),
+                Mathf.Max(0f, wakeTotalDuration - GetWakeFinalPhaseDuration()));
         public event Action<EnemyController> Defeated;
         public event Action<EnemyController, DamageInfo> Damaged;
         public event Action<EnemyController, EnemyState> StateChanged;
@@ -190,24 +198,11 @@ namespace ExtraterrestrialExhaust.Enemy
 
             if (State == EnemyState.Waking)
             {
-                if (distance > behaviorRange)
-                {
-                    SetState(EnemyState.Dormant);
-                    return;
-                }
-
-                if (requireLineOfSightToWake && !WakeSignalHasClearSight)
-                {
-                    // A wall interrupts the activation buildup without
-                    // teleporting the enemy back to its dormant pose.
-                    wakeTimer = Mathf.Max(
-                        0f,
-                        wakeTimer - Time.deltaTime * wakeSignalChargeDecay);
-                    return;
-                }
-
                 wakeTimer += Time.deltaTime;
-                if (wakeTimer < wakeDuration)
+                // EE5 commits to the alert once its wake line has armed. A
+                // later wall crossing must not cancel the authored scream
+                // beat halfway through.
+                if (wakeTimer < wakeTotalDuration)
                     return;
             }
 
@@ -222,6 +217,15 @@ namespace ExtraterrestrialExhaust.Enemy
             if (State != EnemyState.Dormant && State != EnemyState.Waking)
             {
                 ClearWakeSignal();
+                return;
+            }
+
+            if (State == EnemyState.Waking)
+            {
+                WakeSignalVisible = target != null;
+                WakeSignalHasClearSight = target != null;
+                WakeSignalEnd = target ? target.transform.position : transform.position;
+                wakeSignalCharge = wakeSignalChargeDuration;
                 return;
             }
 
@@ -492,6 +496,7 @@ namespace ExtraterrestrialExhaust.Enemy
             else if (nextState == EnemyState.Waking)
             {
                 wakeTimer = 0f;
+                wakeTotalDuration = GetWakeTotalDuration();
                 chaseSteerRemaining = 0f;
                 chaseProgressTimer = 0f;
             }
@@ -510,7 +515,30 @@ namespace ExtraterrestrialExhaust.Enemy
                 chaseProgressTimer = 0f;
             }
 
+            if (nextState == EnemyState.Dormant)
+                wakeTotalDuration = 0f;
+
             StateChanged?.Invoke(this, nextState);
+        }
+
+        float GetWakeTotalDuration()
+        {
+            float minimumAlertDuration = Mathf.Max(0f, wakeDuration)
+                + Mathf.Max(0f, wakeFinalWarningDuration);
+            float minimumIdle = Mathf.Max(0f, wakeIdleDurationMin);
+            float maximumIdle = Mathf.Max(minimumIdle, wakeIdleDurationMax);
+            float randomizedAlert = UnityEngine.Random.Range(minimumIdle, maximumIdle);
+            float alertDuration = Mathf.Max(minimumAlertDuration, randomizedAlert);
+            return alertDuration + Mathf.Max(
+                0f,
+                wakeScreamDuration - wakeFinalWarningDuration);
+        }
+
+        float GetWakeFinalPhaseDuration()
+        {
+            return wakeScreamDuration > 0f
+                ? wakeScreamDuration
+                : wakeFinalWarningDuration;
         }
 
         bool MoveClamped(Vector2 move, out RaycastHit2D blockingWall)

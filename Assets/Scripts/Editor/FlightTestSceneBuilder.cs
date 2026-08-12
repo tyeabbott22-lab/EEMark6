@@ -669,9 +669,34 @@ namespace ExtraterrestrialExhaust.Editor
                     serializedController,
                     "chaseSpeed",
                     ranged ? Ee5SliceProfile.EnemyGunnerChaseSpeed : Ee5SliceProfile.EnemyMeleeChaseSpeed);
-                changed |= SetFloat(serializedController, "wakeSignalChargeDuration", 1.15f);
-                changed |= SetFloat(serializedController, "wakeSignalChargeDecay", 1.8f);
-                changed |= SetFloat(serializedController, "wakeFinalWarningDuration", 0.35f);
+                changed |= SetFloat(
+                    serializedController,
+                    "wakeDuration",
+                    Ee5SliceProfile.EnemyWakeBuildupDuration);
+                changed |= SetFloat(
+                    serializedController,
+                    "wakeIdleDurationMin",
+                    Ee5SliceProfile.EnemyWakeIdleDurationMin);
+                changed |= SetFloat(
+                    serializedController,
+                    "wakeIdleDurationMax",
+                    Ee5SliceProfile.EnemyWakeIdleDurationMax);
+                changed |= SetFloat(
+                    serializedController,
+                    "wakeScreamDuration",
+                    Ee5SliceProfile.EnemyWakeScreamDuration);
+                changed |= SetFloat(
+                    serializedController,
+                    "wakeSignalChargeDuration",
+                    Ee5SliceProfile.EnemyWakeSignalChargeDuration);
+                changed |= SetFloat(
+                    serializedController,
+                    "wakeSignalChargeDecay",
+                    Ee5SliceProfile.EnemyWakeSignalChargeDecay);
+                changed |= SetFloat(
+                    serializedController,
+                    "wakeFinalWarningDuration",
+                    Ee5SliceProfile.EnemyWakeFinalWarningDuration);
                 changed |= SetBool(serializedController, "forwardIsLocalNegativeX", ranged);
                 serializedController.ApplyModifiedPropertiesWithoutUndo();
             }
@@ -683,6 +708,8 @@ namespace ExtraterrestrialExhaust.Editor
                 changed |= SetBool(serializedPresentation, "faceDormantTowardTarget", ranged);
                 changed |= SetBool(serializedPresentation, "forwardIsLocalNegativeX", true);
                 changed |= SetBool(serializedPresentation, "restoreFacingAfterWake", true);
+                changed |= SetBool(serializedPresentation, "pingPongDormantAnimation", true);
+                changed |= SetBool(serializedPresentation, "randomizeDormantStartFrame", true);
                 serializedPresentation.ApplyModifiedPropertiesWithoutUndo();
             }
 
@@ -779,6 +806,48 @@ namespace ExtraterrestrialExhaust.Editor
                 bool controllerForwardNegativeX = serializedController.FindProperty("forwardIsLocalNegativeX").boolValue;
                 if (controllerForwardNegativeX != ranged)
                     issues.Add($"{prefabPath} forwardIsLocalNegativeX={controllerForwardNegativeX}");
+                CheckSerializedFloat(
+                    serializedController,
+                    "wakeDuration",
+                    Ee5SliceProfile.EnemyWakeBuildupDuration,
+                    $"{prefabPath} wakeDuration",
+                    issues);
+                CheckSerializedFloat(
+                    serializedController,
+                    "wakeIdleDurationMin",
+                    Ee5SliceProfile.EnemyWakeIdleDurationMin,
+                    $"{prefabPath} wakeIdleDurationMin",
+                    issues);
+                CheckSerializedFloat(
+                    serializedController,
+                    "wakeIdleDurationMax",
+                    Ee5SliceProfile.EnemyWakeIdleDurationMax,
+                    $"{prefabPath} wakeIdleDurationMax",
+                    issues);
+                CheckSerializedFloat(
+                    serializedController,
+                    "wakeScreamDuration",
+                    Ee5SliceProfile.EnemyWakeScreamDuration,
+                    $"{prefabPath} wakeScreamDuration",
+                    issues);
+                CheckSerializedFloat(
+                    serializedController,
+                    "wakeSignalChargeDuration",
+                    Ee5SliceProfile.EnemyWakeSignalChargeDuration,
+                    $"{prefabPath} wakeSignalChargeDuration",
+                    issues);
+                CheckSerializedFloat(
+                    serializedController,
+                    "wakeSignalChargeDecay",
+                    Ee5SliceProfile.EnemyWakeSignalChargeDecay,
+                    $"{prefabPath} wakeSignalChargeDecay",
+                    issues);
+                CheckSerializedFloat(
+                    serializedController,
+                    "wakeFinalWarningDuration",
+                    Ee5SliceProfile.EnemyWakeFinalWarningDuration,
+                    $"{prefabPath} wakeFinalWarningDuration",
+                    issues);
                 float chaseSpeed = serializedController.FindProperty("chaseSpeed").floatValue;
                 float expectedChaseSpeed = ranged
                     ? Ee5SliceProfile.EnemyGunnerChaseSpeed
@@ -843,6 +912,14 @@ namespace ExtraterrestrialExhaust.Editor
                     issues.Add($"{prefabPath} faceDormantTowardTarget={facesTarget}");
                 if (!forwardNegativeX || !restoresFacing)
                     issues.Add($"{prefabPath} dormant facing basis is incomplete");
+                SerializedProperty pingPongDormant =
+                    serializedPresentation.FindProperty("pingPongDormantAnimation");
+                SerializedProperty randomizeDormant =
+                    serializedPresentation.FindProperty("randomizeDormantStartFrame");
+                if (pingPongDormant == null || !pingPongDormant.boolValue)
+                    issues.Add($"{prefabPath} pingPongDormantAnimation=false");
+                if (randomizeDormant == null || !randomizeDormant.boolValue)
+                    issues.Add($"{prefabPath} randomizeDormantStartFrame=false");
             }
         }
 
@@ -1522,15 +1599,25 @@ namespace ExtraterrestrialExhaust.Editor
             SerializedObject serializedController = new SerializedObject(controller);
             serializedController.FindProperty("detectionRange").floatValue = 12f;
             serializedController.FindProperty("wakeDistance").floatValue = 6f;
-            serializedController.FindProperty("wakeDuration").floatValue = 1.35f;
+            serializedController.FindProperty("wakeDuration").floatValue =
+                Ee5SliceProfile.EnemyWakeBuildupDuration;
             serializedController.FindProperty("requireLineOfSightToWake").boolValue = true;
             // The line is visible before activation, matching EE5's four-times
             // wake-line envelope; the state machine still wakes only at 6 units.
             serializedController.FindProperty("wakeSignalDistanceMultiplier").floatValue =
                 Ee5SliceProfile.EnemyWakeSignalDistanceMultiplier;
-            serializedController.FindProperty("wakeSignalChargeDuration").floatValue = 1.15f;
-            serializedController.FindProperty("wakeSignalChargeDecay").floatValue = 1.8f;
-            serializedController.FindProperty("wakeFinalWarningDuration").floatValue = 0.35f;
+            serializedController.FindProperty("wakeIdleDurationMin").floatValue =
+                Ee5SliceProfile.EnemyWakeIdleDurationMin;
+            serializedController.FindProperty("wakeIdleDurationMax").floatValue =
+                Ee5SliceProfile.EnemyWakeIdleDurationMax;
+            serializedController.FindProperty("wakeScreamDuration").floatValue =
+                Ee5SliceProfile.EnemyWakeScreamDuration;
+            serializedController.FindProperty("wakeSignalChargeDuration").floatValue =
+                Ee5SliceProfile.EnemyWakeSignalChargeDuration;
+            serializedController.FindProperty("wakeSignalChargeDecay").floatValue =
+                Ee5SliceProfile.EnemyWakeSignalChargeDecay;
+            serializedController.FindProperty("wakeFinalWarningDuration").floatValue =
+                Ee5SliceProfile.EnemyWakeFinalWarningDuration;
             serializedController.FindProperty("attackRange").floatValue = ranged ? 7f : 0.8f;
             // Match the authored EE5 roles: the white gunner moves at 2 and
             // the purple close hunter at 3 units per second.
@@ -1651,7 +1738,8 @@ namespace ExtraterrestrialExhaust.Editor
             serializedPresentation.FindProperty("dormantFramesPerSecond").floatValue = 8f;
             serializedPresentation.FindProperty("wakeFramesPerSecond").floatValue = 14f;
             serializedPresentation.FindProperty("defeatDisplayDuration").floatValue = 0.3f;
-            serializedPresentation.FindProperty("pingPongDormantAnimation").boolValue = ranged;
+            serializedPresentation.FindProperty("pingPongDormantAnimation").boolValue = true;
+            serializedPresentation.FindProperty("randomizeDormantStartFrame").boolValue = true;
             serializedPresentation.FindProperty("faceDormantTowardTarget").boolValue = ranged;
             serializedPresentation.FindProperty("forwardIsLocalNegativeX").boolValue = true;
             serializedPresentation.FindProperty("restoreFacingAfterWake").boolValue = true;

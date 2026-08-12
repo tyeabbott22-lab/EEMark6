@@ -44,6 +44,16 @@ namespace ExtraterrestrialExhaust.Core
         public const float EnemyContactKnockback = 8f;
         public const float EnemyDefeatTimeScale = 0.16f;
         public const float EnemyDefeatSlowdownDuration = 0.07f;
+        public const float EnemyWakeSignalChargeDuration = 1.15f;
+        public const float EnemyWakeSignalChargeDecay = 1.8f;
+        public const float EnemyWakeBuildupDuration = 1.35f;
+        public const float EnemyWakeFinalWarningDuration = 0.35f;
+        public const float EnemyWakeIdleDurationMin = 1.1f;
+        public const float EnemyWakeIdleDurationMax = 2.25f;
+        // The EE5 scream strips contain ten frames and play at fourteen FPS.
+        // Keeping the authored duration here prevents the controller from
+        // cutting the final presentation frame off at the state boundary.
+        public const float EnemyWakeScreamDuration = 10f / 14f;
 
         // Objective handoff values are copied from RealSceneEncounterTool and
         // kept here so the builder and runtime defaults cannot drift apart.

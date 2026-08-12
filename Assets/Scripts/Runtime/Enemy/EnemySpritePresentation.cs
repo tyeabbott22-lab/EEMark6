@@ -21,6 +21,7 @@ namespace ExtraterrestrialExhaust.Enemy
         [SerializeField, Min(0.1f)] float wakeFramesPerSecond = 14f;
         [SerializeField, Min(0f)] float defeatDisplayDuration = 0.3f;
         [SerializeField] bool pingPongDormantAnimation = true;
+        [SerializeField] bool randomizeDormantStartFrame = true;
         [SerializeField] bool hideAfterDefeat = true;
 
         [Header("Dormant Facing")]
@@ -154,6 +155,14 @@ namespace ExtraterrestrialExhaust.Enemy
             else
             {
                 currentFrames = activeSprites;
+            }
+
+            if (state == EnemyState.Dormant
+                && randomizeDormantStartFrame
+                && currentFrames != null
+                && currentFrames.Length > 0)
+            {
+                frameIndex = Random.Range(0, currentFrames.Length);
             }
 
             if (restoreFacingAfterWake
