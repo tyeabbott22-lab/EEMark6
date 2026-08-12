@@ -286,11 +286,14 @@ MonoBehaviour:
   thrustFramesPerSecond: 8
   thrustAudio: {fileID: 3956306945368104356}
   thrustClip: {fileID: 8300000, guid: be1aae15372af05409c8ad80fc42caca, type: 3}
+  enforceEe5Profile: 1
   boostedExhaustLengthMultiplier: 1.25
   boostedExhaustWidthMultiplier: 1.15
+  boostedExhaustYScale: 1.5
   boostedParticleEmissionMultiplier: 1.4
-  boostedExhaustStartColor: {r: 0.75, g: 1, b: 1, a: 1}
-  boostedExhaustEndColor: {r: 0.12, g: 0.4, b: 1, a: 0}
+  boostedExhaustStartColor: {r: 0.85, g: 1, b: 1, a: 1}
+  boostedExhaustMidColor: {r: 0.15, g: 0.75, b: 1, a: 0.92}
+  boostedExhaustEndColor: {r: 0.02, g: 0.12, b: 1, a: 0}
   exhaustParticlesCollide: 1
   exhaustCollisionMask:
     serializedVersion: 2

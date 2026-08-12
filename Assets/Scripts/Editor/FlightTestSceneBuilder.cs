@@ -492,6 +492,28 @@ namespace ExtraterrestrialExhaust.Editor
                 mismatches.Add("PlayerWeapon is missing");
             }
 
+            PlayerFlightPresentation presentation =
+                playerObject.GetComponent<PlayerFlightPresentation>();
+            if (!presentation)
+            {
+                mismatches.Add("PlayerFlightPresentation is missing");
+            }
+            else
+            {
+                SerializedObject serializedPresentation =
+                    new SerializedObject(presentation);
+                SerializedProperty enforceProfile =
+                    serializedPresentation.FindProperty("enforceEe5Profile");
+                if (enforceProfile == null || !enforceProfile.boolValue)
+                    mismatches.Add("PlayerFlightPresentation.enforceEe5Profile=false");
+                CheckSerializedFloat(
+                    serializedPresentation,
+                    "boostedExhaustYScale",
+                    Ee5SliceProfile.PlayerBoostedExhaustYScale,
+                    "Player boosted exhaust Y scale",
+                    mismatches);
+            }
+
             PlayerRespawnController recovery = playerObject.GetComponent<PlayerRespawnController>();
             if (!recovery)
             {
@@ -638,9 +660,21 @@ namespace ExtraterrestrialExhaust.Editor
             if (presentation)
             {
                 SerializedObject serializedPresentation = new SerializedObject(presentation);
-                serializedPresentation.FindProperty("boostedExhaustLengthMultiplier").floatValue = 1.25f;
-                serializedPresentation.FindProperty("boostedExhaustWidthMultiplier").floatValue = 1.15f;
-                serializedPresentation.FindProperty("boostedParticleEmissionMultiplier").floatValue = 1.4f;
+                serializedPresentation.FindProperty("enforceEe5Profile").boolValue = true;
+                serializedPresentation.FindProperty("boostedExhaustLengthMultiplier").floatValue =
+                    Ee5SliceProfile.PlayerBoostedExhaustLengthMultiplier;
+                serializedPresentation.FindProperty("boostedExhaustWidthMultiplier").floatValue =
+                    Ee5SliceProfile.PlayerBoostedExhaustWidthMultiplier;
+                serializedPresentation.FindProperty("boostedExhaustYScale").floatValue =
+                    Ee5SliceProfile.PlayerBoostedExhaustYScale;
+                serializedPresentation.FindProperty("boostedParticleEmissionMultiplier").floatValue =
+                    Ee5SliceProfile.PlayerBoostedParticleEmissionMultiplier;
+                serializedPresentation.FindProperty("boostedExhaustStartColor").colorValue =
+                    Ee5SliceProfile.PlayerBoostedExhaustCoreColor;
+                serializedPresentation.FindProperty("boostedExhaustMidColor").colorValue =
+                    Ee5SliceProfile.PlayerBoostedExhaustMidColor;
+                serializedPresentation.FindProperty("boostedExhaustEndColor").colorValue =
+                    Ee5SliceProfile.PlayerBoostedExhaustTipColor;
                 serializedPresentation.FindProperty("exhaustSideOffset").floatValue = 0.28f;
                 serializedPresentation.FindProperty("exhaustLength").floatValue = 0.55f;
                 serializedPresentation.FindProperty("turnExhaustAmount").floatValue = 1f;
