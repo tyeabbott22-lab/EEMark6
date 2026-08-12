@@ -3439,6 +3439,10 @@ namespace ExtraterrestrialExhaust.Editor
             collider.radius = Ee5SliceProfile.VerticalSliceExitRadius;
             LevelExit levelExit = exit.AddComponent<LevelExit>();
             SerializedObject serializedExit = new SerializedObject(levelExit);
+            // Keep the generated objective contract fully serialized. Runtime fallback is
+            // useful for hand-authored scenes, but the reproducible FlightTest should not
+            // depend on a scene-wide lookup to recover its encounter owner.
+            serializedExit.FindProperty("encounter").objectReferenceValue = encounter;
             serializedExit.FindProperty("requiredGate").objectReferenceValue = energyGate;
             serializedExit.FindProperty("gameState").objectReferenceValue = gameState;
             serializedExit.ApplyModifiedPropertiesWithoutUndo();
