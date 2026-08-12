@@ -29,6 +29,11 @@ namespace ExtraterrestrialExhaust.Core
 
         public bool IsDisabled => disabled;
         /// <summary>
+        /// True during the authored lift window: the key has activated the
+        /// gate, but the blocking collider has not finished leaving the route.
+        /// </summary>
+        public bool IsOpening => disabled && !routeClear;
+        /// <summary>
         /// True only after the authored lift finishes and the blocking collider
         /// is actually disabled. Objective flow and extraction use this rather
         /// than treating key impact as an instantaneous teleport.

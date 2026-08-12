@@ -12,6 +12,7 @@ namespace ExtraterrestrialExhaust.Core
     public sealed class EnergyGatePresentation : MonoBehaviour
     {
         [SerializeField] LineRenderer gateLine;
+        [SerializeField] SpriteRenderer gateArtwork;
         [SerializeField] Color unlockColor = new Color(0.2f, 1f, 0.85f, 1f);
         [SerializeField, Min(0.1f)] float burstScale = 1.35f;
         [SerializeField, Min(0f)] float cameraShakeStrength = 0.08f;
@@ -30,6 +31,7 @@ namespace ExtraterrestrialExhaust.Core
         float approachRemaining;
         float baseWidthMultiplier = 1f;
         Color baseColor = new Color(0.2f, 0.55f, 1f, 1f);
+        Color baseArtworkColor = Color.white;
 
         void Awake()
         {
@@ -37,11 +39,18 @@ namespace ExtraterrestrialExhaust.Core
             RepairAuthoredGateArtwork();
             if (!gateLine)
                 gateLine = GetComponent<LineRenderer>();
+            if (!gateArtwork)
+            {
+                Transform artwork = transform.Find("Gate Artwork");
+                gateArtwork = artwork ? artwork.GetComponent<SpriteRenderer>() : null;
+            }
             if (gateLine)
             {
                 baseWidthMultiplier = gateLine.widthMultiplier;
                 baseColor = gateLine.startColor;
             }
+            if (gateArtwork)
+                baseArtworkColor = gateArtwork.color;
         }
 
         void RepairAuthoredGateArtwork()
@@ -72,6 +81,7 @@ namespace ExtraterrestrialExhaust.Core
             pulseRemaining = 0f;
             approachRemaining = 0f;
             RestoreGateLine();
+            RestoreGateArtwork();
         }
 
         void Update()
@@ -95,9 +105,15 @@ namespace ExtraterrestrialExhaust.Core
                     baseWidthMultiplier,
                     baseWidthMultiplier * unlockPulseWidthMultiplier,
                     Mathf.SmoothStep(0f, 1f, pulse) * fade);
+                UpdateArtworkColor(
+                    Color.Lerp(unlockColor, Color.white, pulse * 0.35f),
+                    Mathf.Lerp(0.65f, 1f, fade));
 
                 if (pulseRemaining <= 0f)
+                {
                     RestoreGateLine();
+                    RestoreGateArtwork();
+                }
                 return;
             }
 
@@ -122,9 +138,15 @@ namespace ExtraterrestrialExhaust.Core
                 baseWidthMultiplier,
                 baseWidthMultiplier * approachPulseWidthMultiplier,
                 approachPulse * approachFade);
+            UpdateArtworkColor(
+                Color.Lerp(baseArtworkColor, approachColor, Mathf.SmoothStep(0f, 1f, approachPulse)),
+                Mathf.Lerp(0.8f, 1f, approachFade));
 
             if (approachRemaining <= 0f)
+            {
                 RestoreGateLine();
+                RestoreGateArtwork();
+            }
         }
 
         /// <summary>
@@ -159,6 +181,32 @@ namespace ExtraterrestrialExhaust.Core
                 : baseColor;
             gateLine.startColor = color;
             gateLine.endColor = color;
+        }
+
+        void UpdateArtworkColor(Color color, float alphaMultiplier)
+        {
+            if (!gateArtwork)
+                return;
+
+            color.a = baseArtworkColor.a * Mathf.Clamp01(alphaMultiplier);
+            gateArtwork.color = color;
+        }
+
+        void RestoreGateArtwork()
+        {
+            if (!gateArtwork)
+                return;
+
+            if (energyGate && energyGate.IsDisabled)
+            {
+                Color color = Color.Lerp(baseArtworkColor, unlockColor, 0.42f);
+                color.a = baseArtworkColor.a;
+                gateArtwork.color = color;
+            }
+            else
+            {
+                gateArtwork.color = baseArtworkColor;
+            }
         }
     }
 }
