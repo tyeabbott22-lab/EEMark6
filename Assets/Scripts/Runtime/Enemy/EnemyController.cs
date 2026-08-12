@@ -199,6 +199,15 @@ namespace ExtraterrestrialExhaust.Enemy
 
         void UpdateWakeSignal(float distance)
         {
+            // The line is an activation telegraph, not a permanent combat
+            // tether. Once the enemy is active, the attack and movement
+            // presentations own threat readability instead.
+            if (State != EnemyState.Dormant && State != EnemyState.Waking)
+            {
+                ClearWakeSignal();
+                return;
+            }
+
             float signalDistance = GetWakeSignalDistance();
             WakeSignalVisible = distance <= signalDistance;
             WakeSignalEnd = target ? target.transform.position : transform.position;
@@ -387,6 +396,7 @@ namespace ExtraterrestrialExhaust.Enemy
         void HandleDefeated()
         {
             ResolveNearMiss();
+            ClearWakeSignal();
             SetState(EnemyState.Defeated);
             body.linearVelocity = Vector2.zero;
             body.simulated = false;
@@ -448,6 +458,9 @@ namespace ExtraterrestrialExhaust.Enemy
                 return;
 
             State = nextState;
+            if (nextState != EnemyState.Dormant && nextState != EnemyState.Waking)
+                ClearWakeSignal();
+
             if (nextState == EnemyState.Chasing)
             {
                 lastChasePosition = body.position;
