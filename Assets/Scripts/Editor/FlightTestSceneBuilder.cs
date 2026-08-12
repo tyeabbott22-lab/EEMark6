@@ -177,6 +177,105 @@ namespace ExtraterrestrialExhaust.Editor
                 : $"Renamed {renamed} imported sprite asset(s); EE5 GUID references were preserved. Enemy strip names were left untouched.");
         }
 
+        [MenuItem("Extraterrestrial Exhaust/Repair Player Craft Sprite Wiring")]
+        public static void RepairPlayerCraftSpriteWiring()
+        {
+            Sprite[] craftSprites = LoadSprites(
+                PlayerCraftSpriteAssetPath,
+                LegacyPlayerCraftSpriteAssetPath);
+            if (craftSprites.Length == 0)
+            {
+                Debug.LogError(
+                    $"Could not repair the player craft because no sprite was found at {PlayerCraftSpriteAssetPath}.");
+                return;
+            }
+
+            GameObject prefabContents = PrefabUtility.LoadPrefabContents(PlayerPrefabPath);
+            bool prefabRepaired = RepairPlayerCraftRoot(prefabContents, craftSprites);
+            if (prefabContents)
+            {
+                if (prefabRepaired)
+                    PrefabUtility.SaveAsPrefabAsset(prefabContents, PlayerPrefabPath);
+                PrefabUtility.UnloadPrefabContents(prefabContents);
+            }
+
+            bool sceneRepaired = false;
+            Scene activeScene = SceneManager.GetActiveScene();
+            if (activeScene.IsValid() && activeScene.path == ScenePath)
+            {
+                GameObject scenePlayer = GameObject.Find("Player Craft");
+                if (scenePlayer)
+                {
+                    sceneRepaired = RepairPlayerCraftRoot(scenePlayer, craftSprites);
+                    if (sceneRepaired)
+                    {
+                        EditorUtility.SetDirty(scenePlayer);
+                        EditorSceneManager.MarkSceneDirty(activeScene);
+                    }
+                }
+            }
+
+            AssetDatabase.SaveAssets();
+            Debug.Log(
+                $"Player craft sprite wiring repaired from {AssetDatabase.GetAssetPath(craftSprites[0])}. "
+                + $"Prefab: {prefabRepaired}. Active FlightTest scene: {sceneRepaired}. "
+                + "The purple UFO boss sprite is no longer a valid player presentation source.");
+        }
+
+        [MenuItem("Extraterrestrial Exhaust/Validate Player Craft Sprite Wiring")]
+        public static void ValidatePlayerCraftSpriteWiring()
+        {
+            string expectedPath = ResolveAssetPath(
+                PlayerCraftSpriteAssetPath,
+                LegacyPlayerCraftSpriteAssetPath);
+            Sprite expectedSprite = LoadFirstSprite(expectedPath);
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PlayerPrefabPath);
+            SpriteRenderer prefabRenderer = prefab
+                ? prefab.transform.Find("Craft Visual")?.GetComponent<SpriteRenderer>()
+                : null;
+            string actualPath = prefabRenderer && prefabRenderer.sprite
+                ? AssetDatabase.GetAssetPath(prefabRenderer.sprite)
+                : "<missing>";
+
+            bool matches = expectedSprite && prefabRenderer && prefabRenderer.sprite == expectedSprite;
+            string message = matches
+                ? $"Player craft sprite contract is valid: {actualPath}."
+                : $"Player craft sprite contract is stale. Expected {expectedPath}, found {actualPath}. "
+                    + "Run Extraterrestrial Exhaust > Repair Player Craft Sprite Wiring, then save FlightTest.";
+            if (matches)
+                Debug.Log(message);
+            else
+                Debug.LogWarning(message, prefab);
+        }
+
+        static bool RepairPlayerCraftRoot(GameObject root, Sprite[] craftSprites)
+        {
+            if (!root)
+                return false;
+
+            Transform visual = root.transform.Find("Craft Visual");
+            SpriteRenderer renderer = visual ? visual.GetComponent<SpriteRenderer>() : null;
+            PlayerFlightPresentation presentation = root.GetComponent<PlayerFlightPresentation>();
+            if (!visual || !renderer || !presentation)
+            {
+                Debug.LogWarning(
+                    $"Skipped player craft sprite repair for {root.name}; Craft Visual, SpriteRenderer, or PlayerFlightPresentation is missing.",
+                    root);
+                return false;
+            }
+
+            renderer.sprite = craftSprites[0];
+            SerializedObject serializedPresentation = new SerializedObject(presentation);
+            serializedPresentation.FindProperty("visual").objectReferenceValue = visual;
+            serializedPresentation.FindProperty("visualRenderer").objectReferenceValue = renderer;
+            SetSpriteArray(serializedPresentation, "flightFrames", craftSprites);
+            SetSpriteArray(serializedPresentation, "thrustFrames", craftSprites);
+            serializedPresentation.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(renderer);
+            EditorUtility.SetDirty(presentation);
+            return true;
+        }
+
         static int RenameImportedAsset(string legacyPath, string semanticPath)
         {
             bool hasSemanticAsset = AssetDatabase.LoadMainAssetAtPath(semanticPath);

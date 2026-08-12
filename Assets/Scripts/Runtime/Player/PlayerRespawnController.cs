@@ -13,14 +13,18 @@ namespace ExtraterrestrialExhaust.Player
     public sealed class PlayerRespawnController : MonoBehaviour
     {
         [SerializeField] Transform respawnPoint;
-        [SerializeField] bool reloadSceneOnDeath;
+        // EE5 resets the authored room on death so encounter and objective
+        // state start cleanly on the next life. In-place recovery remains
+        // available for isolated prefab tests and future checkpoint work.
+        [SerializeField] bool reloadSceneOnDeath = true;
         [SerializeField, Min(0f)] float reloadDelay;
         [SerializeField, Min(0f)] float respawnDelay = 1f;
-        [SerializeField] bool respawnAutomatically = true;
+        [SerializeField] bool respawnAutomatically;
 
         PlayerCharacter character;
         PlayerFlightPresentation presentation;
         PlayerWeapon weapon;
+        PlayerWeaponInput weaponInput;
         Rigidbody2D body;
         Coroutine respawnRoutine;
         Vector3 initialPosition;
@@ -34,6 +38,7 @@ namespace ExtraterrestrialExhaust.Player
             character = GetComponent<PlayerCharacter>();
             presentation = GetComponent<PlayerFlightPresentation>();
             weapon = GetComponent<PlayerWeapon>();
+            weaponInput = GetComponent<PlayerWeaponInput>();
             body = GetComponent<Rigidbody2D>();
             initialPosition = transform.position;
             initialRotation = transform.rotation;
@@ -54,6 +59,10 @@ namespace ExtraterrestrialExhaust.Player
         void HandleDeath()
         {
             character.FlightState.TrySetState(PlayerFlightState.Disabled);
+            // A touch/UI hold is not a physical input state. Clear it when a
+            // life ends so an in-place recovery never fires on the first frame
+            // of the next life because the old button press survived death.
+            weaponInput?.ClearUIInput();
             StopBody();
 
             if (reloadSceneOnDeath)
@@ -89,7 +98,10 @@ namespace ExtraterrestrialExhaust.Player
 
         IEnumerator RespawnRoutine()
         {
-            yield return new WaitForSeconds(respawnDelay);
+            // Recovery is lifecycle work, not gameplay simulation. It should
+            // not remain stranded if a pause transition happens during the
+            // delay, so use unscaled time just like the scene-reload path.
+            yield return new WaitForSecondsRealtime(respawnDelay);
 
             Transform target = respawnPoint;
             transform.SetPositionAndRotation(
@@ -99,6 +111,7 @@ namespace ExtraterrestrialExhaust.Player
             StopBody();
             character.FlightMotor?.ResetFacingForRespawn();
             presentation?.ResetPresentation();
+            weaponInput?.ClearUIInput();
             weapon?.ResetForRespawn();
             character.Health.ResetHealth();
             character.FlightState.TrySetState(PlayerFlightState.FreeFlight);
