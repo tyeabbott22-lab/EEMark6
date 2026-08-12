@@ -290,9 +290,11 @@ namespace ExtraterrestrialExhaust.Enemy
             {
                 ClearWakeSignal();
                 SetState(EnemyState.Dormant);
-                return;
             }
+        }
 
+        void EvaluateCombatState()
+        {
             // Both sides of the encounter are simulated in FixedUpdate. Read
             // the player's Rigidbody position here so an interpolated render
             // transform cannot make the melee state chatter at its stop radius.
@@ -304,9 +306,7 @@ namespace ExtraterrestrialExhaust.Enemy
             // EE5's EnemyAI has no post-wake leash. Once the intro commits,
             // the enemy remains an authored room threat until death or reload.
             if (State == EnemyState.Dormant && distance > behaviorRange)
-            {
                 return;
-            }
 
             if (State == EnemyState.Dormant)
             {
@@ -324,7 +324,7 @@ namespace ExtraterrestrialExhaust.Enemy
 
             if (State == EnemyState.Waking)
             {
-                wakeTimer += Time.deltaTime;
+                wakeTimer += Time.fixedDeltaTime;
                 // EE5 commits to the alert once its wake line has armed. A
                 // later wall crossing must not cancel the authored scream
                 // beat halfway through.
@@ -392,7 +392,7 @@ namespace ExtraterrestrialExhaust.Enemy
                 wakeSignalCharge = Mathf.MoveTowards(
                     wakeSignalCharge,
                     0f,
-                    wakeSignalChargeDecay * Time.deltaTime);
+                    wakeSignalChargeDecay * Time.fixedDeltaTime);
                 return;
             }
 
@@ -417,14 +417,14 @@ namespace ExtraterrestrialExhaust.Enemy
                 wakeSignalCharge = Mathf.MoveTowards(
                     wakeSignalCharge,
                     wakeSignalChargeDuration,
-                    Mathf.Max(0f, chargeSpeed) * Time.deltaTime);
+                    Mathf.Max(0f, chargeSpeed) * Time.fixedDeltaTime);
             }
             else
             {
                 wakeSignalCharge = Mathf.MoveTowards(
                     wakeSignalCharge,
                     0f,
-                    wakeSignalChargeDecay * Time.deltaTime);
+                    wakeSignalChargeDecay * Time.fixedDeltaTime);
             }
         }
 
@@ -500,6 +500,23 @@ namespace ExtraterrestrialExhaust.Enemy
                 return;
             }
 
+            if (!target)
+                target = FindFirstObjectByType<PlayerCharacter>();
+
+            if (!target || !bodyCollider)
+            {
+                body.linearVelocity = Vector2.zero;
+                return;
+            }
+
+            if (!target.CanReceiveGameplayInput)
+            {
+                ClearWakeSignal();
+                SetState(EnemyState.Dormant);
+                body.linearVelocity = Vector2.zero;
+                return;
+            }
+
             // Contact damage, the attack-facing lock, and navigation all run
             // on the physics clock. Decaying recovery here prevents a render
             // frame-rate change from altering the distance at which the melee
@@ -511,11 +528,7 @@ namespace ExtraterrestrialExhaust.Enemy
                     attackRecoveryRemaining - Time.fixedDeltaTime);
             }
 
-            if (!target || !bodyCollider)
-            {
-                body.linearVelocity = Vector2.zero;
-                return;
-            }
+            EvaluateCombatState();
 
             if (movementMode == EnemyMovementMode.Wander
                 && (State == EnemyState.Chasing || State == EnemyState.Attacking))

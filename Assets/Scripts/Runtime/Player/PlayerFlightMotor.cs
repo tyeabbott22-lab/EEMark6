@@ -331,6 +331,10 @@ namespace ExtraterrestrialExhaust.Player
             if (collision != null && IsStopper(collision.collider))
             {
                 inStopperZone = true;
+                // Match EE5's solid-stopper fallback: remove the horizontal
+                // component while the collider is holding the craft, but
+                // leave vertical drift available for the authored pass-through.
+                body.linearVelocity = new Vector2(0f, body.linearVelocity.y);
                 body.angularVelocity = 0f;
             }
         }

@@ -95,7 +95,6 @@ namespace ExtraterrestrialExhaust.Enemy
 
         void Update()
         {
-            cooldownRemaining -= Time.deltaTime;
             if (gameState && !gameState.IsPlaying)
             {
                 HideTelegraph();
@@ -109,12 +108,28 @@ namespace ExtraterrestrialExhaust.Enemy
             if (!target)
                 target = FindFirstObjectByType<PlayerCharacter>();
 
+            UpdateTelegraphIfReady();
+        }
+
+        void FixedUpdate()
+        {
+            if (gameState && !gameState.IsPlaying)
+                return;
+
+            // The gunner's authored one-second cadence is gameplay timing,
+            // not presentation timing. Keeping the countdown and fire gate on
+            // the physics clock prevents a variable render rate from changing
+            // the dodge rhythm or spawning a shot between movement steps.
+            cooldownRemaining -= Time.fixedDeltaTime;
+            if (controller && !controller.IsCombatActive)
+                return;
+
+            if (!target)
+                target = FindFirstObjectByType<PlayerCharacter>();
+
             if (!target || !target.CanReceiveGameplayInput
                 || !projectilePrefab || cooldownRemaining > 0f)
-            {
-                UpdateTelegraphIfReady();
                 return;
-            }
 
             // Aim from the same physics-space target position used by the
             // controller. Using the interpolated Transform here made shots
