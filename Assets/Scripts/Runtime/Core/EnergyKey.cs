@@ -456,7 +456,10 @@ namespace ExtraterrestrialExhaust.Core
                 return;
 
             Vector2 keyPosition = body ? body.position : (Vector2)transform.position;
-            float closestDistance = float.PositiveInfinity;
+            EnemyController nearestRanged = null;
+            float nearestRangedDistance = float.PositiveInfinity;
+            EnemyController nearestFallback = null;
+            float nearestFallbackDistance = float.PositiveInfinity;
             for (int i = 0; i < candidates.Length; i++)
             {
                 EnemyController candidate = candidates[i];
@@ -464,12 +467,25 @@ namespace ExtraterrestrialExhaust.Core
                     continue;
 
                 float distance = (candidate.PhysicsPosition - keyPosition).sqrMagnitude;
-                if (distance >= closestDistance)
-                    continue;
+                if (distance < nearestFallbackDistance)
+                {
+                    nearestFallbackDistance = distance;
+                    nearestFallback = candidate;
+                }
 
-                closestDistance = distance;
-                enemyTarget = candidate;
+                // EE5's objective carrier is the ranged gunner. Prefer that
+                // role during recovery instead of letting scene enumeration
+                // order or a stale spawn position silently bind the key to the
+                // melee hunter.
+                if (candidate.GetComponent<EnemyWeapon>()
+                    && distance < nearestRangedDistance)
+                {
+                    nearestRangedDistance = distance;
+                    nearestRanged = candidate;
+                }
             }
+
+            enemyTarget = nearestRanged ? nearestRanged : nearestFallback;
         }
 
         void RefreshCarrierSubscriptions()
