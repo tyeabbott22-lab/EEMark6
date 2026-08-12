@@ -140,7 +140,7 @@ namespace ExtraterrestrialExhaust.Core
         void HandleStateChanged(GameState previous, GameState next)
         {
             Refresh();
-            if (next == GameState.GameOver)
+            if (next == GameState.GameOver && (!exit || exit.IsComplete))
                 ShowObjectiveBanner("EXTRACTION COMPLETE");
         }
         void HandleObjectiveChanged(SliceObjectiveState previous, SliceObjectiveState next)

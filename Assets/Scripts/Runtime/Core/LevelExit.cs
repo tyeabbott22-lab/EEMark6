@@ -33,7 +33,9 @@ namespace ExtraterrestrialExhaust.Core
         LineRenderer exitRenderer;
         ExtractionPortalPresentation portalPresentation;
         bool capturing;
+        bool extractionComplete;
         public bool IsCapturing => capturing;
+        public bool IsComplete => extractionComplete;
         // EE5's door state is the extraction gate. Once the delivered key has
         // disabled it, remaining enemies are pressure rather than a hidden
         // second exit condition.
@@ -82,7 +84,7 @@ namespace ExtraterrestrialExhaust.Core
 
         void TryStartCapture(Collider2D other)
         {
-            if (!IsUnlocked || capturing)
+            if (!IsUnlocked || capturing || extractionComplete)
                 return;
 
             PlayerCharacter player = other.GetComponentInParent<PlayerCharacter>();
@@ -199,6 +201,7 @@ namespace ExtraterrestrialExhaust.Core
             portalPresentation?.CompleteCapture();
             player.FlightState.TrySetState(PlayerFlightState.Disabled);
             FindFirstObjectByType<ScoreSystem>()?.Award(ScoreReason.LevelCompleted);
+            extractionComplete = true;
             gameState?.EndGame();
             capturing = false;
         }

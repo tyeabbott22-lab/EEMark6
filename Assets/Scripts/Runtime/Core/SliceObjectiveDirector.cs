@@ -48,8 +48,16 @@ namespace ExtraterrestrialExhaust.Core
             ResolveReferences();
 
             SliceObjectiveState nextState;
-            if (gameState && gameState.CurrentState == GameState.GameOver)
+            if (exit && exit.IsComplete)
             {
+                nextState = SliceObjectiveState.ExtractionComplete;
+            }
+            else if (!exit && gameState && gameState.CurrentState == GameState.GameOver)
+            {
+                // A scene without an authored exit can still use this director
+                // as a lightweight state adapter. Generated FlightTest scenes
+                // always have an exit, so their completion state comes from the
+                // portal capture contract above rather than GameOver alone.
                 nextState = SliceObjectiveState.ExtractionComplete;
             }
             else if (exit && exit.IsUnlocked)
