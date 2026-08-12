@@ -422,6 +422,26 @@ namespace ExtraterrestrialExhaust.Editor
                     + $"(expected {Ee5SliceProfile.PlayerCollisionDamageEnabled})");
             }
 
+            HealthComponent healthProfile = playerObject.GetComponent<HealthComponent>();
+            if (!healthProfile)
+            {
+                mismatches.Add("HealthComponent is missing");
+            }
+            else
+            {
+                SerializedObject serializedHealth = new SerializedObject(healthProfile);
+                float maxHealth = serializedHealth.FindProperty("maxHealth").floatValue;
+                float invulnerability = serializedHealth.FindProperty("invulnerabilityDuration").floatValue;
+                if (!Mathf.Approximately(maxHealth, Ee5SliceProfile.PlayerMaxHealth))
+                    mismatches.Add($"maxHealth={maxHealth} (expected {Ee5SliceProfile.PlayerMaxHealth})");
+                if (!Mathf.Approximately(invulnerability, Ee5SliceProfile.PlayerInvulnerabilityDuration))
+                {
+                    mismatches.Add(
+                        $"invulnerabilityDuration={invulnerability} "
+                        + $"(expected {Ee5SliceProfile.PlayerInvulnerabilityDuration})");
+                }
+            }
+
             PlayerWeapon weapon = playerObject.GetComponent<PlayerWeapon>();
             if (weapon)
             {
@@ -502,8 +522,9 @@ namespace ExtraterrestrialExhaust.Editor
             if (health)
             {
                 SerializedObject serializedHealth = new SerializedObject(health);
-                serializedHealth.FindProperty("maxHealth").floatValue = 5f;
-                serializedHealth.FindProperty("invulnerabilityDuration").floatValue = 1f;
+                serializedHealth.FindProperty("maxHealth").floatValue = Ee5SliceProfile.PlayerMaxHealth;
+                serializedHealth.FindProperty("invulnerabilityDuration").floatValue =
+                    Ee5SliceProfile.PlayerInvulnerabilityDuration;
                 serializedHealth.ApplyModifiedPropertiesWithoutUndo();
             }
 
@@ -1082,8 +1103,9 @@ namespace ExtraterrestrialExhaust.Editor
             serializedMotor.ApplyModifiedPropertiesWithoutUndo();
             HealthComponent playerHealth = player.GetComponent<HealthComponent>();
             SerializedObject serializedPlayerHealth = new SerializedObject(playerHealth);
-            serializedPlayerHealth.FindProperty("maxHealth").floatValue = 5f;
-            serializedPlayerHealth.FindProperty("invulnerabilityDuration").floatValue = 1f;
+            serializedPlayerHealth.FindProperty("maxHealth").floatValue = Ee5SliceProfile.PlayerMaxHealth;
+            serializedPlayerHealth.FindProperty("invulnerabilityDuration").floatValue =
+                Ee5SliceProfile.PlayerInvulnerabilityDuration;
             serializedPlayerHealth.ApplyModifiedPropertiesWithoutUndo();
             PlayerFlightInput input = player.GetComponent<PlayerFlightInput>();
             if (inputAsset)

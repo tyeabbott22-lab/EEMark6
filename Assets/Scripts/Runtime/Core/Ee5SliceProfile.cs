@@ -11,6 +11,8 @@ namespace ExtraterrestrialExhaust.Core
         public const float PlayerGravityScale = 0.285f;
         public const float PlayerLinearDamping = 0.35f;
         public const float PlayerAngularDamping = 3.25f;
+        public const float PlayerMaxHealth = 5f;
+        public const float PlayerInvulnerabilityDuration = 0.5f;
 
         public const float ThrustForce = 55f;
         public const float RotationTorque = 0.4f;
