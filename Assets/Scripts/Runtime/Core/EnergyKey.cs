@@ -154,18 +154,32 @@ namespace ExtraterrestrialExhaust.Core
             switch (state)
             {
                 case EnergyKeyState.AttachedToEnemy:
-                    FollowEnemyOrbit();
                     // Keep the poll as a recovery path for references that are
                     // resolved late; normal gameplay releases from the carrier
                     // event so the objective handoff has no frame of drift.
                     TryReleaseFromCarrier();
+                    break;
+                case EnergyKeyState.FollowingPlayer:
+                    CheckGate();
+                    break;
+            }
+        }
+
+        void FixedUpdate()
+        {
+            // The key is a kinematic Rigidbody2D. Keeping all physical motion
+            // on the fixed step prevents orbit and gate-flight jitter when the
+            // render frame rate differs from the physics rate.
+            switch (state)
+            {
+                case EnergyKeyState.AttachedToEnemy:
+                    FollowEnemyOrbit();
                     break;
                 case EnergyKeyState.OrbitingPlayer:
                     FollowPlayerOrbit();
                     break;
                 case EnergyKeyState.FollowingPlayer:
                     FollowPlayer();
-                    CheckGate();
                     break;
                 case EnergyKeyState.FlyingToGate:
                     FlyToGate();
@@ -191,10 +205,10 @@ namespace ExtraterrestrialExhaust.Core
             phase += enemyOrbitSpeed * Time.deltaTime;
             Vector3 center = enemyTarget.transform.position + enemyOffset;
             Vector3 offset = new Vector3(Mathf.Cos(phase), Mathf.Sin(phase), 0f) * enemyOrbitRadius;
-            transform.position = Vector3.Lerp(
-                transform.position,
+            body.MovePosition(Vector2.Lerp(
+                body.position,
                 center + offset,
-                1f - Mathf.Exp(-enemyOrbitSharpness * Time.deltaTime));
+                1f - Mathf.Exp(-enemyOrbitSharpness * Time.fixedDeltaTime)));
         }
 
         void FollowPlayerOrbit()
@@ -205,13 +219,13 @@ namespace ExtraterrestrialExhaust.Core
             float centerT = 1f - Mathf.Exp(-centerFollowSharpness * Time.deltaTime);
             orbitCenter = Vector2.Lerp(orbitCenter, player.transform.position, centerT);
             phase += orbitSpeed * Time.deltaTime;
-            currentRadiusX = Mathf.Lerp(currentRadiusX, orbitRadiusX, radiusEase * Time.deltaTime);
-            currentRadiusY = Mathf.Lerp(currentRadiusY, orbitRadiusY, radiusEase * Time.deltaTime);
+            currentRadiusX = Mathf.Lerp(currentRadiusX, orbitRadiusX, radiusEase * Time.fixedDeltaTime);
+            currentRadiusY = Mathf.Lerp(currentRadiusY, orbitRadiusY, radiusEase * Time.fixedDeltaTime);
 
             Vector2 target = orbitCenter + new Vector2(
                 Mathf.Cos(phase) * currentRadiusX,
                 Mathf.Sin(phase) * currentRadiusY);
-            float orbitT = 1f - Mathf.Exp(-orbitSharpness * Time.deltaTime);
+            float orbitT = 1f - Mathf.Exp(-orbitSharpness * Time.fixedDeltaTime);
             body.MovePosition(Vector2.Lerp(body.position, target, orbitT));
         }
 
@@ -223,7 +237,7 @@ namespace ExtraterrestrialExhaust.Core
                 body.MovePosition(Vector2.Lerp(
                     body.position,
                     target,
-                    1f - Mathf.Exp(-playerFollowSharpness * Time.deltaTime)));
+                    1f - Mathf.Exp(-playerFollowSharpness * Time.fixedDeltaTime)));
             }
         }
 
@@ -249,7 +263,7 @@ namespace ExtraterrestrialExhaust.Core
             Vector2 nextPosition = Vector2.MoveTowards(
                 body.position,
                 gateTarget,
-                gateFlySpeed * Time.deltaTime);
+                gateFlySpeed * Time.fixedDeltaTime);
             body.MovePosition(nextPosition);
 
             if (Vector2.Distance(nextPosition, gateTarget) > 0.15f)
