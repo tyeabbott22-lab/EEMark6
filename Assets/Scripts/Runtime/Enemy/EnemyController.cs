@@ -116,8 +116,10 @@ namespace ExtraterrestrialExhaust.Enemy
         public PlayerCharacter Target => target;
         /// <summary>Authoritative Rigidbody position for physics-step followers.</summary>
         public Vector2 PhysicsPosition => body ? body.position : (Vector2)transform.position;
+        public bool IsMelee => movementMode == EnemyMovementMode.Chase;
         public bool ForwardIsLocalNegativeX => forwardIsLocalNegativeX;
         public bool CanAttack => State == EnemyState.Attacking;
+        public float AttackReach => attackRange;
         public bool IsCombatActive => State == EnemyState.Chasing || State == EnemyState.Attacking;
         public float WakeProgress => State == EnemyState.Waking && wakeTotalDuration > 0f
             ? Mathf.Clamp01(wakeTimer / Mathf.Max(0.01f, wakeTotalDuration))
@@ -185,6 +187,12 @@ namespace ExtraterrestrialExhaust.Enemy
             // turn response. Runtime repair keeps a stale inspector override
             // from reintroducing a twitchy melee presentation.
             faceTurnSpeed = Ee5SliceProfile.EnemyFaceTurnSpeed;
+
+            // EE5's ranged gunner aims from local negative X. The purple
+            // melee hunter keeps the authored controller basis and relies on
+            // its mirrored root scale above. Derive this role flag here so
+            // an older prefab cannot leave the sprite presentation inverted.
+            forwardIsLocalNegativeX = movementMode == EnemyMovementMode.Wander;
         }
 
         void OnEnable()
@@ -235,7 +243,10 @@ namespace ExtraterrestrialExhaust.Enemy
                 return;
             }
 
-            float distance = Vector2.Distance(transform.position, target.transform.position);
+            // Both sides of the encounter are simulated in FixedUpdate. Read
+            // the player's Rigidbody position here so an interpolated render
+            // transform cannot make the melee state chatter at its stop radius.
+            float distance = Vector2.Distance(body.position, target.PhysicsPosition);
             UpdateNearMiss(distance);
             UpdateWakeSignal(distance);
 
@@ -375,7 +386,7 @@ namespace ExtraterrestrialExhaust.Enemy
                 return transform.position;
 
             Collider2D targetCollider = target.GetComponent<Collider2D>();
-            return targetCollider ? targetCollider.bounds.center : (Vector2)target.transform.position;
+            return targetCollider ? targetCollider.bounds.center : target.PhysicsPosition;
         }
 
         bool HasClearLineOfSight(Vector2 origin, Vector2 targetPoint, out Vector2 lineEnd)
@@ -461,7 +472,7 @@ namespace ExtraterrestrialExhaust.Enemy
             // chase direction, which reads as a backwards enemy.
             if (State == EnemyState.Attacking)
             {
-                Vector2 toTarget = (Vector2)target.transform.position - body.position;
+                Vector2 toTarget = target.PhysicsPosition - body.position;
                 if (toTarget.sqrMagnitude > 0.0001f)
                     FaceTarget(toTarget.normalized);
             }
@@ -472,7 +483,7 @@ namespace ExtraterrestrialExhaust.Enemy
         void HandleChaseMovement()
         {
             body.linearVelocity = Vector2.zero;
-            Vector2 toTarget = (Vector2)target.transform.position - body.position;
+            Vector2 toTarget = target.PhysicsPosition - body.position;
             if (toTarget.sqrMagnitude <= 0.0001f)
                 return;
 
@@ -525,7 +536,7 @@ namespace ExtraterrestrialExhaust.Enemy
         void HandleWanderMovement()
         {
             body.linearVelocity = Vector2.zero;
-            Vector2 toTarget = (Vector2)target.transform.position - body.position;
+            Vector2 toTarget = target.PhysicsPosition - body.position;
             if (toTarget.sqrMagnitude > 0.0001f)
                 FaceTarget(toTarget.normalized);
 
@@ -547,7 +558,7 @@ namespace ExtraterrestrialExhaust.Enemy
         void HandleOrbitMovement()
         {
             body.linearVelocity = Vector2.zero;
-            Vector2 toTarget = (Vector2)target.transform.position - body.position;
+            Vector2 toTarget = target.PhysicsPosition - body.position;
             if (toTarget.sqrMagnitude > 0.0001f)
                 FaceTarget(toTarget.normalized);
 
@@ -770,7 +781,7 @@ namespace ExtraterrestrialExhaust.Enemy
                 : -directDirection;
             Vector2 tangent = new Vector2(-normal.y, normal.x);
             Vector2 towardTarget = target
-                ? ((Vector2)target.transform.position - body.position).normalized
+                ? (target.PhysicsPosition - body.position).normalized
                 : directDirection;
 
             if (Vector2.Dot(tangent, towardTarget) < Vector2.Dot(-tangent, towardTarget))
@@ -829,7 +840,7 @@ namespace ExtraterrestrialExhaust.Enemy
                 return false;
 
             Vector2 towardTarget = target
-                ? ((Vector2)target.transform.position - body.position).normalized
+                ? (target.PhysicsPosition - body.position).normalized
                 : directDirection;
             if (leftOpen && rightOpen)
             {

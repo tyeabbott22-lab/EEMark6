@@ -97,12 +97,16 @@ namespace ExtraterrestrialExhaust.Player
             {
                 flipRequestLatched = false;
             }
-            else if (ResolvedFlipAction != null && ResolvedFlipAction.WasPressedThisFrame())
+            else if ((ResolvedFlipAction != null && ResolvedFlipAction.WasPressedThisFrame())
+                || (includeEe5KeyboardFallback
+                    && Keyboard.current != null
+                    && Keyboard.current.xKey.wasPressedThisFrame))
             {
-                // Keep the edge alive until the motor consumes it. Unity does
-                // not guarantee the order of sibling Update methods, and a
-                // one-frame property can otherwise be sampled before this
-                // component has read the action.
+                // EE5's X flip was read through the legacy input path. Keep
+                // that keyboard contract alive even when an imported action
+                // asset has the Flip action but no serialized X binding.
+                // Keep the edge alive until the motor consumes it because
+                // Unity does not guarantee sibling Update order.
                 flipRequestLatched = true;
             }
 

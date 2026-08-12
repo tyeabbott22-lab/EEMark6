@@ -19,6 +19,32 @@ namespace ExtraterrestrialExhaust.Enemy
             controller = GetComponent<EnemyController>();
         }
 
+        void FixedUpdate()
+        {
+            // EE5's melee enemy dealt contact damage while physically
+            // overlapping the player. EE6 deliberately keeps the navigation
+            // body just outside that overlap to eliminate rigidbody tug-of-war
+            // and the resulting jitter. Preserve the readable attack timing
+            // with a range hit instead of reintroducing that collision loop.
+            if (!controller || !controller.IsMelee || !controller.CanAttack)
+                return;
+
+            PlayerCharacter player = controller.Target;
+            if (!player || !player.CanReceiveGameplayInput)
+                return;
+
+            Vector2 enemyPosition = controller.PhysicsPosition;
+            Vector2 playerPosition = player.PhysicsPosition;
+            if (Vector2.Distance(enemyPosition, playerPosition) > controller.AttackReach)
+                return;
+
+            Vector2 direction = (playerPosition - enemyPosition).normalized;
+            if (direction.sqrMagnitude <= 0.001f)
+                direction = Vector2.right;
+
+            TryDamagePlayer(player, playerPosition, direction);
+        }
+
         void OnCollisionStay2D(Collision2D collision)
         {
             // EE5 attaches this contact contract to both enemyNormal and
@@ -35,6 +61,15 @@ namespace ExtraterrestrialExhaust.Enemy
             Vector2 hitPoint = collision.contactCount > 0
                 ? collision.GetContact(0).point
                 : player.transform.position;
+
+            TryDamagePlayer(player, hitPoint, direction);
+        }
+
+        void TryDamagePlayer(PlayerCharacter player, Vector2 hitPoint, Vector2 direction)
+        {
+            if (!player || !player.CanReceiveGameplayInput || Time.time < nextDamageTime)
+                return;
+
             DamageInfo damageInfo = new DamageInfo(
                 damage,
                 DamageType.Enemy,
