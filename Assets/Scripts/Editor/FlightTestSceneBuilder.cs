@@ -2557,12 +2557,14 @@ namespace ExtraterrestrialExhaust.Editor
             PlayerCharacter character = RequireComponent<PlayerCharacter>(player, PlayerPrefabPath);
             PlayerFlightInput input = RequireComponent<PlayerFlightInput>(player, PlayerPrefabPath);
             input.ConfigureInputAsset(inputAsset);
+            PrefabUtility.RecordPrefabInstancePropertyModifications(input);
             SetSerializedObjectReference(input, "gameState", gameState);
             SetSerializedFloat(input, "turnDeadzone", Ee5SliceProfile.PlayerTurnDeadzone);
             SetSerializedFloat(input, "thrustDeadzone", Ee5SliceProfile.PlayerThrustDeadzone);
 
             PlayerWeaponInput weaponInput = RequireComponent<PlayerWeaponInput>(player, PlayerPrefabPath);
             weaponInput.ConfigureInputAsset(inputAsset);
+            PrefabUtility.RecordPrefabInstancePropertyModifications(weaponInput);
             SetSerializedObjectReference(weaponInput, "gameState", gameState);
 
             PlayerWeapon weapon = RequireComponent<PlayerWeapon>(player, PlayerPrefabPath);
@@ -2639,6 +2641,7 @@ namespace ExtraterrestrialExhaust.Editor
 
             property.objectReferenceValue = value;
             serialized.ApplyModifiedPropertiesWithoutUndo();
+            PrefabUtility.RecordPrefabInstancePropertyModifications(component);
         }
 
         static void SetSerializedFloat(Component component, string propertyName, float value)
@@ -2653,6 +2656,7 @@ namespace ExtraterrestrialExhaust.Editor
 
             property.floatValue = value;
             serialized.ApplyModifiedPropertiesWithoutUndo();
+            PrefabUtility.RecordPrefabInstancePropertyModifications(component);
         }
 
         static PlayerCharacter CreatePlayer(
@@ -2956,7 +2960,7 @@ namespace ExtraterrestrialExhaust.Editor
             line.startColor = Color.white;
             line.endColor = new Color(1f, 0.1f, 0.1f);
             line.sortingOrder = 20;
-            line.material = new Material(Shader.Find("Sprites/Default"));
+            line.material = CreateLineMaterial();
 
             GameObject prefab = PrefabUtility.SaveAsPrefabAsset(projectile, ProjectilePrefabPath);
             if (editingExisting)
@@ -3174,7 +3178,7 @@ namespace ExtraterrestrialExhaust.Editor
             line.endColor = ranged
                 ? new Color(1f, 0.65f, 0.1f)
                 : new Color(1f, 0.2f, 0.65f);
-            line.material = new Material(Shader.Find("Sprites/Default"));
+            line.material = CreateLineMaterial();
 
             SpriteRenderer sprite = enemy.AddComponent<SpriteRenderer>();
             sprite.sprite = LoadFirstSprite(activeSpritePath);
@@ -3661,7 +3665,7 @@ namespace ExtraterrestrialExhaust.Editor
             line.startColor = new Color(0.2f, 0.85f, 1f);
             line.endColor = new Color(0.8f, 0.2f, 1f);
             line.sortingOrder = 5;
-            line.material = new Material(Shader.Find("Sprites/Default"));
+            line.material = CreateLineMaterial();
         }
 
         static void CreateCamera(PlayerCharacter target, Transform[] parallaxBackdrops)
@@ -4166,7 +4170,7 @@ namespace ExtraterrestrialExhaust.Editor
             line.endWidth = 0.08f;
             line.startColor = color;
             line.endColor = color;
-            line.material = new Material(Shader.Find("Sprites/Default"));
+            line.material = CreateLineMaterial();
         }
 
         static void CreateCircleOutline(
@@ -4186,7 +4190,7 @@ namespace ExtraterrestrialExhaust.Editor
             line.endColor = color;
             line.sortingOrder = 14;
             line.numCornerVertices = 2;
-            line.material = new Material(Shader.Find("Sprites/Default"));
+            line.material = CreateLineMaterial();
 
             for (int i = 0; i < segments; i++)
             {
@@ -4196,6 +4200,26 @@ namespace ExtraterrestrialExhaust.Editor
                     Mathf.Sin(angle) * radius,
                     0f));
             }
+        }
+
+        static Material CreateLineMaterial()
+        {
+            // Unity 6 projects using URP may not resolve the legacy
+            // Sprites/Default shader in editor code. Prefer the URP sprite
+            // shader, then keep the old path as a compatibility fallback.
+            Shader shader = Shader.Find("Universal Render Pipeline/2D/Sprite-Unlit-Default");
+            if (!shader)
+                shader = Shader.Find("Sprites/Default");
+            if (!shader)
+                shader = Shader.Find("Unlit/Color");
+
+            if (shader)
+                return new Material(shader);
+
+            // The built-in line material is a safe final fallback for scene
+            // composition. A missing decorative material must not prevent the
+            // gameplay slice from being saved.
+            return AssetDatabase.GetBuiltinExtraResource<Material>("Default-Line.mat");
         }
 
         static Sprite LoadFirstSprite(string assetPath)
