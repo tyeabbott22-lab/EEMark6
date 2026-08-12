@@ -33,6 +33,11 @@ namespace ExtraterrestrialExhaust.Editor
         // run, so an existing checkout never loses its visual wiring.
         const string PlayerCraftSpriteAssetPath = "Assets/Art/Player/player_craft.png";
         const string LegacyPlayerCraftSpriteAssetPath = "Assets/Art/Player/sprSnipe.png";
+        // EE5 realScene uses this exact two-frame sheet for the craft's
+        // authored idle/thrust read. Keep the static semantic sprite above as
+        // the fallback and wire the sliced sheet only into presentation.
+        const string PlayerCraftFlightSheetAssetPath =
+            "Assets/Art/Player/player_craft_flight_sheet.png";
         const string PlayerHealthSpriteAssetPath = "Assets/Art/Player/health_sheet.png";
         const string LegacyPlayerHealthSpriteAssetPath = "Assets/Art/Player/health.png";
         const string PlayerProjectileSpriteAssetPath = "Assets/Art/Player/player_projectile.png";
@@ -384,13 +389,16 @@ namespace ExtraterrestrialExhaust.Editor
             SetSpriteArray(
                 serializedPresentation,
                 "flightFrames",
-                LoadSprites(PlayerCraftSpriteAssetPath, LegacyPlayerCraftSpriteAssetPath));
+                LoadSprites(PlayerCraftFlightSheetAssetPath));
             SetSpriteArray(
                 serializedPresentation,
                 "thrustFrames",
-                LoadSprites(PlayerCraftSpriteAssetPath, LegacyPlayerCraftSpriteAssetPath));
-            serializedPresentation.FindProperty("animationFramesPerSecond").floatValue = 8f;
-            serializedPresentation.FindProperty("thrustFramesPerSecond").floatValue = 14f;
+                LoadSprites(PlayerCraftFlightSheetAssetPath));
+            // realScene2's AnimationClip samples the two authored frames at
+            // 12 FPS. The runtime state machine keeps that same cadence while
+            // avoiding an Animator dependency in the reusable EE6 prefab.
+            serializedPresentation.FindProperty("animationFramesPerSecond").floatValue = 12f;
+            serializedPresentation.FindProperty("thrustFramesPerSecond").floatValue = 12f;
             serializedPresentation.ApplyModifiedPropertiesWithoutUndo();
             PlayerDamageFeedback damageFeedback = player.AddComponent<PlayerDamageFeedback>();
             SerializedObject serializedDamageFeedback = new SerializedObject(damageFeedback);
