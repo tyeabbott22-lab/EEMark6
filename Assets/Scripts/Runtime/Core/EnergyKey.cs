@@ -85,7 +85,12 @@ namespace ExtraterrestrialExhaust.Core
 
         public EnergyKeyState State => state;
         public bool IsAvailable => state == EnergyKeyState.OrbitingPlayer;
-        public bool IsCollected => state == EnergyKeyState.FollowingPlayer || state == EnergyKeyState.FlyingToGate;
+        // Consumed is still part of the collected phase: the key is destroyed only
+        // after it has triggered the gate, so objective listeners must not rewind
+        // to CLEAR ENCOUNTER during that handoff.
+        public bool IsCollected => state == EnergyKeyState.FollowingPlayer ||
+                                   state == EnergyKeyState.FlyingToGate ||
+                                   state == EnergyKeyState.Consumed;
         public PlayerCharacter CurrentPlayer => player;
         public EnemyController EnemyTarget => enemyTarget;
         public EnergyGate TargetGate => targetGate;
