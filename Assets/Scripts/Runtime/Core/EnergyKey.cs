@@ -30,10 +30,10 @@ namespace ExtraterrestrialExhaust.Core
         [SerializeField] EnergyGate targetGate;
 
         [Header("Enemy Orbit")]
-        [SerializeField] Vector3 enemyOffset = new Vector3(0f, 1f, 0f);
-        [SerializeField, Min(0f)] float enemyOrbitRadius = 1f;
-        [SerializeField, Min(0f)] float enemyOrbitSpeed = 4f;
-        [SerializeField, Min(0f)] float enemyOrbitSharpness = 8f;
+        [SerializeField] Vector3 enemyOffset = Ee5SliceProfile.EnergyKeyEnemyOffset;
+        [SerializeField, Min(0f)] float enemyOrbitRadius = Ee5SliceProfile.EnergyKeyEnemyOrbitRadius;
+        [SerializeField, Min(0f)] float enemyOrbitSpeed = Ee5SliceProfile.EnergyKeyEnemyOrbitSpeed;
+        [SerializeField, Min(0f)] float enemyOrbitSharpness = Ee5SliceProfile.EnergyKeyEnemyOrbitSharpness;
 
         [Header("Player Orbit")]
         [SerializeField, Min(0f)] float orbitRadiusX = 4.4f;
@@ -48,7 +48,7 @@ namespace ExtraterrestrialExhaust.Core
         [SerializeField, Min(0f)] float collectDistance = Ee5SliceProfile.EnergyKeyCollectDistance;
         [SerializeField, Min(0f)] float collectionArmDelay;
         [SerializeField, Min(0f)] float minRadiusBeforeCollect;
-        [SerializeField] Vector3 playerOffset = new Vector3(0.6f, 0.7f, 0f);
+        [SerializeField] Vector3 playerOffset = Ee5SliceProfile.EnergyKeyPlayerOffset;
         [SerializeField, Min(0f)] float playerFollowSharpness = Ee5SliceProfile.EnergyKeyPlayerFollowSharpness;
 
         [Header("Gate")]

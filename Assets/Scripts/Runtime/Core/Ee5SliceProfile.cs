@@ -112,18 +112,25 @@ namespace ExtraterrestrialExhaust.Core
         // cutting the final presentation frame off at the state boundary.
         public const float EnemyWakeScreamDuration = 10f / 14f;
 
-        // Objective handoff values are copied from RealSceneEncounterTool and
-        // kept here so the builder and runtime defaults cannot drift apart.
-        public const float EnergyGateLiftDistance = 10f;
-        public const float EnergyGateLiftSpeed = 7f;
-        public const float EnergyKeyCarrierSpawnOffsetY = 1.35f;
+        // Objective handoff values are copied from the EE5 keyFollow and
+        // wallFinal2 prefabs. Keep the motion source-of-truth here so a scene
+        // rebuild cannot quietly turn the key into a different game feel.
+        public const float EnergyGateLiftDistance = 12f;
+        public const float EnergyGateLiftSpeed = 6f;
+        public static readonly Vector3 EnergyKeyEnemyOffset =
+            new Vector3(-0.5f, 0f, 0f);
+        public const float EnergyKeyEnemyOrbitRadius = 3f;
+        public const float EnergyKeyEnemyOrbitSpeed = 3f;
+        public const float EnergyKeyEnemyOrbitSharpness = 6f;
         public const float EnergyKeyVisualScale = 1.65f;
         // energy_key.png keeps its artwork in the upper half of a transparent
         // 96x64 canvas; move the visual down so the gameplay root stays centered.
         public static readonly Vector3 EnergyKeyVisualOffset = new Vector3(0f, -0.13f, 0f);
-        public const float EnergyKeyCollectDistance = 0.85f;
-        public const float EnergyKeyGateUnlockRange = 2.25f;
-        public const float EnergyKeyPlayerFollowSharpness = 14f;
+        public const float EnergyKeyCollectDistance = 0.65f;
+        public const float EnergyKeyGateUnlockRange = 2f;
+        public static readonly Vector3 EnergyKeyPlayerOffset =
+            new Vector3(0.5f, 0.7f, 0f);
+        public const float EnergyKeyPlayerFollowSharpness = 12f;
 
         // Generated FlightTest room landmarks. Keeping these together makes
         // a layout pass reviewable and prevents the builder's objective route,

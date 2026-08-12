@@ -1717,6 +1717,24 @@ namespace ExtraterrestrialExhaust.Editor
                 CheckObjectReference(serializedKey, "targetGate", "EnergyKey target gate", issues);
                 CheckSerializedFloat(
                     serializedKey,
+                    "enemyOrbitRadius",
+                    Ee5SliceProfile.EnergyKeyEnemyOrbitRadius,
+                    "EnergyKey enemy orbit radius",
+                    issues);
+                CheckSerializedFloat(
+                    serializedKey,
+                    "enemyOrbitSpeed",
+                    Ee5SliceProfile.EnergyKeyEnemyOrbitSpeed,
+                    "EnergyKey enemy orbit speed",
+                    issues);
+                CheckSerializedFloat(
+                    serializedKey,
+                    "enemyOrbitSharpness",
+                    Ee5SliceProfile.EnergyKeyEnemyOrbitSharpness,
+                    "EnergyKey enemy orbit sharpness",
+                    issues);
+                CheckSerializedFloat(
+                    serializedKey,
                     "collectDistance",
                     Ee5SliceProfile.EnergyKeyCollectDistance,
                     "EnergyKey collect distance",
@@ -2677,7 +2695,7 @@ namespace ExtraterrestrialExhaust.Editor
             // old compact-slice spawn was detached from the carrier, which
             // made the objective appear to teleport at scene start.
             key.transform.position = gunnerEnemy.transform.position
-                + new Vector3(1f, Ee5SliceProfile.EnergyKeyCarrierSpawnOffsetY, 0f);
+                + Ee5SliceProfile.EnergyKeyEnemyOffset;
             CircleCollider2D keyCollider = key.AddComponent<CircleCollider2D>();
             keyCollider.isTrigger = true;
             EnergyKey energyKey = key.AddComponent<EnergyKey>();
@@ -2700,9 +2718,16 @@ namespace ExtraterrestrialExhaust.Editor
             // entire encounter to be cleared before it can progress.
             serializedKey.FindProperty("enemyTarget").objectReferenceValue = gunnerEnemy;
             serializedKey.FindProperty("targetGate").objectReferenceValue = energyGate;
-            serializedKey.FindProperty("enemyOrbitRadius").floatValue = 1f;
-            serializedKey.FindProperty("enemyOrbitSpeed").floatValue = 4f;
-            serializedKey.FindProperty("enemyOrbitSharpness").floatValue = 8f;
+            serializedKey.FindProperty("enemyOffset").vector3Value =
+                Ee5SliceProfile.EnergyKeyEnemyOffset;
+            serializedKey.FindProperty("enemyOrbitRadius").floatValue =
+                Ee5SliceProfile.EnergyKeyEnemyOrbitRadius;
+            serializedKey.FindProperty("enemyOrbitSpeed").floatValue =
+                Ee5SliceProfile.EnergyKeyEnemyOrbitSpeed;
+            serializedKey.FindProperty("enemyOrbitSharpness").floatValue =
+                Ee5SliceProfile.EnergyKeyEnemyOrbitSharpness;
+            serializedKey.FindProperty("playerOffset").vector3Value =
+                Ee5SliceProfile.EnergyKeyPlayerOffset;
             serializedKey.FindProperty("gateUnlockRange").floatValue =
                 Ee5SliceProfile.EnergyKeyGateUnlockRange;
             serializedKey.FindProperty("collectDistance").floatValue =
