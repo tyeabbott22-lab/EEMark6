@@ -83,7 +83,7 @@ namespace ExtraterrestrialExhaust.Enemy
             controller?.RegisterPlayerContact();
             if (player.Health.TryTakeDamage(damageInfo))
             {
-                controller?.RegisterAttackImpact();
+                controller?.RegisterAttackImpact(direction);
                 // Keep this feedback at the same authority as damage. A
                 // navigation pass or a blocked overlap cannot accidentally
                 // play a fake swing, while the player still gets a crisp

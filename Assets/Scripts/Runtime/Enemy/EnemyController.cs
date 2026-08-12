@@ -114,6 +114,7 @@ namespace ExtraterrestrialExhaust.Enemy
         float wakeSignalCharge;
         float wanderTimer;
         float attackRecoveryRemaining;
+        Vector2 attackFacingDirection = Vector2.right;
         bool nearPlayer;
         bool touchedPlayerDuringNearPass;
         bool spriteFlippedUpright;
@@ -137,6 +138,7 @@ namespace ExtraterrestrialExhaust.Enemy
         public float ContactDamageReach => Mathf.Min(
             Mathf.Max(0f, attackRange),
             Mathf.Max(0f, contactDamageRange));
+        public bool IsAttackRecoveryActive => IsMelee && attackRecoveryRemaining > 0f;
         public bool IsCombatActive => State == EnemyState.Chasing || State == EnemyState.Attacking;
         public float WakeProgress => State == EnemyState.Waking && wakeTotalDuration > 0f
             ? Mathf.Clamp01(wakeTimer / Mathf.Max(0.01f, wakeTotalDuration))
@@ -526,6 +528,17 @@ namespace ExtraterrestrialExhaust.Enemy
                 return;
             }
 
+            if (State == EnemyState.Attacking && attackRecoveryRemaining > 0f)
+            {
+                // A confirmed strike owns this short presentation window. Do
+                // not let the player's knockback make the hunter re-aim every
+                // fixed tick; that angle tug-of-war is the popcorn/jitter that
+                // the original EE5 contact beat never showed.
+                FaceTarget(attackFacingDirection);
+                body.linearVelocity = Vector2.zero;
+                return;
+            }
+
             // EE5 keeps facing the player while a melee hunter is in its
             // contact-attack state. Without this branch the body stops moving
             // at the attack radius but its sprite remains aimed at the last
@@ -661,10 +674,15 @@ namespace ExtraterrestrialExhaust.Enemy
         /// beat after a successful contact hit. This is behavior timing, not a
         /// second damage path; EnemyContactDamage remains the damage authority.
         /// </summary>
-        public void RegisterAttackImpact()
+        public void RegisterAttackImpact() => RegisterAttackImpact(Vector2.zero);
+
+        public void RegisterAttackImpact(Vector2 direction)
         {
             if (!IsMelee || attackRecoveryDuration <= 0f)
                 return;
+
+            if (direction.sqrMagnitude > 0.001f)
+                attackFacingDirection = direction.normalized;
 
             attackRecoveryRemaining = Mathf.Max(
                 attackRecoveryRemaining,
@@ -743,6 +761,16 @@ namespace ExtraterrestrialExhaust.Enemy
                 // than creating a new patrol anchor after chasing the player.
                 orbitCenter = homePosition;
                 orbitAngle = UnityEngine.Random.Range(0f, 360f);
+                chaseSteerRemaining = 0f;
+                chaseProgressTimer = 0f;
+            }
+            else if (nextState == EnemyState.Attacking)
+            {
+                Vector2 toTarget = target
+                    ? target.PhysicsPosition - body.position
+                    : Vector2.zero;
+                if (toTarget.sqrMagnitude > 0.001f)
+                    attackFacingDirection = toTarget.normalized;
                 chaseSteerRemaining = 0f;
                 chaseProgressTimer = 0f;
             }
