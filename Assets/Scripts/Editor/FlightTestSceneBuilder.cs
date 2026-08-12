@@ -105,7 +105,7 @@ namespace ExtraterrestrialExhaust.Editor
                 gameState,
                 projectilePrefab,
                 "Purple Melee Hunter",
-                new Vector2(3.25f, 2.25f),
+                Ee5SliceProfile.VerticalSliceMeleeSpawn,
                 false,
                 EnemyMeleePrefabPath,
                 MeleeSpritePath,
@@ -115,7 +115,7 @@ namespace ExtraterrestrialExhaust.Editor
                 gameState,
                 projectilePrefab,
                 "White Gunner",
-                new Vector2(5f, -2f),
+                Ee5SliceProfile.VerticalSliceGunnerSpawn,
                 true,
                 EnemyGunnerPrefabPath,
                 EnemySpritePath,
@@ -1046,6 +1046,27 @@ namespace ExtraterrestrialExhaust.Editor
                 issues.Add($"{label} reference missing");
         }
 
+        static void CheckSceneObjectPosition(
+            GameObject sceneObject,
+            Vector2 expected,
+            string label,
+            List<string> issues)
+        {
+            if (!sceneObject)
+            {
+                issues.Add($"{label} missing");
+                return;
+            }
+
+            Vector2 actual = sceneObject.transform.position;
+            if (Vector2.Distance(actual, expected) > 0.01f)
+            {
+                issues.Add(
+                    $"{label} position=({actual.x:0.###},{actual.y:0.###}) "
+                    + $"(expected {expected.x:0.###},{expected.y:0.###})");
+            }
+        }
+
         static bool SetBool(SerializedObject serialized, string propertyName, bool value)
         {
             SerializedProperty property = serialized.FindProperty(propertyName);
@@ -1071,6 +1092,11 @@ namespace ExtraterrestrialExhaust.Editor
                     player,
                     expectedSprite,
                     "Player Craft"));
+                CheckSceneObjectPosition(
+                    player,
+                    Ee5SliceProfile.VerticalSlicePlayerSpawn,
+                    "Player Craft",
+                    issues);
             }
             if (!UnityEngine.Object.FindFirstObjectByType<GameStateMachine>())
                 issues.Add("Game State");
@@ -1259,6 +1285,27 @@ namespace ExtraterrestrialExhaust.Editor
                     }
                 }
             }
+
+            CheckSceneObjectPosition(
+                GameObject.Find("Purple Melee Hunter"),
+                Ee5SliceProfile.VerticalSliceMeleeSpawn,
+                "Purple Melee Hunter",
+                issues);
+            CheckSceneObjectPosition(
+                GameObject.Find("White Gunner"),
+                Ee5SliceProfile.VerticalSliceGunnerSpawn,
+                "White Gunner",
+                issues);
+            CheckSceneObjectPosition(
+                GameObject.Find("Energy Gate"),
+                Ee5SliceProfile.VerticalSliceGatePosition,
+                "Energy Gate",
+                issues);
+            CheckSceneObjectPosition(
+                GameObject.Find("Level Exit"),
+                Ee5SliceProfile.VerticalSliceExitPosition,
+                "Level Exit",
+                issues);
 
             SliceObjectiveDirector objectiveDirector =
                 UnityEngine.Object.FindFirstObjectByType<SliceObjectiveDirector>();
@@ -1583,7 +1630,7 @@ namespace ExtraterrestrialExhaust.Editor
         {
             GameObject player = new GameObject("Player Craft");
             player.tag = "Player";
-            player.transform.position = Vector3.zero;
+            player.transform.position = Ee5SliceProfile.VerticalSlicePlayerSpawn;
 
             Rigidbody2D body = player.AddComponent<Rigidbody2D>();
             body.mass = Ee5SliceProfile.PlayerMass;
@@ -2139,13 +2186,13 @@ namespace ExtraterrestrialExhaust.Editor
 
             GameObject gate = new GameObject("Energy Gate");
             gate.tag = "Wall";
-            gate.transform.position = new Vector3(5f, 0f, 0f);
+            gate.transform.position = Ee5SliceProfile.VerticalSliceGatePosition;
             BoxCollider2D gateCollider = gate.AddComponent<BoxCollider2D>();
-            gateCollider.size = new Vector2(0.35f, 3.8f);
+            gateCollider.size = Ee5SliceProfile.VerticalSliceGateColliderSize;
             EnergyGate energyGate = gate.AddComponent<EnergyGate>();
             GameObject keyTarget = new GameObject("Key Target");
             keyTarget.transform.SetParent(gate.transform, false);
-            keyTarget.transform.localPosition = new Vector3(0f, 1.7f, 0f);
+            keyTarget.transform.localPosition = Ee5SliceProfile.VerticalSliceGateKeyTarget;
             SerializedObject serializedGate = new SerializedObject(energyGate);
             serializedGate.FindProperty("liftDistance").floatValue =
                 Ee5SliceProfile.EnergyGateLiftDistance;
@@ -2169,7 +2216,10 @@ namespace ExtraterrestrialExhaust.Editor
             serializedGatePresentation.FindProperty("approachPulseWidthMultiplier").floatValue = 1.25f;
             serializedGatePresentation.FindProperty("approachPulseSpeed").floatValue = 24f;
             serializedGatePresentation.ApplyModifiedPropertiesWithoutUndo();
-            CreateSquareOutline(gate.transform, new Vector2(0.35f, 3.8f), new Color(0.2f, 0.55f, 1f));
+            CreateSquareOutline(
+                gate.transform,
+                Ee5SliceProfile.VerticalSliceGateColliderSize,
+                new Color(0.2f, 0.55f, 1f));
             CreateGateVisual(gate.transform);
 
             GameObject key = new GameObject("Energy Key");
@@ -2221,10 +2271,10 @@ namespace ExtraterrestrialExhaust.Editor
             CreateSquareOutline(key.transform, Vector2.one * 0.5f, new Color(1f, 0.8f, 0.1f));
 
             GameObject exit = new GameObject("Level Exit");
-            exit.transform.position = new Vector3(6.8f, 0f, 0f);
+            exit.transform.position = Ee5SliceProfile.VerticalSliceExitPosition;
             CircleCollider2D collider = exit.AddComponent<CircleCollider2D>();
             collider.isTrigger = true;
-            collider.radius = 1.45f;
+            collider.radius = Ee5SliceProfile.VerticalSliceExitRadius;
             LevelExit levelExit = exit.AddComponent<LevelExit>();
             SerializedObject serializedExit = new SerializedObject(levelExit);
             serializedExit.FindProperty("requiredGate").objectReferenceValue = energyGate;
@@ -2367,24 +2417,24 @@ namespace ExtraterrestrialExhaust.Editor
         {
             CreateInstructionTrigger(
                 "Flight Controls Instruction",
-                new Vector2(0f, 0f),
-                new Vector2(4.2f, 3.4f),
+                Ee5SliceProfile.VerticalSliceFlightInstructionPosition,
+                Ee5SliceProfile.VerticalSliceFlightInstructionSize,
                 "W / UP / SPACE  THRUST\nA / D  ROTATE    S / DOWN  STABILIZE\nX  FLIP    Z / ENTER / MOUSE  FIRE",
                 true);
             CreateInstructionTrigger(
                 "Energy Key Instruction",
-                new Vector2(2.5f, 3.5f),
-                new Vector2(4.8f, 2.8f),
+                Ee5SliceProfile.VerticalSliceKeyInstructionPosition,
+                Ee5SliceProfile.VerticalSliceKeyInstructionSize,
                 "DEFEAT THE CARRIER.\nTHE ENERGY KEY WILL BREAK FREE WHEN IT IS DEFEATED.");
             CreateInstructionTrigger(
                 "Energy Gate Instruction",
-                new Vector2(5f, 0f),
-                new Vector2(2.2f, 5f),
+                Ee5SliceProfile.VerticalSliceGateInstructionPosition,
+                Ee5SliceProfile.VerticalSliceGateInstructionSize,
                 "COLLECT THE ENERGY KEY,\nTHEN FLY INTO THE ENERGY GATE.");
             CreateInstructionTrigger(
                 "Extraction Instruction",
-                new Vector2(6.8f, 0f),
-                new Vector2(3f, 4f),
+                Ee5SliceProfile.VerticalSliceExitInstructionPosition,
+                Ee5SliceProfile.VerticalSliceExitInstructionSize,
                 "EXTRACTION ONLINE.\nFLY INTO THE PORTAL TO COMPLETE THE SLICE.",
                 true);
         }
@@ -2571,10 +2621,28 @@ namespace ExtraterrestrialExhaust.Editor
         {
             // Keep the playable rectangle in one place so movement tuning and
             // future scene variants cannot drift apart from the authored room.
-            CreateWall("Left Wall", new Vector2(-8f, 0f), new Vector2(0.5f, 14f));
-            CreateWall("Right Wall", new Vector2(8f, 0f), new Vector2(0.5f, 14f));
-            CreateWall("Floor", new Vector2(0f, -6f), new Vector2(16f, 0.5f));
-            CreateWall("Ceiling", new Vector2(0f, 6f), new Vector2(16f, 0.5f));
+            Vector2 halfExtents = Ee5SliceProfile.VerticalSliceArenaHalfExtents;
+            Vector2 boundarySize = new Vector2(
+                halfExtents.x * 2f,
+                halfExtents.y * 2f);
+            float overscan = Ee5SliceProfile.VerticalSliceBoundaryOverscan;
+            float thickness = Ee5SliceProfile.VerticalSliceBoundaryThickness;
+            CreateWall(
+                "Left Wall",
+                new Vector2(-halfExtents.x, 0f),
+                new Vector2(thickness, boundarySize.y + overscan));
+            CreateWall(
+                "Right Wall",
+                new Vector2(halfExtents.x, 0f),
+                new Vector2(thickness, boundarySize.y + overscan));
+            CreateWall(
+                "Floor",
+                new Vector2(0f, -halfExtents.y),
+                new Vector2(boundarySize.x, thickness));
+            CreateWall(
+                "Ceiling",
+                new Vector2(0f, halfExtents.y),
+                new Vector2(boundarySize.x, thickness));
 
             // The box colliders above remain the gameplay boundary. This
             // imported EE5 SpriteShape is presentation-only, so terrain art
@@ -2589,16 +2657,16 @@ namespace ExtraterrestrialExhaust.Editor
             // objective route remains direct and testable.
             CreateBrittleWall(
                 "Upper Crater Shelf",
-                new Vector2(0.8f, 4.15f),
-                new Vector2(4.2f, 0.35f));
+                Ee5SliceProfile.VerticalSliceUpperShelfPosition,
+                Ee5SliceProfile.VerticalSliceUpperShelfSize);
             CreateBrittleWall(
                 "Lower Crater Shelf",
-                new Vector2(-0.6f, -4.15f),
-                new Vector2(4.8f, 0.35f));
+                Ee5SliceProfile.VerticalSliceLowerShelfPosition,
+                Ee5SliceProfile.VerticalSliceLowerShelfSize);
             CreateWall(
                 "Extraction Spine",
-                new Vector2(6.2f, 2.35f),
-                new Vector2(0.35f, 2.5f));
+                Ee5SliceProfile.VerticalSliceExtractionSpinePosition,
+                Ee5SliceProfile.VerticalSliceExtractionSpineSize);
         }
 
         static void CreateFlightStopperZone()
@@ -2647,29 +2715,34 @@ namespace ExtraterrestrialExhaust.Editor
                 return;
             }
 
+            Vector2 halfExtents = Ee5SliceProfile.VerticalSliceArenaHalfExtents;
+            float floorY = -halfExtents.y;
+            float basinBottomY = floorY - Ee5SliceProfile.VerticalSliceBoundaryThickness;
+            float halfWidth = halfExtents.x;
+
             CreateMoonTerrainPiece(
                 "Playable Low Basin - SpriteShape",
                 profile,
                 Vector2.zero,
                 new[]
                 {
-                    new Vector2(-8f, -5.72f),
-                    new Vector2(-6.4f, -5.48f),
-                    new Vector2(-4.4f, -5.62f),
-                    new Vector2(-2.2f, -5.4f),
-                    new Vector2(0f, -5.56f),
-                    new Vector2(2.2f, -5.38f),
-                    new Vector2(4.4f, -5.58f),
-                    new Vector2(6.4f, -5.45f),
-                    new Vector2(8f, -5.7f),
-                    new Vector2(8f, -6.5f),
-                    new Vector2(-8f, -6.5f)
+                    new Vector2(-halfWidth, floorY + 0.28f),
+                    new Vector2(-halfWidth * 0.8f, floorY + 0.52f),
+                    new Vector2(-halfWidth * 0.55f, floorY + 0.38f),
+                    new Vector2(-halfWidth * 0.275f, floorY + 0.6f),
+                    new Vector2(0f, floorY + 0.44f),
+                    new Vector2(halfWidth * 0.275f, floorY + 0.62f),
+                    new Vector2(halfWidth * 0.55f, floorY + 0.42f),
+                    new Vector2(halfWidth * 0.8f, floorY + 0.55f),
+                    new Vector2(halfWidth, floorY + 0.3f),
+                    new Vector2(halfWidth, basinBottomY),
+                    new Vector2(-halfWidth, basinBottomY)
                 });
 
             CreateMoonTerrainPiece(
                 "Upper Crater Shelf - SpriteShape",
                 profile,
-                new Vector2(0.8f, 4.15f),
+                Ee5SliceProfile.VerticalSliceUpperShelfPosition,
                 new[]
                 {
                     new Vector2(-2.1f, -0.18f),
@@ -2686,7 +2759,7 @@ namespace ExtraterrestrialExhaust.Editor
             CreateMoonTerrainPiece(
                 "Lower Crater Shelf - SpriteShape",
                 profile,
-                new Vector2(-0.6f, -4.15f),
+                Ee5SliceProfile.VerticalSliceLowerShelfPosition,
                 new[]
                 {
                     new Vector2(-2.4f, -0.18f),
@@ -2737,11 +2810,11 @@ namespace ExtraterrestrialExhaust.Editor
         {
             CreateContactHazard(
                 "Red Heat Hazard",
-                new Vector2(0f, -2.4f),
-                1.15f,
+                Ee5SliceProfile.VerticalSliceHazardPosition,
+                Ee5SliceProfile.VerticalSliceHazardRadius,
                 new Color(1f, 0.08f, 0.01f, 0.92f));
-            CreateHealthPickup(new Vector2(-5.8f, 4.4f));
-            CreateFireRatePickup(new Vector2(-5.8f, -4.4f));
+            CreateHealthPickup(Ee5SliceProfile.VerticalSliceHealthCachePosition);
+            CreateFireRatePickup(Ee5SliceProfile.VerticalSliceFireRateCachePosition);
         }
 
         static void CreateContactHazard(

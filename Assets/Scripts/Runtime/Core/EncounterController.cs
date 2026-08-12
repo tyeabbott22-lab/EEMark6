@@ -26,8 +26,29 @@ namespace ExtraterrestrialExhaust.Core
                 ? encounterEnemies
                 : FindObjectsByType<EnemyController>(FindObjectsSortMode.None);
             scoreSystem = FindFirstObjectByType<ScoreSystem>();
-            if (enemies.Length == 0)
+            // Evaluate the authored roster immediately. This matters when a
+            // scene is re-enabled or loaded additively after its enemies have
+            // already been defeated; waiting for another Defeated event would
+            // leave the objective director permanently in ClearEncounter.
+            EvaluateCompletion();
+        }
+
+        void EvaluateCompletion()
+        {
+            if (IsComplete)
+                return;
+
+            if (enemies == null || enemies.Length == 0)
+            {
                 CompleteEncounter();
+                return;
+            }
+
+            foreach (EnemyController enemy in enemies)
+                if (enemy && enemy.State != EnemyState.Defeated)
+                    return;
+
+            CompleteEncounter();
         }
 
         void OnEnable()
@@ -41,6 +62,8 @@ namespace ExtraterrestrialExhaust.Core
                     enemy.Defeated += HandleEnemyDefeated;
                     enemy.Damaged += HandleEnemyDamaged;
                 }
+
+            EvaluateCompletion();
         }
 
         void OnDisable()
@@ -67,11 +90,7 @@ namespace ExtraterrestrialExhaust.Core
         void HandleEnemyDefeated(EnemyController defeatedEnemy)
         {
             scoreSystem?.Award(ScoreReason.EnemyDefeated);
-            foreach (EnemyController enemy in enemies)
-                if (enemy && enemy.State != EnemyState.Defeated)
-                    return;
-
-            CompleteEncounter();
+            EvaluateCompletion();
         }
 
         void CompleteEncounter()
