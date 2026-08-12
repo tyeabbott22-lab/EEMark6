@@ -747,6 +747,13 @@ namespace ExtraterrestrialExhaust.Editor
                     serializedController,
                     "wakeFinalWarningDuration",
                     Ee5SliceProfile.EnemyWakeFinalWarningDuration);
+                // The gold EE5 gunner patrols its authored home radius. Keep
+                // the legacy orbit experiment available in the component, but
+                // never leave the prefab itself in the orbiting state.
+                changed |= SetBool(
+                    serializedController,
+                    "orbitWhileAttacking",
+                    false);
                 changed |= SetBool(serializedController, "forwardIsLocalNegativeX", ranged);
                 serializedController.ApplyModifiedPropertiesWithoutUndo();
             }
@@ -760,6 +767,23 @@ namespace ExtraterrestrialExhaust.Editor
                 changed |= SetBool(serializedPresentation, "restoreFacingAfterWake", true);
                 changed |= SetBool(serializedPresentation, "pingPongDormantAnimation", true);
                 changed |= SetBool(serializedPresentation, "randomizeDormantStartFrame", true);
+                changed |= SetFloat(serializedPresentation, "animationFramesPerSecond", 10f);
+                changed |= SetFloat(serializedPresentation, "dormantFramesPerSecond", 8f);
+                changed |= SetFloat(serializedPresentation, "wakeFramesPerSecond", 14f);
+                Sprite[] dormantSprites = LoadSprites(
+                    ranged ? EnemyIdleSpritePath : MeleeSpritePath);
+                Sprite[] activeSprites = LoadSprites(
+                    ranged ? EnemySpritePath : MeleeSpritePath);
+                Sprite[] wakeSprites = LoadSprites(
+                    ranged ? EnemyDefeatSpritePath : MeleeDefeatSpritePath);
+                changed |= SetSpriteArrayIfDifferent(
+                    serializedPresentation, "dormantSprites", dormantSprites);
+                changed |= SetSpriteArrayIfDifferent(
+                    serializedPresentation, "alertSprites", wakeSprites);
+                changed |= SetSpriteArrayIfDifferent(
+                    serializedPresentation, "activeSprites", activeSprites);
+                changed |= SetSpriteArrayIfDifferent(
+                    serializedPresentation, "defeatedSprites", wakeSprites);
                 serializedPresentation.ApplyModifiedPropertiesWithoutUndo();
             }
 
@@ -944,6 +968,12 @@ namespace ExtraterrestrialExhaust.Editor
                     Ee5SliceProfile.EnemyGunnerWanderDurationMax,
                     $"{prefabPath} wanderDurationMax",
                     issues);
+                CheckSerializedBool(
+                    serializedController,
+                    "orbitWhileAttacking",
+                    false,
+                    $"{prefabPath} orbitWhileAttacking",
+                    issues);
             }
 
             if (ranged)
@@ -1034,6 +1064,36 @@ namespace ExtraterrestrialExhaust.Editor
                     issues.Add($"{prefabPath} pingPongDormantAnimation=false");
                 if (randomizeDormant == null || !randomizeDormant.boolValue)
                     issues.Add($"{prefabPath} randomizeDormantStartFrame=false");
+                Sprite[] expectedDormantSprites = LoadSprites(
+                    ranged ? EnemyIdleSpritePath : MeleeSpritePath);
+                Sprite[] expectedActiveSprites = LoadSprites(
+                    ranged ? EnemySpritePath : MeleeSpritePath);
+                Sprite[] expectedWakeSprites = LoadSprites(
+                    ranged ? EnemyDefeatSpritePath : MeleeDefeatSpritePath);
+                CheckSpriteArray(
+                    serializedPresentation,
+                    "dormantSprites",
+                    expectedDormantSprites,
+                    $"{prefabPath} dormantSprites",
+                    issues);
+                CheckSpriteArray(
+                    serializedPresentation,
+                    "alertSprites",
+                    expectedWakeSprites,
+                    $"{prefabPath} alertSprites",
+                    issues);
+                CheckSpriteArray(
+                    serializedPresentation,
+                    "activeSprites",
+                    expectedActiveSprites,
+                    $"{prefabPath} activeSprites",
+                    issues);
+                CheckSpriteArray(
+                    serializedPresentation,
+                    "defeatedSprites",
+                    expectedWakeSprites,
+                    $"{prefabPath} defeatedSprites",
+                    issues);
             }
         }
 
@@ -1147,6 +1207,65 @@ namespace ExtraterrestrialExhaust.Editor
 
             property.boolValue = value;
             return true;
+        }
+
+        static bool SetSpriteArrayIfDifferent(
+            SerializedObject serialized,
+            string propertyName,
+            Sprite[] sprites)
+        {
+            SerializedProperty property = serialized.FindProperty(propertyName);
+            if (property == null)
+                return false;
+
+            sprites ??= System.Array.Empty<Sprite>();
+            bool changed = property.arraySize != sprites.Length;
+            if (!changed)
+            {
+                for (int i = 0; i < sprites.Length; i++)
+                {
+                    if (property.GetArrayElementAtIndex(i).objectReferenceValue == sprites[i])
+                        continue;
+
+                    changed = true;
+                    break;
+                }
+            }
+
+            if (!changed)
+                return false;
+
+            property.arraySize = sprites.Length;
+            for (int i = 0; i < sprites.Length; i++)
+                property.GetArrayElementAtIndex(i).objectReferenceValue = sprites[i];
+            return true;
+        }
+
+        static void CheckSpriteArray(
+            SerializedObject serialized,
+            string propertyName,
+            Sprite[] expected,
+            string label,
+            List<string> issues)
+        {
+            SerializedProperty property = serialized.FindProperty(propertyName);
+            expected ??= System.Array.Empty<Sprite>();
+            if (property == null || property.arraySize != expected.Length)
+            {
+                issues.Add(
+                    $"{label} has {(property != null ? property.arraySize : 0)} frames "
+                    + $"(expected {expected.Length})");
+                return;
+            }
+
+            for (int i = 0; i < expected.Length; i++)
+            {
+                if (property.GetArrayElementAtIndex(i).objectReferenceValue == expected[i])
+                    continue;
+
+                issues.Add($"{label} frame {i} is wired to the wrong sprite");
+                return;
+            }
         }
 
         static bool SetEnum(SerializedObject serialized, string propertyName, System.Enum value)
