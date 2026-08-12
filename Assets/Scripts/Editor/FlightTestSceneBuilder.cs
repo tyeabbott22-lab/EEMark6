@@ -70,6 +70,17 @@ namespace ExtraterrestrialExhaust.Editor
         [MenuItem("Extraterrestrial Exhaust/Build Flight Test Scene")]
         public static void Build()
         {
+            BuildInternal(false);
+        }
+
+        [MenuItem("Extraterrestrial Exhaust/Build Flight Test Scene (Preserve Prefabs)")]
+        public static void BuildPreservingPrefabs()
+        {
+            BuildInternal(true);
+        }
+
+        static void BuildInternal(bool preservePrefabs)
+        {
             lastBuildSucceeded = false;
             if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
             {
@@ -85,7 +96,16 @@ namespace ExtraterrestrialExhaust.Editor
             try
             {
                 InputActionAsset inputAsset = AssetDatabase.LoadAssetAtPath<InputActionAsset>(InputAssetPath);
-                PlayerProjectile projectilePrefab = CreateProjectilePrefab();
+                PlayerProjectile projectilePrefab = preservePrefabs
+                    ? AssetDatabase.LoadAssetAtPath<PlayerProjectile>(ProjectilePrefabPath)
+                    : CreateProjectilePrefab();
+                if (!projectilePrefab)
+                {
+                    throw new System.InvalidOperationException(
+                        preservePrefabs
+                            ? $"Could not preserve prefabs because {ProjectilePrefabPath} is missing."
+                            : $"Could not create the player projectile at {ProjectilePrefabPath}.");
+                }
 
                 Transform[] backdrops = CreateBackdrop();
                 GameStateMachine gameState = CreateGameStateMachine(inputAsset);
@@ -114,7 +134,11 @@ namespace ExtraterrestrialExhaust.Editor
             serializedScore.FindProperty("maximumMultiplier").floatValue = 50f;
             serializedScore.FindProperty("gameState").objectReferenceValue = gameState;
             serializedScore.ApplyModifiedPropertiesWithoutUndo();
-            PlayerCharacter player = CreatePlayer(inputAsset, projectilePrefab, gameState);
+            PlayerCharacter player = CreatePlayer(
+                inputAsset,
+                projectilePrefab,
+                gameState,
+                preservePrefabs);
             CreateCamera(player, backdrops);
             EnemyController meleeEnemy = CreateEnemy(
                 gameState,
@@ -125,7 +149,8 @@ namespace ExtraterrestrialExhaust.Editor
                 EnemyMeleePrefabPath,
                 MeleeSpritePath,
                 MeleeIdleSpritePath,
-                MeleeDefeatSpritePath);
+                MeleeDefeatSpritePath,
+                preservePrefabs);
             EnemyController gunnerEnemy = CreateEnemy(
                 gameState,
                 projectilePrefab,
@@ -135,7 +160,8 @@ namespace ExtraterrestrialExhaust.Editor
                 EnemyGunnerPrefabPath,
                 EnemySpritePath,
                 EnemyIdleSpritePath,
-                EnemyDefeatSpritePath);
+                EnemyDefeatSpritePath,
+                preservePrefabs);
             SliceObjectiveDirector objectiveDirector = CreateEncounterAndExit(
                 gameState,
                 meleeEnemy,
@@ -157,7 +183,8 @@ namespace ExtraterrestrialExhaust.Editor
             ConfigureBuildSettings();
                 Selection.activeGameObject = GameObject.Find("Player Craft");
                 Debug.Log(
-                    $"Built {ScenePath}. Controls: W/Space thrust, A/D or Q/E rotate, S/C stabilize, X flip.");
+                    $"Built {ScenePath}{(preservePrefabs ? " without rewriting prefabs" : "")}. "
+                    + "Controls: W/Space thrust, A/D or Q/E rotate, S/C stabilize, X flip.");
             }
             catch (System.Exception exception)
             {
@@ -2494,7 +2521,8 @@ namespace ExtraterrestrialExhaust.Editor
         static PlayerCharacter CreatePlayer(
             InputActionAsset inputAsset,
             PlayerProjectile projectilePrefab,
-            GameStateMachine gameState)
+            GameStateMachine gameState,
+            bool preservePrefabs)
         {
             GameObject player = new GameObject("Player Craft");
             player.tag = "Player";
@@ -2676,10 +2704,13 @@ namespace ExtraterrestrialExhaust.Editor
             serializedDamageFeedback.ApplyModifiedPropertiesWithoutUndo();
             PlayerCollisionDamage collisionDamage = player.AddComponent<PlayerCollisionDamage>();
             collisionDamage.enabled = Ee5SliceProfile.PlayerCollisionDamageEnabled;
-            PrefabUtility.SaveAsPrefabAssetAndConnect(
-                player,
-                PlayerPrefabPath,
-                InteractionMode.AutomatedAction);
+            if (!preservePrefabs)
+            {
+                PrefabUtility.SaveAsPrefabAssetAndConnect(
+                    player,
+                    PlayerPrefabPath,
+                    InteractionMode.AutomatedAction);
+            }
             AssetDatabase.SaveAssets();
             return character;
         }
@@ -2810,7 +2841,8 @@ namespace ExtraterrestrialExhaust.Editor
             string prefabPath,
             string activeSpritePath,
             string dormantSpritePath,
-            string defeatedSpritePath)
+            string defeatedSpritePath,
+            bool preservePrefabs)
         {
             GameObject enemy = new GameObject(objectName);
             enemy.transform.position = position;
@@ -3063,10 +3095,13 @@ namespace ExtraterrestrialExhaust.Editor
             serializedDeath.FindProperty("audioVolume").floatValue = 0.65f;
             serializedDeath.ApplyModifiedPropertiesWithoutUndo();
 
-            PrefabUtility.SaveAsPrefabAssetAndConnect(
-                enemy,
-                prefabPath,
-                InteractionMode.AutomatedAction);
+            if (!preservePrefabs)
+            {
+                PrefabUtility.SaveAsPrefabAssetAndConnect(
+                    enemy,
+                    prefabPath,
+                    InteractionMode.AutomatedAction);
+            }
             AssetDatabase.SaveAssets();
             return controller;
         }
