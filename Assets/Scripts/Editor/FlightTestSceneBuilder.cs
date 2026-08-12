@@ -4186,7 +4186,16 @@ namespace ExtraterrestrialExhaust.Editor
             int segments,
             float width)
         {
-            LineRenderer line = parent.gameObject.AddComponent<LineRenderer>();
+            if (!parent)
+                return;
+
+            // A hazard can intentionally have more than one ring. Unity does
+            // not allow multiple LineRenderer components on one GameObject,
+            // so each decorative ring gets its own child instead of silently
+            // returning a null component on the second call.
+            GameObject outlineObject = new GameObject("Circle Outline");
+            outlineObject.transform.SetParent(parent, false);
+            LineRenderer line = outlineObject.AddComponent<LineRenderer>();
             line.useWorldSpace = false;
             line.loop = true;
             line.positionCount = segments;
