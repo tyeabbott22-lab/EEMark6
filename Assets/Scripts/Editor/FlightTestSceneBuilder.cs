@@ -717,23 +717,7 @@ namespace ExtraterrestrialExhaust.Editor
 
             PlayerFlightMotor motor = playerObject.GetComponent<PlayerFlightMotor>();
             if (motor)
-            {
-                SerializedObject serializedMotor = new SerializedObject(motor);
-                serializedMotor.FindProperty("enforceEe5Profile").boolValue = true;
-                serializedMotor.FindProperty("thrustForce").floatValue = Ee5SliceProfile.ThrustForce;
-                serializedMotor.FindProperty("rotationTorque").floatValue = Ee5SliceProfile.RotationTorque;
-                serializedMotor.FindProperty("rotationAddsThrust").boolValue = true;
-                serializedMotor.FindProperty("rotationBoostMultiplier").floatValue = Ee5SliceProfile.RotationBoostMultiplier;
-                serializedMotor.FindProperty("stabilizationSpeed").floatValue = Ee5SliceProfile.StabilizationSpeed;
-                serializedMotor.FindProperty("angularDamping").floatValue = Ee5SliceProfile.FlightAngularDamping;
-                serializedMotor.FindProperty("stabilizationAngle").floatValue = 0f;
-                serializedMotor.FindProperty("removeVelocityIntoColliders").boolValue =
-                    Ee5SliceProfile.PlayerRemoveVelocityIntoColliders;
-                SerializedProperty stopperTag = serializedMotor.FindProperty("stopperTag");
-                if (stopperTag != null)
-                    stopperTag.stringValue = "StopperZone";
-                serializedMotor.ApplyModifiedPropertiesWithoutUndo();
-            }
+                ApplyEe5PlayerMotorProfile(motor);
 
             PlayerCollisionDamage collisionDamage = playerObject.GetComponent<PlayerCollisionDamage>();
             if (collisionDamage)
@@ -1545,6 +1529,69 @@ namespace ExtraterrestrialExhaust.Editor
             return true;
         }
 
+        /// <summary>
+        /// Keeps the serialized builder contract aligned with PlayerFlightMotor's
+        /// runtime EE5 profile. In particular, the optional neutral upright assist
+        /// must not remain hidden in a generated scene when the gold profile disables it.
+        /// </summary>
+        static bool ApplyEe5PlayerMotorProfile(PlayerFlightMotor motor)
+        {
+            if (!motor)
+                return false;
+
+            SerializedObject serializedMotor = new SerializedObject(motor);
+            bool changed = false;
+            changed |= SetBool(serializedMotor, "enforceEe5Profile", true);
+            changed |= SetFloat(serializedMotor, "thrustForce", Ee5SliceProfile.ThrustForce);
+            changed |= SetFloat(serializedMotor, "rotationTorque", Ee5SliceProfile.RotationTorque);
+            changed |= SetBool(serializedMotor, "rotationAddsThrust", true);
+            changed |= SetFloat(
+                serializedMotor,
+                "rotationBoostMultiplier",
+                Ee5SliceProfile.RotationBoostMultiplier);
+            changed |= SetFloat(serializedMotor, "stabilizationSpeed", Ee5SliceProfile.StabilizationSpeed);
+            changed |= SetFloat(serializedMotor, "angularDamping", Ee5SliceProfile.FlightAngularDamping);
+            changed |= SetFloat(serializedMotor, "stabilizationAngle", 0f);
+            changed |= SetBool(
+                serializedMotor,
+                "uprightAssistEnabled",
+                Ee5SliceProfile.UprightAssistEnabled);
+            changed |= SetFloat(
+                serializedMotor,
+                "uprightAssistWindow",
+                Ee5SliceProfile.UprightAssistWindow);
+            changed |= SetFloat(
+                serializedMotor,
+                "uprightAssistSpeed",
+                Ee5SliceProfile.UprightAssistSpeed);
+            changed |= SetFloat(
+                serializedMotor,
+                "uprightAssistAngularBrake",
+                Ee5SliceProfile.UprightAssistAngularBrake);
+            changed |= SetFloat(
+                serializedMotor,
+                "uprightAssistMaxAngularSpeed",
+                Ee5SliceProfile.UprightAssistMaxAngularSpeed);
+            changed |= SetFloat(
+                serializedMotor,
+                "uprightAssistReleaseDelay",
+                Ee5SliceProfile.UprightAssistReleaseDelay);
+            changed |= SetBool(
+                serializedMotor,
+                "removeVelocityIntoColliders",
+                Ee5SliceProfile.PlayerRemoveVelocityIntoColliders);
+
+            SerializedProperty stopperTag = serializedMotor.FindProperty("stopperTag");
+            if (stopperTag != null && stopperTag.stringValue != "StopperZone")
+            {
+                stopperTag.stringValue = "StopperZone";
+                changed = true;
+            }
+
+            serializedMotor.ApplyModifiedPropertiesWithoutUndo();
+            return changed;
+        }
+
         static bool SetSpriteArrayIfDifferent(
             SerializedObject serialized,
             string propertyName,
@@ -2316,57 +2363,7 @@ namespace ExtraterrestrialExhaust.Editor
 
             PlayerFlightMotor motor = root.GetComponent<PlayerFlightMotor>();
             if (motor)
-            {
-                SerializedObject serializedMotor = new SerializedObject(motor);
-                changed |= SetBool(serializedMotor, "enforceEe5Profile", true);
-                changed |= SetFloat(serializedMotor, "thrustForce", Ee5SliceProfile.ThrustForce);
-                changed |= SetFloat(serializedMotor, "rotationTorque", Ee5SliceProfile.RotationTorque);
-                changed |= SetBool(serializedMotor, "rotationAddsThrust", true);
-                changed |= SetFloat(
-                    serializedMotor,
-                    "rotationBoostMultiplier",
-                    Ee5SliceProfile.RotationBoostMultiplier);
-                changed |= SetFloat(
-                    serializedMotor,
-                    "stabilizationSpeed",
-                    Ee5SliceProfile.StabilizationSpeed);
-                changed |= SetFloat(
-                    serializedMotor,
-                    "angularDamping",
-                    Ee5SliceProfile.FlightAngularDamping);
-                changed |= SetFloat(serializedMotor, "stabilizationAngle", 0f);
-                changed |= SetBool(
-                    serializedMotor,
-                    "uprightAssistEnabled",
-                    Ee5SliceProfile.UprightAssistEnabled);
-                changed |= SetFloat(
-                    serializedMotor,
-                    "uprightAssistWindow",
-                    Ee5SliceProfile.UprightAssistWindow);
-                changed |= SetFloat(
-                    serializedMotor,
-                    "uprightAssistSpeed",
-                    Ee5SliceProfile.UprightAssistSpeed);
-                changed |= SetFloat(
-                    serializedMotor,
-                    "uprightAssistAngularBrake",
-                    Ee5SliceProfile.UprightAssistAngularBrake);
-                changed |= SetFloat(
-                    serializedMotor,
-                    "uprightAssistMaxAngularSpeed",
-                    Ee5SliceProfile.UprightAssistMaxAngularSpeed);
-                changed |= SetBool(
-                    serializedMotor,
-                    "removeVelocityIntoColliders",
-                    Ee5SliceProfile.PlayerRemoveVelocityIntoColliders);
-                SerializedProperty stopperTag = serializedMotor.FindProperty("stopperTag");
-                if (stopperTag != null && stopperTag.stringValue != "StopperZone")
-                {
-                    stopperTag.stringValue = "StopperZone";
-                    changed = true;
-                }
-                serializedMotor.ApplyModifiedPropertiesWithoutUndo();
-            }
+                changed |= ApplyEe5PlayerMotorProfile(motor);
 
             return changed;
         }
@@ -2591,6 +2588,9 @@ namespace ExtraterrestrialExhaust.Editor
             player.transform.position = Ee5SliceProfile.VerticalSlicePlayerSpawn;
 
             PlayerCharacter character = RequireComponent<PlayerCharacter>(player, PlayerPrefabPath);
+            PlayerFlightMotor motor = RequireComponent<PlayerFlightMotor>(player, PlayerPrefabPath);
+            ApplyEe5PlayerMotorProfile(motor);
+            PrefabUtility.RecordPrefabInstancePropertyModifications(motor);
             PlayerFlightInput input = RequireComponent<PlayerFlightInput>(player, PlayerPrefabPath);
             input.ConfigureInputAsset(inputAsset);
             PrefabUtility.RecordPrefabInstancePropertyModifications(input);
@@ -2718,27 +2718,7 @@ namespace ExtraterrestrialExhaust.Editor
             playerCollider.offset = new Vector2(-0.004f, 0f);
             PlayerCharacter character = player.AddComponent<PlayerCharacter>();
             PlayerFlightMotor motor = player.GetComponent<PlayerFlightMotor>();
-            SerializedObject serializedMotor = new SerializedObject(motor);
-            serializedMotor.FindProperty("enforceEe5Profile").boolValue = true;
-            serializedMotor.FindProperty("thrustForce").floatValue = Ee5SliceProfile.ThrustForce;
-            serializedMotor.FindProperty("rotationTorque").floatValue = Ee5SliceProfile.RotationTorque;
-            serializedMotor.FindProperty("rotationAddsThrust").boolValue = true;
-            serializedMotor.FindProperty("rotationBoostMultiplier").floatValue = Ee5SliceProfile.RotationBoostMultiplier;
-            serializedMotor.FindProperty("stabilizationSpeed").floatValue = Ee5SliceProfile.StabilizationSpeed;
-            serializedMotor.FindProperty("angularDamping").floatValue = Ee5SliceProfile.FlightAngularDamping;
-            serializedMotor.FindProperty("stabilizationAngle").floatValue = 0f;
-            serializedMotor.FindProperty("uprightAssistEnabled").boolValue = Ee5SliceProfile.UprightAssistEnabled;
-            serializedMotor.FindProperty("uprightAssistWindow").floatValue = Ee5SliceProfile.UprightAssistWindow;
-            serializedMotor.FindProperty("uprightAssistSpeed").floatValue = Ee5SliceProfile.UprightAssistSpeed;
-            serializedMotor.FindProperty("uprightAssistAngularBrake").floatValue = Ee5SliceProfile.UprightAssistAngularBrake;
-            serializedMotor.FindProperty("uprightAssistMaxAngularSpeed").floatValue =
-                Ee5SliceProfile.UprightAssistMaxAngularSpeed;
-            serializedMotor.FindProperty("removeVelocityIntoColliders").boolValue =
-                Ee5SliceProfile.PlayerRemoveVelocityIntoColliders;
-            SerializedProperty stopperTag = serializedMotor.FindProperty("stopperTag");
-            if (stopperTag != null)
-                stopperTag.stringValue = "StopperZone";
-            serializedMotor.ApplyModifiedPropertiesWithoutUndo();
+            ApplyEe5PlayerMotorProfile(motor);
             HealthComponent playerHealth = player.GetComponent<HealthComponent>();
             SerializedObject serializedPlayerHealth = new SerializedObject(playerHealth);
             serializedPlayerHealth.FindProperty("maxHealth").floatValue = Ee5SliceProfile.PlayerMaxHealth;

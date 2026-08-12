@@ -42,7 +42,7 @@ namespace ExtraterrestrialExhaust.Player
 
         [Header("Optional Neutral Upright Assist")]
         [Tooltip("Prototype/accessibility assist. Disabled by the EE5 gold profile; S/C remains the authored stabilize command.")]
-        [SerializeField] bool uprightAssistEnabled = true;
+        [SerializeField] bool uprightAssistEnabled = Ee5SliceProfile.UprightAssistEnabled;
         [SerializeField, Min(0f)] float uprightAssistWindow = Ee5SliceProfile.UprightAssistWindow;
         [SerializeField, Min(0f)] float uprightAssistSpeed = Ee5SliceProfile.UprightAssistSpeed;
         [SerializeField, Min(0f)] float uprightAssistAngularBrake = Ee5SliceProfile.UprightAssistAngularBrake;
