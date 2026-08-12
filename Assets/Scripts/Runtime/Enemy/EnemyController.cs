@@ -46,6 +46,8 @@ namespace ExtraterrestrialExhaust.Enemy
         [SerializeField, Min(1f)] float wakeSignalDistanceMultiplier = 4f;
         [SerializeField, Min(0.01f)] float wakeSignalChargeDuration = Ee5SliceProfile.EnemyWakeSignalChargeDuration;
         [SerializeField, Min(0f)] float wakeSignalChargeDecay = Ee5SliceProfile.EnemyWakeSignalChargeDecay;
+        [SerializeField, Min(0f)] float wakeSignalChargeSpeedAtEdge = Ee5SliceProfile.EnemyWakeSignalChargeSpeedAtEdge;
+        [SerializeField, Min(0f)] float wakeSignalChargeSpeedAtClose = Ee5SliceProfile.EnemyWakeSignalChargeSpeedAtClose;
         [SerializeField, Min(0f)] float wakeFinalWarningDuration = Ee5SliceProfile.EnemyWakeFinalWarningDuration;
         [SerializeField, Min(0f)] float attackRange = 1.2f;
         [SerializeField, Min(0f)] float chaseSpeed = 2.5f;
@@ -255,14 +257,14 @@ namespace ExtraterrestrialExhaust.Enemy
             {
                 WakeSignalVisible = target != null;
                 WakeSignalHasClearSight = target != null;
-                WakeSignalEnd = target ? target.transform.position : transform.position;
+                WakeSignalEnd = target ? GetWakeSignalTargetPoint() : transform.position;
                 wakeSignalCharge = wakeSignalChargeDuration;
                 return;
             }
 
             float signalDistance = GetWakeSignalDistance();
             WakeSignalVisible = distance <= signalDistance;
-            WakeSignalEnd = target ? target.transform.position : transform.position;
+            WakeSignalEnd = target ? GetWakeSignalTargetPoint() : transform.position;
 
             if (!WakeSignalVisible)
             {
@@ -275,7 +277,7 @@ namespace ExtraterrestrialExhaust.Enemy
             }
 
             Vector2 origin = bodyCollider ? bodyCollider.bounds.center : transform.position;
-            Vector2 targetPoint = target.transform.position;
+            Vector2 targetPoint = GetWakeSignalTargetPoint();
             Vector2 lineEnd = targetPoint;
             WakeSignalHasClearSight = !requireLineOfSightToWake
                 || HasClearLineOfSight(origin, targetPoint, out lineEnd);
@@ -284,10 +286,18 @@ namespace ExtraterrestrialExhaust.Enemy
 
             if (WakeSignalHasClearSight)
             {
+                // Match EE5's EnemyAI pressure curve: a distant clear line
+                // takes longer to commit, while a close approach accelerates
+                // the final charge and makes the scream handoff feel earned.
+                float proximity = Mathf.Clamp01(1f - distance / Mathf.Max(0.01f, signalDistance));
+                float chargeSpeed = Mathf.Lerp(
+                    wakeSignalChargeSpeedAtEdge,
+                    wakeSignalChargeSpeedAtClose,
+                    proximity);
                 wakeSignalCharge = Mathf.MoveTowards(
                     wakeSignalCharge,
                     wakeSignalChargeDuration,
-                    Time.deltaTime);
+                    Mathf.Max(0f, chargeSpeed) * Time.deltaTime);
             }
             else
             {
@@ -308,6 +318,15 @@ namespace ExtraterrestrialExhaust.Enemy
 
         float GetWakeSignalDistance() =>
             wakeDistance * Mathf.Max(1f, wakeSignalDistanceMultiplier);
+
+        Vector2 GetWakeSignalTargetPoint()
+        {
+            if (!target)
+                return transform.position;
+
+            Collider2D targetCollider = target.GetComponent<Collider2D>();
+            return targetCollider ? targetCollider.bounds.center : (Vector2)target.transform.position;
+        }
 
         bool HasClearLineOfSight(Vector2 origin, Vector2 targetPoint, out Vector2 lineEnd)
         {

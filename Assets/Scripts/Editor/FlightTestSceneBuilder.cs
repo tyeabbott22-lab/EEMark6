@@ -779,6 +779,14 @@ namespace ExtraterrestrialExhaust.Editor
                     Ee5SliceProfile.EnemyWakeSignalChargeDecay);
                 changed |= SetFloat(
                     serializedController,
+                    "wakeSignalChargeSpeedAtEdge",
+                    Ee5SliceProfile.EnemyWakeSignalChargeSpeedAtEdge);
+                changed |= SetFloat(
+                    serializedController,
+                    "wakeSignalChargeSpeedAtClose",
+                    Ee5SliceProfile.EnemyWakeSignalChargeSpeedAtClose);
+                changed |= SetFloat(
+                    serializedController,
                     "wakeFinalWarningDuration",
                     Ee5SliceProfile.EnemyWakeFinalWarningDuration);
                 // The gold EE5 gunner patrols its authored home radius. Keep
@@ -965,6 +973,18 @@ namespace ExtraterrestrialExhaust.Editor
                     "wakeSignalChargeDecay",
                     Ee5SliceProfile.EnemyWakeSignalChargeDecay,
                     $"{prefabPath} wakeSignalChargeDecay",
+                    issues);
+                CheckSerializedFloat(
+                    serializedController,
+                    "wakeSignalChargeSpeedAtEdge",
+                    Ee5SliceProfile.EnemyWakeSignalChargeSpeedAtEdge,
+                    $"{prefabPath} wakeSignalChargeSpeedAtEdge",
+                    issues);
+                CheckSerializedFloat(
+                    serializedController,
+                    "wakeSignalChargeSpeedAtClose",
+                    Ee5SliceProfile.EnemyWakeSignalChargeSpeedAtClose,
+                    $"{prefabPath} wakeSignalChargeSpeedAtClose",
                     issues);
                 CheckSerializedFloat(
                     serializedController,
@@ -2303,6 +2323,10 @@ namespace ExtraterrestrialExhaust.Editor
                 Ee5SliceProfile.EnemyWakeSignalChargeDuration;
             serializedController.FindProperty("wakeSignalChargeDecay").floatValue =
                 Ee5SliceProfile.EnemyWakeSignalChargeDecay;
+            serializedController.FindProperty("wakeSignalChargeSpeedAtEdge").floatValue =
+                Ee5SliceProfile.EnemyWakeSignalChargeSpeedAtEdge;
+            serializedController.FindProperty("wakeSignalChargeSpeedAtClose").floatValue =
+                Ee5SliceProfile.EnemyWakeSignalChargeSpeedAtClose;
             serializedController.FindProperty("wakeFinalWarningDuration").floatValue =
                 Ee5SliceProfile.EnemyWakeFinalWarningDuration;
             serializedController.FindProperty("attackRange").floatValue = ranged ? 7f : 0.8f;

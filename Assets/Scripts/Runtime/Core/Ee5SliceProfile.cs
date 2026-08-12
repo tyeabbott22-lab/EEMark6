@@ -80,6 +80,12 @@ namespace ExtraterrestrialExhaust.Core
         public const float EnemyDefeatSlowdownDuration = 0.07f;
         public const float EnemyWakeSignalChargeDuration = 1.15f;
         public const float EnemyWakeSignalChargeDecay = 1.8f;
+        // EE5 charges the wake line slowly at the edge of its four-times
+        // envelope and accelerates as the player closes in. Keeping both
+        // endpoints named makes the approach feel intentional instead of
+        // hiding a second tuning curve inside EnemyController.
+        public const float EnemyWakeSignalChargeSpeedAtEdge = 0.28f;
+        public const float EnemyWakeSignalChargeSpeedAtClose = 1.85f;
         public const float EnemyWakeBuildupDuration = 1.35f;
         public const float EnemyWakeFinalWarningDuration = 0.35f;
         public const float EnemyWakeIdleDurationMin = 1.1f;
