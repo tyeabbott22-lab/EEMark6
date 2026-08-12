@@ -197,6 +197,7 @@ namespace ExtraterrestrialExhaust.Editor
                 Debug.Log(
                     $"Built {ScenePath}{(preservePrefabs ? " from existing prefabs without rewriting them" : "")}. "
                     + "Controls: W/Space thrust, A/D or Q/E rotate, S/C stabilize, X flip.");
+                ValidateActiveFlightTestSceneContract();
             }
             catch (System.Exception exception)
             {
@@ -1689,6 +1690,11 @@ namespace ExtraterrestrialExhaust.Editor
                         issues.Add("Main Camera AudioListener");
 
                     SerializedObject serializedFollow = new SerializedObject(cameraFollow);
+                    CheckObjectReference(
+                        serializedFollow,
+                        "target",
+                        "Main Camera player target",
+                        issues);
                     CheckSerializedFloat(
                         serializedFollow,
                         "speedZoomStart",
