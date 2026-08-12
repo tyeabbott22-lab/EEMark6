@@ -88,11 +88,12 @@ namespace ExtraterrestrialExhaust.Player
 
             body.mass = Ee5SliceProfile.PlayerMass;
             body.gravityScale = Ee5SliceProfile.PlayerGravityScale;
-            // The EE5 prefab values are the reference point, but this Unity 6
-            // pass needs a little more carry-through so a held Q/E turn can
-            // complete a readable flip instead of feeling submerged in syrup.
-            body.linearDamping = Ee5SliceProfile.PlayerFlightLinearDamping;
-            body.angularDamping = Ee5SliceProfile.PlayerFlightAngularDamping;
+            // Keep damping on the Rigidbody2D as authored scene/prefab tuning.
+            // These values are part of the delicate flight feel, and overwriting
+            // them here made inspector experiments appear to save while having
+            // no effect at runtime. The editor builder still writes the EE5
+            // baseline into newly generated scenes; existing prefab overrides
+            // remain meaningful when the craft is instantiated.
             body.interpolation = RigidbodyInterpolation2D.Interpolate;
             body.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
         }
