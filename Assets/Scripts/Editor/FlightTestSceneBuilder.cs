@@ -2038,6 +2038,34 @@ namespace ExtraterrestrialExhaust.Editor
                 issues.Add("EnergyGate");
             else
             {
+                BoxCollider2D gateCollider = gate.GetComponent<BoxCollider2D>();
+                if (!gateCollider)
+                {
+                    issues.Add("EnergyGate collider");
+                }
+                else if (Vector2.Distance(
+                             gateCollider.size,
+                             Ee5SliceProfile.VerticalSliceGateColliderSize) > 0.01f)
+                {
+                    issues.Add(
+                        $"EnergyGate collider size=({gateCollider.size.x:0.###},{gateCollider.size.y:0.###}) "
+                        + $"(expected {Ee5SliceProfile.VerticalSliceGateColliderSize.x:0.###},{Ee5SliceProfile.VerticalSliceGateColliderSize.y:0.###})");
+                }
+
+                Transform keyTarget = gate.transform.Find("Key Target");
+                if (!keyTarget)
+                {
+                    issues.Add("EnergyGate key target transform");
+                }
+                else if (Vector2.Distance(
+                             keyTarget.localPosition,
+                             Ee5SliceProfile.VerticalSliceGateKeyTarget) > 0.01f)
+                {
+                    issues.Add(
+                        $"EnergyGate key target=({keyTarget.localPosition.x:0.###},{keyTarget.localPosition.y:0.###}) "
+                        + $"(expected {Ee5SliceProfile.VerticalSliceGateKeyTarget.x:0.###},{Ee5SliceProfile.VerticalSliceGateKeyTarget.y:0.###})");
+                }
+
                 SerializedObject serializedGate = new SerializedObject(gate);
                 CheckSerializedBool(
                     serializedGate,
@@ -2067,7 +2095,9 @@ namespace ExtraterrestrialExhaust.Editor
             else
             {
                 SerializedObject serializedExit = new SerializedObject(levelExit);
+                CheckObjectReference(serializedExit, "encounter", "LevelExit encounter", issues);
                 CheckObjectReference(serializedExit, "requiredGate", "LevelExit required gate", issues);
+                CheckObjectReference(serializedExit, "gameState", "LevelExit game state", issues);
                 Collider2D exitCollider = levelExit.GetComponent<Collider2D>();
                 if (!exitCollider || !exitCollider.isTrigger)
                     issues.Add("LevelExit must be a trigger");

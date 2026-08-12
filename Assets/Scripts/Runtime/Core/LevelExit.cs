@@ -53,6 +53,8 @@ namespace ExtraterrestrialExhaust.Core
         bool[] capturedColliderStates;
         SpriteRenderer[] capturedRenderers;
         Color[] capturedRendererColors;
+        EncounterController subscribedEncounter;
+        EnergyGate subscribedGate;
         public bool IsCapturing => capturing;
         public bool IsComplete => extractionComplete;
         // EE5's door state is the extraction gate. Once the delivered key has
@@ -64,10 +66,7 @@ namespace ExtraterrestrialExhaust.Core
 
         void Awake()
         {
-            if (!encounter)
-                encounter = FindFirstObjectByType<EncounterController>();
-            if (!gameState)
-                gameState = FindFirstObjectByType<GameStateMachine>();
+            ResolveReferences();
             exitRenderer = GetComponent<LineRenderer>();
             portalPresentation = GetComponent<ExtractionPortalPresentation>();
             UpdateVisual();
@@ -75,27 +74,69 @@ namespace ExtraterrestrialExhaust.Core
 
         void OnEnable()
         {
-            if (encounter)
-                encounter.Completed += UpdateVisual;
-            if (requiredGate)
-            {
-                requiredGate.Disabled += UpdateVisual;
-                requiredGate.RouteCleared += UpdateVisual;
-            }
+            ResolveReferences();
+            RefreshSubscriptions();
+            UpdateVisual();
         }
 
         void OnDisable()
         {
-            if (encounter)
-                encounter.Completed -= UpdateVisual;
-            if (requiredGate)
-            {
-                requiredGate.Disabled -= UpdateVisual;
-                requiredGate.RouteCleared -= UpdateVisual;
-            }
+            Unsubscribe();
 
             if (capturing && !extractionComplete)
                 CancelCapture();
+        }
+
+        void ResolveReferences()
+        {
+            if (!encounter)
+                encounter = FindFirstObjectByType<EncounterController>();
+            if (!requiredGate)
+                requiredGate = FindFirstObjectByType<EnergyGate>();
+            if (!gameState)
+                gameState = FindFirstObjectByType<GameStateMachine>();
+        }
+
+        void RefreshSubscriptions()
+        {
+            if (subscribedEncounter != encounter)
+            {
+                if (subscribedEncounter)
+                    subscribedEncounter.Completed -= UpdateVisual;
+                subscribedEncounter = encounter;
+                if (subscribedEncounter)
+                    subscribedEncounter.Completed += UpdateVisual;
+            }
+
+            if (subscribedGate != requiredGate)
+            {
+                if (subscribedGate)
+                {
+                    subscribedGate.Disabled -= UpdateVisual;
+                    subscribedGate.RouteCleared -= UpdateVisual;
+                }
+
+                subscribedGate = requiredGate;
+                if (subscribedGate)
+                {
+                    subscribedGate.Disabled += UpdateVisual;
+                    subscribedGate.RouteCleared += UpdateVisual;
+                }
+            }
+        }
+
+        void Unsubscribe()
+        {
+            if (subscribedEncounter)
+                subscribedEncounter.Completed -= UpdateVisual;
+            if (subscribedGate)
+            {
+                subscribedGate.Disabled -= UpdateVisual;
+                subscribedGate.RouteCleared -= UpdateVisual;
+            }
+
+            subscribedEncounter = null;
+            subscribedGate = null;
         }
 
         void OnTriggerEnter2D(Collider2D other)
