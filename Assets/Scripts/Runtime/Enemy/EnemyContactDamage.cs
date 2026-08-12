@@ -1,5 +1,6 @@
 using UnityEngine;
 using ExtraterrestrialExhaust.Combat;
+using ExtraterrestrialExhaust.CameraSystem;
 using ExtraterrestrialExhaust.Player;
 
 namespace ExtraterrestrialExhaust.Enemy
@@ -83,6 +84,15 @@ namespace ExtraterrestrialExhaust.Enemy
             if (player.Health.TryTakeDamage(damageInfo))
             {
                 controller?.RegisterAttackImpact();
+                // Keep this feedback at the same authority as damage. A
+                // navigation pass or a blocked overlap cannot accidentally
+                // play a fake swing, while the player still gets a crisp
+                // strike read before the knockback carries them away.
+                MeleeAttackBurst.Spawn(
+                    hitPoint,
+                    direction,
+                    new Color(1f, 0.22f, 0.86f, 0.95f));
+                PlayerCameraFollow.Instance?.Shake(0.028f, 0.045f);
                 // Health owns whether the hit was lethal. Only shove a player
                 // who remains alive; the respawn controller owns dead-body reset.
                 if (player.Health.IsAlive && player.FlightMotor && player.FlightMotor.Body)
