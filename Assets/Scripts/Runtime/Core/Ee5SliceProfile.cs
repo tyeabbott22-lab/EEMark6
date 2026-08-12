@@ -49,7 +49,9 @@ namespace ExtraterrestrialExhaust.Core
         public const float EnergyGateLiftSpeed = 7f;
         public const float EnergyKeyCarrierSpawnOffsetY = 1.35f;
         public const float EnergyKeyVisualScale = 1.65f;
-        public const float EnergyKeyPlayerFollowSharpness = 12f;
+        public const float EnergyKeyCollectDistance = 0.85f;
+        public const float EnergyKeyGateUnlockRange = 2.25f;
+        public const float EnergyKeyPlayerFollowSharpness = 14f;
 
         public const float FlightStopperCenterY = -2f;
         public const float FlightStopperWidth = 12f;

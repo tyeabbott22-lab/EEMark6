@@ -45,14 +45,14 @@ namespace ExtraterrestrialExhaust.Core
         [SerializeField, Min(0f)] float centerFollowSharpness = 5.5f;
 
         [Header("Collection")]
-        [SerializeField, Min(0f)] float collectDistance = 0.65f;
+        [SerializeField, Min(0f)] float collectDistance = Ee5SliceProfile.EnergyKeyCollectDistance;
         [SerializeField, Min(0f)] float collectionArmDelay;
         [SerializeField, Min(0f)] float minRadiusBeforeCollect;
         [SerializeField] Vector3 playerOffset = new Vector3(0.6f, 0.7f, 0f);
         [SerializeField, Min(0f)] float playerFollowSharpness = Ee5SliceProfile.EnergyKeyPlayerFollowSharpness;
 
         [Header("Gate")]
-        [SerializeField, Min(0f)] float gateUnlockRange = 2f;
+        [SerializeField, Min(0f)] float gateUnlockRange = Ee5SliceProfile.EnergyKeyGateUnlockRange;
         [SerializeField, Min(0f)] float gateFlySpeed = 14f;
 
         [Header("Visual")]

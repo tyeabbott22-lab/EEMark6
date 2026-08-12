@@ -833,6 +833,24 @@ namespace ExtraterrestrialExhaust.Editor
             return true;
         }
 
+        static void CheckSerializedFloat(
+            SerializedObject serialized,
+            string propertyName,
+            float expected,
+            string label,
+            List<string> issues)
+        {
+            SerializedProperty property = serialized.FindProperty(propertyName);
+            if (property == null)
+            {
+                issues.Add($"{label} property missing");
+                return;
+            }
+
+            if (!Mathf.Approximately(property.floatValue, expected))
+                issues.Add($"{label}={property.floatValue:0.###} (expected {expected:0.###})");
+        }
+
         static bool SetBool(SerializedObject serialized, string propertyName, bool value)
         {
             SerializedProperty property = serialized.FindProperty(propertyName);
@@ -868,10 +886,51 @@ namespace ExtraterrestrialExhaust.Editor
             EnergyKey key = UnityEngine.Object.FindFirstObjectByType<EnergyKey>();
             if (!key)
                 issues.Add("EnergyKey");
-            else if (!key.EnemyTarget || !key.EnemyTarget.GetComponent<EnemyWeapon>())
-                issues.Add("EnergyKey carrier (ranged gunner)");
-            if (!UnityEngine.Object.FindFirstObjectByType<EnergyGate>())
+            else
+            {
+                if (!key.EnemyTarget || !key.EnemyTarget.GetComponent<EnemyWeapon>())
+                    issues.Add("EnergyKey carrier (ranged gunner)");
+
+                SerializedObject serializedKey = new SerializedObject(key);
+                CheckSerializedFloat(
+                    serializedKey,
+                    "collectDistance",
+                    Ee5SliceProfile.EnergyKeyCollectDistance,
+                    "EnergyKey collect distance",
+                    issues);
+                CheckSerializedFloat(
+                    serializedKey,
+                    "gateUnlockRange",
+                    Ee5SliceProfile.EnergyKeyGateUnlockRange,
+                    "EnergyKey gate handoff range",
+                    issues);
+                CheckSerializedFloat(
+                    serializedKey,
+                    "playerFollowSharpness",
+                    Ee5SliceProfile.EnergyKeyPlayerFollowSharpness,
+                    "EnergyKey player follow sharpness",
+                    issues);
+            }
+
+            EnergyGate gate = UnityEngine.Object.FindFirstObjectByType<EnergyGate>();
+            if (!gate)
                 issues.Add("EnergyGate");
+            else
+            {
+                SerializedObject serializedGate = new SerializedObject(gate);
+                CheckSerializedFloat(
+                    serializedGate,
+                    "liftDistance",
+                    Ee5SliceProfile.EnergyGateLiftDistance,
+                    "EnergyGate lift distance",
+                    issues);
+                CheckSerializedFloat(
+                    serializedGate,
+                    "liftSpeed",
+                    Ee5SliceProfile.EnergyGateLiftSpeed,
+                    "EnergyGate lift speed",
+                    issues);
+            }
             if (!UnityEngine.Object.FindFirstObjectByType<LevelExit>())
                 issues.Add("LevelExit");
             if (!UnityEngine.Object.FindFirstObjectByType<GameplayHud>())
@@ -1690,8 +1749,10 @@ namespace ExtraterrestrialExhaust.Editor
             serializedKey.FindProperty("enemyOrbitRadius").floatValue = 1f;
             serializedKey.FindProperty("enemyOrbitSpeed").floatValue = 4f;
             serializedKey.FindProperty("enemyOrbitSharpness").floatValue = 8f;
-            serializedKey.FindProperty("gateUnlockRange").floatValue = 2.25f;
-            serializedKey.FindProperty("collectDistance").floatValue = 0.85f;
+            serializedKey.FindProperty("gateUnlockRange").floatValue =
+                Ee5SliceProfile.EnergyKeyGateUnlockRange;
+            serializedKey.FindProperty("collectDistance").floatValue =
+                Ee5SliceProfile.EnergyKeyCollectDistance;
             serializedKey.FindProperty("playerFollowSharpness").floatValue =
                 Ee5SliceProfile.EnergyKeyPlayerFollowSharpness;
             serializedKey.FindProperty("releasePulseDuration").floatValue = Ee5SliceProfile.KeyReleasePulseDuration;
