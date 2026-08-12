@@ -76,6 +76,12 @@ namespace ExtraterrestrialExhaust.Core
         public const float EnemyGunnerWanderRadius = 2f;
         public const float EnemyGunnerWanderDurationMin = 1f;
         public const float EnemyGunnerWanderDurationMax = 3f;
+        // EE5's enemyFast prefab mirrors the root transform on X while its
+        // facing controller keeps the authored +X basis. Preserve that
+        // convention instead of trying to compensate by flipping the sword
+        // sprite or changing the target angle at runtime.
+        public const float EnemyMeleeRootScaleX = -1f;
+        public const float EnemyGunnerRootScaleX = 1f;
         public const float EnemyGunnerFireCooldown = 1f;
         public const float EnemyGunnerProjectileSpeed = 6f;
         // EnemyBullet's authored lifetime in the EE5 bullet prefab is two

@@ -781,6 +781,16 @@ namespace ExtraterrestrialExhaust.Editor
             }
 
             bool changed = false;
+            float expectedRootScaleX = ranged
+                ? Ee5SliceProfile.EnemyGunnerRootScaleX
+                : Ee5SliceProfile.EnemyMeleeRootScaleX;
+            Vector3 rootScale = prefabContents.transform.localScale;
+            if (!Mathf.Approximately(rootScale.x, expectedRootScaleX))
+            {
+                rootScale.x = expectedRootScaleX;
+                prefabContents.transform.localScale = rootScale;
+                changed = true;
+            }
             EnemyController controller = prefabContents.GetComponent<EnemyController>();
             HealthComponent health = prefabContents.GetComponent<HealthComponent>();
             if (health)
@@ -1077,6 +1087,15 @@ namespace ExtraterrestrialExhaust.Editor
                 bool controllerForwardNegativeX = serializedController.FindProperty("forwardIsLocalNegativeX").boolValue;
                 if (controllerForwardNegativeX != ranged)
                     issues.Add($"{prefabPath} forwardIsLocalNegativeX={controllerForwardNegativeX}");
+                float expectedRootScaleX = ranged
+                    ? Ee5SliceProfile.EnemyGunnerRootScaleX
+                    : Ee5SliceProfile.EnemyMeleeRootScaleX;
+                if (!Mathf.Approximately(prefab.transform.localScale.x, expectedRootScaleX))
+                {
+                    issues.Add(
+                        $"{prefabPath} root scale.x={prefab.transform.localScale.x}; "
+                        + $"expected {expectedRootScaleX}");
+                }
                 CheckSerializedFloat(
                     serializedController,
                     "wakeDuration",
@@ -2586,6 +2605,15 @@ namespace ExtraterrestrialExhaust.Editor
         {
             GameObject enemy = new GameObject(objectName);
             enemy.transform.position = position;
+            // Match the EE5 prefab basis: the purple melee art is authored
+            // facing local negative X, so the root mirror supplies its saved
+            // default world-facing direction without corrupting sprite names.
+            enemy.transform.localScale = Vector3.one * 1f;
+            Vector3 authoredRootScale = enemy.transform.localScale;
+            authoredRootScale.x = ranged
+                ? Ee5SliceProfile.EnemyGunnerRootScaleX
+                : Ee5SliceProfile.EnemyMeleeRootScaleX;
+            enemy.transform.localScale = authoredRootScale;
 
             Rigidbody2D body = enemy.AddComponent<Rigidbody2D>();
             // EE5 drives enemies with MovePosition on kinematic, interpolated

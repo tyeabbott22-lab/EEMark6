@@ -168,6 +168,17 @@ namespace ExtraterrestrialExhaust.Enemy
             body.interpolation = RigidbodyInterpolation2D.Interpolate;
             body.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
 
+            // The purple EE5 melee prefab is authored with a mirrored root,
+            // not a SpriteRenderer flip. Restoring it here keeps the sword,
+            // health display, and wake handoff on the same coordinate basis
+            // even when an older scene instance lost its prefab override.
+            float authoredScaleX = movementMode == EnemyMovementMode.Wander
+                ? Ee5SliceProfile.EnemyGunnerRootScaleX
+                : Ee5SliceProfile.EnemyMeleeRootScaleX;
+            Vector3 rootScale = transform.localScale;
+            rootScale.x = Mathf.Sign(authoredScaleX) * Mathf.Max(0.0001f, Mathf.Abs(rootScale.x));
+            transform.localScale = rootScale;
+
             // The EE5 enemy prefabs all use the same deliberate five-degree
             // turn response. Runtime repair keeps a stale inspector override
             // from reintroducing a twitchy melee presentation.
