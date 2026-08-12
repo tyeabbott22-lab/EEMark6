@@ -114,13 +114,21 @@ namespace ExtraterrestrialExhaust.Enemy
         bool nearPlayer;
         bool touchedPlayerDuringNearPass;
         bool spriteFlippedUpright;
+        EnemyWeapon weapon;
+        EnemyContactDamage contactDamage;
+        bool roleResolved;
+        bool meleeRole;
 
         public EnemyState State { get; private set; }
         public PlayerCharacter Target => target;
         /// <summary>Authoritative Rigidbody position for physics-step followers.</summary>
         public Vector2 PhysicsPosition => body ? body.position : (Vector2)transform.position;
-        public bool IsMelee => movementMode == EnemyMovementMode.Chase;
-        public bool ForwardIsLocalNegativeX => forwardIsLocalNegativeX;
+        // Prefer the authored movement enum, but recover an older EE5 melee
+        // prefab when it still says Wander. The melee prefab has contact
+        // damage and no weapon; the gunner has both, so the weapon component
+        // is the stronger role signal when serialized values disagree.
+        public bool IsMelee => ResolveMeleeRole();
+        public bool ForwardIsLocalNegativeX => IsMelee ? false : forwardIsLocalNegativeX;
         public bool CanAttack => State == EnemyState.Attacking;
         public float AttackReach => attackRange;
         public float ContactDamageReach => Mathf.Min(
@@ -153,6 +161,9 @@ namespace ExtraterrestrialExhaust.Enemy
             bodyCollider = GetComponent<Collider2D>();
             health = GetComponent<HealthComponent>();
             spriteRenderer = GetComponent<SpriteRenderer>();
+            ResolveMeleeRole();
+            if (meleeRole)
+                movementMode = EnemyMovementMode.Chase;
             ApplyEe5PhysicsProfile();
             if (!gameState)
                 gameState = FindFirstObjectByType<GameStateMachine>();
@@ -166,6 +177,8 @@ namespace ExtraterrestrialExhaust.Enemy
         {
             if (!body)
                 return;
+
+            bool isMelee = ResolveMeleeRole();
 
             // EnemyController advances with Rigidbody2D.MovePosition and
             // MoveRotation. EE5's prefabs are kinematic/interpolated; allowing
@@ -182,9 +195,9 @@ namespace ExtraterrestrialExhaust.Enemy
             // not a SpriteRenderer flip. Restoring it here keeps the sword,
             // health display, and wake handoff on the same coordinate basis
             // even when an older scene instance lost its prefab override.
-            float authoredScaleX = movementMode == EnemyMovementMode.Wander
-                ? Ee5SliceProfile.EnemyGunnerRootScaleX
-                : Ee5SliceProfile.EnemyMeleeRootScaleX;
+            float authoredScaleX = isMelee
+                ? Ee5SliceProfile.EnemyMeleeRootScaleX
+                : Ee5SliceProfile.EnemyGunnerRootScaleX;
             Vector3 rootScale = transform.localScale;
             rootScale.x = Mathf.Sign(authoredScaleX) * Mathf.Max(0.0001f, Mathf.Abs(rootScale.x));
             transform.localScale = rootScale;
@@ -198,10 +211,23 @@ namespace ExtraterrestrialExhaust.Enemy
             // melee hunter keeps the authored controller basis and relies on
             // its mirrored root scale above. Derive this role flag here so
             // an older prefab cannot leave the sprite presentation inverted.
-            forwardIsLocalNegativeX = movementMode == EnemyMovementMode.Wander;
-            contactDamageRange = movementMode == EnemyMovementMode.Chase
+            forwardIsLocalNegativeX = !isMelee;
+            contactDamageRange = isMelee
                 ? Ee5SliceProfile.EnemyMeleeContactRange
                 : 0f;
+        }
+
+        bool ResolveMeleeRole()
+        {
+            if (roleResolved)
+                return meleeRole;
+
+            weapon = GetComponent<EnemyWeapon>();
+            contactDamage = GetComponent<EnemyContactDamage>();
+            meleeRole = weapon == null
+                && (movementMode == EnemyMovementMode.Chase || contactDamage != null);
+            roleResolved = true;
+            return meleeRole;
         }
 
         void OnEnable()
