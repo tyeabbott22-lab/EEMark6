@@ -1029,6 +1029,23 @@ namespace ExtraterrestrialExhaust.Editor
                 issues.Add($"{label}={property.boolValue} (expected {expected})");
         }
 
+        static void CheckObjectReference(
+            SerializedObject serialized,
+            string propertyName,
+            string label,
+            List<string> issues)
+        {
+            SerializedProperty property = serialized.FindProperty(propertyName);
+            if (property == null)
+            {
+                issues.Add($"{label} property missing");
+                return;
+            }
+
+            if (!property.objectReferenceValue)
+                issues.Add($"{label} reference missing");
+        }
+
         static bool SetBool(SerializedObject serialized, string propertyName, bool value)
         {
             SerializedProperty property = serialized.FindProperty(propertyName);
@@ -1220,10 +1237,44 @@ namespace ExtraterrestrialExhaust.Editor
                     issues.Add("PlayerProjectile collider must be a trigger");
             }
 
-            if (!UnityEngine.Object.FindFirstObjectByType<EncounterController>())
+            EncounterController encounter = UnityEngine.Object.FindFirstObjectByType<EncounterController>();
+            if (!encounter)
+            {
                 issues.Add("EncounterController");
-            if (!UnityEngine.Object.FindFirstObjectByType<SliceObjectiveDirector>())
+            }
+            else
+            {
+                SerializedObject serializedEncounter = new SerializedObject(encounter);
+                SerializedProperty encounterEnemies = serializedEncounter.FindProperty("encounterEnemies");
+                if (encounterEnemies == null || encounterEnemies.arraySize < 2)
+                {
+                    issues.Add("EncounterController enemy roster");
+                }
+                else
+                {
+                    for (int i = 0; i < encounterEnemies.arraySize; i++)
+                    {
+                        if (!encounterEnemies.GetArrayElementAtIndex(i).objectReferenceValue)
+                            issues.Add($"EncounterController enemy reference {i}");
+                    }
+                }
+            }
+
+            SliceObjectiveDirector objectiveDirector =
+                UnityEngine.Object.FindFirstObjectByType<SliceObjectiveDirector>();
+            if (!objectiveDirector)
+            {
                 issues.Add("SliceObjectiveDirector");
+            }
+            else
+            {
+                SerializedObject serializedObjective = new SerializedObject(objectiveDirector);
+                CheckObjectReference(serializedObjective, "encounter", "Objective encounter", issues);
+                CheckObjectReference(serializedObjective, "energyKey", "Objective energy key", issues);
+                CheckObjectReference(serializedObjective, "gate", "Objective gate", issues);
+                CheckObjectReference(serializedObjective, "exit", "Objective exit", issues);
+                CheckObjectReference(serializedObjective, "gameState", "Objective game state", issues);
+            }
             EnergyKey key = UnityEngine.Object.FindFirstObjectByType<EnergyKey>();
             if (!key)
                 issues.Add("EnergyKey");
@@ -1233,6 +1284,9 @@ namespace ExtraterrestrialExhaust.Editor
                     issues.Add("EnergyKey carrier (ranged gunner)");
 
                 SerializedObject serializedKey = new SerializedObject(key);
+                CheckObjectReference(serializedKey, "requiredEncounter", "EnergyKey encounter", issues);
+                CheckObjectReference(serializedKey, "enemyTarget", "EnergyKey carrier", issues);
+                CheckObjectReference(serializedKey, "targetGate", "EnergyKey target gate", issues);
                 CheckSerializedFloat(
                     serializedKey,
                     "collectDistance",
@@ -1259,6 +1313,7 @@ namespace ExtraterrestrialExhaust.Editor
             else
             {
                 SerializedObject serializedGate = new SerializedObject(gate);
+                CheckObjectReference(serializedGate, "keyTarget", "EnergyGate key target", issues);
                 CheckSerializedFloat(
                     serializedGate,
                     "liftDistance",
@@ -1272,8 +1327,19 @@ namespace ExtraterrestrialExhaust.Editor
                     "EnergyGate lift speed",
                     issues);
             }
-            if (!UnityEngine.Object.FindFirstObjectByType<LevelExit>())
+            LevelExit levelExit = UnityEngine.Object.FindFirstObjectByType<LevelExit>();
+            if (!levelExit)
+            {
                 issues.Add("LevelExit");
+            }
+            else
+            {
+                SerializedObject serializedExit = new SerializedObject(levelExit);
+                CheckObjectReference(serializedExit, "requiredGate", "LevelExit required gate", issues);
+                Collider2D exitCollider = levelExit.GetComponent<Collider2D>();
+                if (!exitCollider || !exitCollider.isTrigger)
+                    issues.Add("LevelExit must be a trigger");
+            }
             if (!UnityEngine.Object.FindFirstObjectByType<GameplayHud>())
                 issues.Add("GameplayHud");
             GameObject stopper = GameObject.Find("Flight Stopper Zone");
