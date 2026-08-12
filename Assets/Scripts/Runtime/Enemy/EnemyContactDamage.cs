@@ -11,6 +11,7 @@ namespace ExtraterrestrialExhaust.Enemy
         [SerializeField, Min(0.01f)] float cooldown = 0.75f;
         [SerializeField, Min(0f)] float knockback = 8f;
         float nextDamageTime;
+
         EnemyController controller;
 
         void Awake()
@@ -20,9 +21,9 @@ namespace ExtraterrestrialExhaust.Enemy
 
         void OnCollisionStay2D(Collision2D collision)
         {
-            if (controller && !controller.CanAttack)
-                return;
-
+            // EE5 attaches this contact contract to both enemyNormal and
+            // enemyGun. Do not gate it on the controller's ranged/melee attack
+            // state; physical contact remains dangerous during the intro.
             PlayerCharacter player = collision.collider.GetComponentInParent<PlayerCharacter>();
             if (!player || !player.CanReceiveGameplayInput || Time.time < nextDamageTime)
                 return;

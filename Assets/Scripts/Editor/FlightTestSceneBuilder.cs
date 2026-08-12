@@ -600,6 +600,31 @@ namespace ExtraterrestrialExhaust.Editor
                 serializedPresentation.ApplyModifiedPropertiesWithoutUndo();
             }
 
+            EnemyContactDamage contactDamage = prefabContents.GetComponent<EnemyContactDamage>();
+            if (!contactDamage)
+            {
+                contactDamage = prefabContents.AddComponent<EnemyContactDamage>();
+                changed = true;
+            }
+
+            if (contactDamage)
+            {
+                SerializedObject serializedContact = new SerializedObject(contactDamage);
+                changed |= SetFloat(
+                    serializedContact,
+                    "damage",
+                    Ee5SliceProfile.EnemyContactDamage);
+                changed |= SetFloat(
+                    serializedContact,
+                    "cooldown",
+                    Ee5SliceProfile.EnemyContactCooldown);
+                changed |= SetFloat(
+                    serializedContact,
+                    "knockback",
+                    Ee5SliceProfile.EnemyContactKnockback);
+                serializedContact.ApplyModifiedPropertiesWithoutUndo();
+            }
+
             if (ranged)
             {
                 EnemyWeapon weapon = prefabContents.GetComponent<EnemyWeapon>();
@@ -672,6 +697,25 @@ namespace ExtraterrestrialExhaust.Editor
                     if (!Mathf.Approximately(projectileSpeed, Ee5SliceProfile.EnemyGunnerProjectileSpeed))
                         issues.Add($"{prefabPath} projectileSpeed={projectileSpeed}");
                 }
+            }
+
+            EnemyContactDamage contactDamage = prefab.GetComponent<EnemyContactDamage>();
+            if (!contactDamage)
+            {
+                issues.Add($"{prefabPath} has no EnemyContactDamage");
+            }
+            else
+            {
+                SerializedObject serializedContact = new SerializedObject(contactDamage);
+                float damage = serializedContact.FindProperty("damage").floatValue;
+                float cooldown = serializedContact.FindProperty("cooldown").floatValue;
+                float knockback = serializedContact.FindProperty("knockback").floatValue;
+                if (!Mathf.Approximately(damage, Ee5SliceProfile.EnemyContactDamage))
+                    issues.Add($"{prefabPath} contact damage={damage}");
+                if (!Mathf.Approximately(cooldown, Ee5SliceProfile.EnemyContactCooldown))
+                    issues.Add($"{prefabPath} contact cooldown={cooldown}");
+                if (!Mathf.Approximately(knockback, Ee5SliceProfile.EnemyContactKnockback))
+                    issues.Add($"{prefabPath} contact knockback={knockback}");
             }
 
             EnemySpritePresentation presentation = prefab.GetComponent<EnemySpritePresentation>();
@@ -1312,18 +1356,15 @@ namespace ExtraterrestrialExhaust.Editor
             serializedController.FindProperty("keepSpriteUpright").boolValue = true;
             serializedController.FindProperty("gameState").objectReferenceValue = gameState;
             serializedController.ApplyModifiedPropertiesWithoutUndo();
-            if (!ranged)
-            {
-                // The gunner's threat is ranged pressure; giving it the melee
-                // contact contract as well makes the two roster roles collapse
-                // into the same punishment pattern.
-                EnemyContactDamage contactDamage = enemy.AddComponent<EnemyContactDamage>();
-                SerializedObject serializedContact = new SerializedObject(contactDamage);
-                serializedContact.FindProperty("damage").floatValue = 1f;
-                serializedContact.FindProperty("cooldown").floatValue = 0.64f;
-                serializedContact.FindProperty("knockback").floatValue = 9f;
-                serializedContact.ApplyModifiedPropertiesWithoutUndo();
-            }
+            // EE5 gives both roster roles the same close-contact punishment.
+            // The gunner remains primarily a ranged threat, but colliding with
+            // it must never become a free pass through the encounter.
+            EnemyContactDamage contactDamage = enemy.AddComponent<EnemyContactDamage>();
+            SerializedObject serializedContact = new SerializedObject(contactDamage);
+            serializedContact.FindProperty("damage").floatValue = Ee5SliceProfile.EnemyContactDamage;
+            serializedContact.FindProperty("cooldown").floatValue = Ee5SliceProfile.EnemyContactCooldown;
+            serializedContact.FindProperty("knockback").floatValue = Ee5SliceProfile.EnemyContactKnockback;
+            serializedContact.ApplyModifiedPropertiesWithoutUndo();
             enemy.AddComponent<DamageFlashFeedback>();
             if (ranged)
             {
