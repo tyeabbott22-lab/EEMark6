@@ -639,6 +639,10 @@ namespace ExtraterrestrialExhaust.Editor
                         serializedWeapon,
                         "projectileSpeed",
                         Ee5SliceProfile.EnemyGunnerProjectileSpeed);
+                    changed |= SetFloat(
+                        serializedWeapon,
+                        "projectileLifetime",
+                        Ee5SliceProfile.EnemyGunnerProjectileLifetime);
                     serializedWeapon.ApplyModifiedPropertiesWithoutUndo();
                 }
             }
@@ -692,10 +696,13 @@ namespace ExtraterrestrialExhaust.Editor
                     SerializedObject serializedWeapon = new SerializedObject(weapon);
                     float cooldown = serializedWeapon.FindProperty("fireCooldown").floatValue;
                     float projectileSpeed = serializedWeapon.FindProperty("projectileSpeed").floatValue;
+                    float projectileLifetime = serializedWeapon.FindProperty("projectileLifetime").floatValue;
                     if (!Mathf.Approximately(cooldown, Ee5SliceProfile.EnemyGunnerFireCooldown))
                         issues.Add($"{prefabPath} fireCooldown={cooldown}");
                     if (!Mathf.Approximately(projectileSpeed, Ee5SliceProfile.EnemyGunnerProjectileSpeed))
                         issues.Add($"{prefabPath} projectileSpeed={projectileSpeed}");
+                    if (!Mathf.Approximately(projectileLifetime, Ee5SliceProfile.EnemyGunnerProjectileLifetime))
+                        issues.Add($"{prefabPath} projectileLifetime={projectileLifetime}");
                 }
             }
 
@@ -1379,6 +1386,8 @@ namespace ExtraterrestrialExhaust.Editor
                 serializedWeapon.FindProperty("attackRange").floatValue = 7f;
                 serializedWeapon.FindProperty("fireCooldown").floatValue = Ee5SliceProfile.EnemyGunnerFireCooldown;
                 serializedWeapon.FindProperty("projectileSpeed").floatValue = Ee5SliceProfile.EnemyGunnerProjectileSpeed;
+                serializedWeapon.FindProperty("projectileLifetime").floatValue =
+                    Ee5SliceProfile.EnemyGunnerProjectileLifetime;
                 serializedWeapon.FindProperty("projectileKnockback").floatValue = 2.5f;
                 serializedWeapon.FindProperty("projectileTint").colorValue = new Color(0.05f, 1f, 0.16f, 1f);
                 serializedWeapon.FindProperty("drawAimTelegraph").boolValue = true;

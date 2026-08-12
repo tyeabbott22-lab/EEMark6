@@ -132,6 +132,13 @@ namespace ExtraterrestrialExhaust.Combat
 
         public void SetKnockback(float value) => knockback = Mathf.Max(0f, value);
 
+        /// <summary>
+        /// Enemy bullets reuse the same impact presentation prefab but keep
+        /// their own EE5 travel window instead of inheriting the player shot's
+        /// shorter lifetime.
+        /// </summary>
+        public void SetLifetime(float value) => lifetime = Mathf.Max(0.01f, value);
+
         void OnTriggerEnter2D(Collider2D other)
         {
             if (dying)

@@ -20,6 +20,7 @@ namespace ExtraterrestrialExhaust.Enemy
         [SerializeField, Min(0.05f)] float fireCooldown = 1f;
         [SerializeField, Min(0f)] float attackRange = 7f;
         [SerializeField, Min(0f)] float projectileSpeed = 6f;
+        [SerializeField, Min(0.01f)] float projectileLifetime = Ee5SliceProfile.EnemyGunnerProjectileLifetime;
         [SerializeField, Min(0f)] float projectileKnockback = 2.5f;
         [SerializeField] Color projectileTint = new Color(0.05f, 1f, 0.16f, 1f);
         [Header("Attack Telegraph")]
@@ -125,6 +126,7 @@ namespace ExtraterrestrialExhaust.Enemy
             PlayerProjectile projectile = Instantiate(projectilePrefab, origin.position, Quaternion.identity);
             projectile.SetTeam(ProjectileTeam.Enemy);
             projectile.SetKnockback(projectileKnockback);
+            projectile.SetLifetime(projectileLifetime);
             projectile.SetTint(projectileTint);
             projectile.Launch(direction, gameObject, projectileSpeed);
             cooldownRemaining = fireCooldown;
