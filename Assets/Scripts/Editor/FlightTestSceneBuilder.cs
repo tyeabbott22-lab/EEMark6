@@ -14,6 +14,7 @@ using ExtraterrestrialExhaust.Core;
 using ExtraterrestrialExhaust.Player;
 using ExtraterrestrialExhaust.CameraSystem;
 using ExtraterrestrialExhaust.Enemy;
+using ExtraterrestrialExhaust.Presentation;
 
 namespace ExtraterrestrialExhaust.Editor
 {
@@ -58,6 +59,7 @@ namespace ExtraterrestrialExhaust.Editor
             "Assets/Art/Reference/Environment/Moon/MoonTerrainFillProfile.asset";
         const string StarfieldSpritePath = "Assets/Art/Reference/Environment/starfield_backdrop.png";
         const string LegacyStarfieldSpritePath = "Assets/Art/Reference/Environment/sprStars.png";
+        const string NebulaSpritePath = "Assets/Art/Reference/Environment/nebula_backdrop.png";
         const string EnemyBurstSpritePath = "Assets/Art/Reference/Effects/enemy_defeat_burst.png";
         const string LegacyEnemyBurstSpritePath = "Assets/Art/Reference/Effects/sprExplode.png";
         const string EnemyBurstAudioPath = "Assets/Audio/Reference/sfxExplode.wav";
@@ -1325,27 +1327,42 @@ namespace ExtraterrestrialExhaust.Editor
             GameObject backdropRoot = new GameObject("Starfield Backdrop");
             backdropRoot.transform.position = new Vector3(0f, 0f, 4f);
 
-            return new[]
-            {
-                CreateBackdropLayer(
-                    backdropRoot.transform,
-                    "Far Stars",
-                    Vector3.one * 4f,
-                    new Color(0.32f, 0.4f, 0.7f, 0.35f),
-                    -120),
-                CreateBackdropLayer(
-                    backdropRoot.transform,
-                    "Mid Stars",
-                    Vector3.one * 4.7f,
-                    new Color(0.45f, 0.55f, 0.9f, 0.42f),
-                    -110),
-                CreateBackdropLayer(
-                    backdropRoot.transform,
-                    "Near Stars",
-                    Vector3.one * 5.4f,
-                    new Color(0.65f, 0.75f, 1f, 0.28f),
-                    -100)
-            };
+            Transform nebula = CreateBackdropLayer(
+                backdropRoot.transform,
+                "Nebula Backdrop - far parallax order -120",
+                Vector3.one * 4.7f,
+                new Color(0.32972205f, 0f, 0.4627451f, 0.9f),
+                -120,
+                NebulaSpritePath);
+
+            GameObject starFieldObject = new GameObject("Star Field Generator");
+            starFieldObject.transform.SetParent(backdropRoot.transform, false);
+            starFieldObject.transform.localPosition = new Vector3(0.01f, -0.01f, 0f);
+            StarfieldGridGenerator starField = starFieldObject.AddComponent<StarfieldGridGenerator>();
+            SerializedObject serializedStarField = new SerializedObject(starField);
+            serializedStarField.FindProperty("starTileSprite").objectReferenceValue =
+                LoadFirstSprite(StarfieldSpritePath, LegacyStarfieldSpritePath);
+            serializedStarField.FindProperty("columns").intValue = 10;
+            serializedStarField.FindProperty("rows").intValue = 12;
+            serializedStarField.FindProperty("seamOverlap").floatValue = 0.02f;
+            serializedStarField.FindProperty("seed").intValue = 32090;
+            serializedStarField.FindProperty("staggerRows").boolValue = true;
+            serializedStarField.FindProperty("rowStaggerAmount").floatValue = 0.5f;
+            serializedStarField.FindProperty("randomFlips").boolValue = true;
+            serializedStarField.FindProperty("randomQuarterRotations").boolValue = true;
+            serializedStarField.FindProperty("brightnessJitter").floatValue = 0.06f;
+            serializedStarField.FindProperty("addExtraStars").boolValue = true;
+            serializedStarField.FindProperty("extraStarCount").intValue = 350;
+            serializedStarField.FindProperty("extraStarSizeRange").vector2Value = new Vector2(0.015f, 0.055f);
+            serializedStarField.FindProperty("yellowStarChance").floatValue = 0.18f;
+            serializedStarField.FindProperty("blueStarChance").floatValue = 0.04f;
+            serializedStarField.FindProperty("generatedRootName").stringValue = "_Generated Starfield";
+            serializedStarField.FindProperty("sortingLayerName").stringValue = "Default";
+            serializedStarField.FindProperty("sortingOrder").intValue = -110;
+            serializedStarField.FindProperty("generateOnStart").boolValue = true;
+            serializedStarField.ApplyModifiedPropertiesWithoutUndo();
+
+            return new[] { nebula, starFieldObject.transform };
         }
 
         static Transform CreateBackdropLayer(
@@ -1353,14 +1370,15 @@ namespace ExtraterrestrialExhaust.Editor
             string objectName,
             Vector3 scale,
             Color color,
-            int sortingOrder)
+            int sortingOrder,
+            string spritePath)
         {
             GameObject layer = new GameObject(objectName);
             layer.transform.SetParent(parent, false);
             layer.transform.localScale = scale;
 
             SpriteRenderer renderer = layer.AddComponent<SpriteRenderer>();
-            renderer.sprite = LoadFirstSprite(StarfieldSpritePath, LegacyStarfieldSpritePath);
+            renderer.sprite = LoadFirstSprite(spritePath, LegacyStarfieldSpritePath);
             renderer.sortingOrder = sortingOrder;
             renderer.color = color;
             return layer.transform;
