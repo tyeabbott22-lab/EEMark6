@@ -259,6 +259,16 @@ namespace ExtraterrestrialExhaust.Editor
                 return;
             }
 
+            List<string> sceneContractIssues = GetGeneratedSceneContractIssues();
+            if (sceneContractIssues.Count > 0)
+            {
+                Debug.LogWarning(
+                    "The active FlightTest is still a legacy or incomplete scene: "
+                    + string.Join(", ", sceneContractIssues)
+                    + ". Run Extraterrestrial Exhaust > Build Flight Test Scene before applying a player-only repair.");
+                return;
+            }
+
             GameObject playerObject = GameObject.Find("Player Craft");
             GameStateMachine gameState = UnityEngine.Object.FindFirstObjectByType<GameStateMachine>();
             InputActionAsset inputAsset = AssetDatabase.LoadAssetAtPath<InputActionAsset>(InputAssetPath);
@@ -289,6 +299,31 @@ namespace ExtraterrestrialExhaust.Editor
                 + "55 thrust, 0.35 linear damping, one-second player shots, "
                 + "12 recoil, orange craft sprite, and room-reset death flow. "
                 + "Save the scene to persist the migration.");
+        }
+
+        [MenuItem("Extraterrestrial Exhaust/Validate Active FlightTest Scene Contract")]
+        public static void ValidateActiveFlightTestSceneContract()
+        {
+            Scene activeScene = SceneManager.GetActiveScene();
+            if (!activeScene.IsValid() || activeScene.path != ScenePath)
+            {
+                Debug.LogWarning(
+                    $"Active scene is not {ScenePath}. Open the generated FlightTest scene to validate its vertical-slice contract.");
+                return;
+            }
+
+            List<string> issues = GetGeneratedSceneContractIssues();
+            if (issues.Count == 0)
+            {
+                Debug.Log(
+                    "Active FlightTest contains the generated EE5 vertical-slice contract: player, encounter, key, gate, exit, HUD, and enemy roster.");
+                return;
+            }
+
+            Debug.LogWarning(
+                "Active FlightTest is not the generated vertical slice. Missing or incomplete systems: "
+                + string.Join(", ", issues)
+                + ". Run Extraterrestrial Exhaust > Build Flight Test Scene.");
         }
 
         [MenuItem("Extraterrestrial Exhaust/Validate Active FlightTest Player Profile")]
@@ -472,6 +507,32 @@ namespace ExtraterrestrialExhaust.Editor
                 serializedWeaponPresentation.FindProperty("cameraShakeDuration").floatValue = 0.05f;
                 serializedWeaponPresentation.ApplyModifiedPropertiesWithoutUndo();
             }
+        }
+
+        static List<string> GetGeneratedSceneContractIssues()
+        {
+            List<string> issues = new List<string>();
+            if (!GameObject.Find("Player Craft"))
+                issues.Add("Player Craft");
+            if (!UnityEngine.Object.FindFirstObjectByType<GameStateMachine>())
+                issues.Add("Game State");
+            if (!UnityEngine.Object.FindFirstObjectByType<EncounterController>())
+                issues.Add("EncounterController");
+            if (!UnityEngine.Object.FindFirstObjectByType<SliceObjectiveDirector>())
+                issues.Add("SliceObjectiveDirector");
+            if (!UnityEngine.Object.FindFirstObjectByType<EnergyKey>())
+                issues.Add("EnergyKey");
+            if (!UnityEngine.Object.FindFirstObjectByType<EnergyGate>())
+                issues.Add("EnergyGate");
+            if (!UnityEngine.Object.FindFirstObjectByType<LevelExit>())
+                issues.Add("LevelExit");
+            if (!UnityEngine.Object.FindFirstObjectByType<GameplayHud>())
+                issues.Add("GameplayHud");
+
+            EnemyController[] enemies = UnityEngine.Object.FindObjectsByType<EnemyController>(FindObjectsSortMode.None);
+            if (enemies == null || enemies.Length < 2)
+                issues.Add($"Enemy roster ({enemies?.Length ?? 0}/2)");
+            return issues;
         }
 
         static bool RepairPlayerCraftRoot(GameObject root, Sprite[] craftSprites)

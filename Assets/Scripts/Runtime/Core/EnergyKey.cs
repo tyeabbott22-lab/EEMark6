@@ -231,7 +231,7 @@ namespace ExtraterrestrialExhaust.Core
 
         void FollowPlayer()
         {
-            if (player)
+            if (player && player.CanReceiveGameplayInput)
             {
                 Vector3 target = player.transform.position + playerOffset;
                 body.MovePosition(Vector2.Lerp(
@@ -243,7 +243,11 @@ namespace ExtraterrestrialExhaust.Core
 
         void CheckGate()
         {
-            if (!player || !targetGate)
+            // The key should not complete the objective behind the player's
+            // back while a capture, death, or other scripted state owns the
+            // craft. The player contract is the single authority for that
+            // handoff eligibility.
+            if (!player || !player.CanReceiveGameplayInput || !targetGate)
                 return;
 
             if (Vector2.Distance(player.transform.position, targetGate.KeyTarget.position) <= gateUnlockRange)
@@ -314,7 +318,11 @@ namespace ExtraterrestrialExhaust.Core
             if (!otherPlayer || !player || !otherPlayer.CanReceiveGameplayInput)
                 return;
 
-            if (Vector2.Distance(body.position, player.transform.position) > collectDistance)
+            // Use the collider's owning player for the proximity check. The
+            // resolved field normally points at the same object, but keeping
+            // the event-local identity correct makes this reusable in tests
+            // and additive scenes with more than one player candidate.
+            if (Vector2.Distance(body.position, otherPlayer.transform.position) > collectDistance)
                 return;
 
             player = otherPlayer;
