@@ -93,6 +93,10 @@ namespace ExtraterrestrialExhaust.Core
         // range hit must stay near the combined collider edge rather than
         // firing from the full state-transition radius.
         public const float EnemyMeleeContactRange = 0.95f;
+        // EE6's melee controller uses a kinematic navigation body and a
+        // deterministic range hit. A trigger body preserves wall/target casts
+        // without letting scripted motion shove the dynamic player.
+        public const bool EnemyMeleeUsesTriggerBody = true;
         // A small exit band prevents a melee hunter from alternating between
         // Chasing and Attacking when the player hovers exactly on its brake
         // radius. The authored EE5 movement remains the reference; this band

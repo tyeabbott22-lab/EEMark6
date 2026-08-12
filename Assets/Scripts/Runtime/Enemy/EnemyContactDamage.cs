@@ -47,9 +47,10 @@ namespace ExtraterrestrialExhaust.Enemy
 
         void OnCollisionStay2D(Collision2D collision)
         {
-            // EE5 attaches this contact contract to both enemyNormal and
-            // enemyGun. Do not gate it on the controller's ranged/melee attack
-            // state; physical contact remains dangerous during the intro.
+            // Keep the solid-body EE5 contact contract for the ranged gunner
+            // and older authored scenes. The repaired melee role uses a
+            // trigger navigation body, so its near-contact FixedUpdate path
+            // is the deterministic replacement for this callback.
             PlayerCharacter player = collision.collider.GetComponentInParent<PlayerCharacter>();
             if (!player || !player.CanReceiveGameplayInput || Time.time < nextDamageTime)
                 return;

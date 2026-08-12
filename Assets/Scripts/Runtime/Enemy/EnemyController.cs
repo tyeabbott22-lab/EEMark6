@@ -215,6 +215,14 @@ namespace ExtraterrestrialExhaust.Enemy
             contactDamageRange = isMelee
                 ? Ee5SliceProfile.EnemyMeleeContactRange
                 : 0f;
+            if (bodyCollider)
+            {
+                // Navigation still sees the player and walls through
+                // Collider2D.Cast, but the melee body no longer pushes the
+                // dynamic craft while the range hit is being evaluated.
+                bodyCollider.isTrigger = isMelee
+                    && Ee5SliceProfile.EnemyMeleeUsesTriggerBody;
+            }
         }
 
         bool ResolveMeleeRole()

@@ -960,6 +960,18 @@ namespace ExtraterrestrialExhaust.Editor
                 }
             }
 
+            Collider2D bodyCollider = prefabContents.GetComponent<Collider2D>();
+            if (bodyCollider)
+            {
+                bool expectedTrigger = !ranged && Ee5SliceProfile.EnemyMeleeUsesTriggerBody;
+                if (bodyCollider.isTrigger != expectedTrigger)
+                {
+                    bodyCollider.isTrigger = expectedTrigger;
+                    EditorUtility.SetDirty(bodyCollider);
+                    changed = true;
+                }
+            }
+
             EnemySpritePresentation presentation = prefabContents.GetComponent<EnemySpritePresentation>();
             if (presentation)
             {
@@ -1102,6 +1114,17 @@ namespace ExtraterrestrialExhaust.Editor
                     issues.Add($"{prefabPath} linearDamping={body.linearDamping} (expected 0)");
                 if (body.interpolation != RigidbodyInterpolation2D.Interpolate)
                     issues.Add($"{prefabPath} Rigidbody2D interpolation is not Interpolate");
+            }
+            Collider2D bodyCollider = prefab.GetComponent<Collider2D>();
+            if (!bodyCollider)
+            {
+                issues.Add($"{prefabPath} has no root Collider2D");
+            }
+            else
+            {
+                bool expectedTrigger = !ranged && Ee5SliceProfile.EnemyMeleeUsesTriggerBody;
+                if (bodyCollider.isTrigger != expectedTrigger)
+                    issues.Add($"{prefabPath} root collider trigger={bodyCollider.isTrigger}");
             }
             HealthComponent health = prefab.GetComponent<HealthComponent>();
             if (!health)
@@ -2808,6 +2831,7 @@ namespace ExtraterrestrialExhaust.Editor
             // The melee hitbox is slightly larger than its visual body so that
             // contact damage becomes reliable before the chase state brakes.
             collider.radius = ranged ? 0.55f : 0.72f;
+            collider.isTrigger = !ranged && Ee5SliceProfile.EnemyMeleeUsesTriggerBody;
             HealthComponent health = enemy.AddComponent<HealthComponent>();
             SerializedObject serializedHealth = new SerializedObject(health);
             serializedHealth.FindProperty("maxHealth").floatValue = ranged ? 5f : 3f;
