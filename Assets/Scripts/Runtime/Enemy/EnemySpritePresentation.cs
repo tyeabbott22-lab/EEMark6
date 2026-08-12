@@ -69,7 +69,16 @@ namespace ExtraterrestrialExhaust.Enemy
             // axis. If an older prefab says melee faces like the gunner, the
             // controller is the authoritative role-specific source at runtime.
             if (controller)
+            {
                 forwardIsLocalNegativeX = controller.ForwardIsLocalNegativeX;
+                // The EE5 melee strip faces the player during its dormant and
+                // wake beats. Recover that contract from the controller role
+                // when an older prefab still serializes the gunner default.
+                faceDormantTowardTarget = controller.IsMelee
+                    ? Ee5SliceProfile.EnemyMeleeFacesDormantTarget
+                    : true;
+                dormantFacingHysteresis = Ee5SliceProfile.EnemyDormantFacingHysteresis;
+            }
 
             renderers = GetComponentsInChildren<Renderer>(true);
             authoredFlipX = spriteRenderer && spriteRenderer.flipX;
