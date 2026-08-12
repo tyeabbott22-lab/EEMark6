@@ -24,6 +24,11 @@ namespace ExtraterrestrialExhaust.Core
         public const float PlayerFireCooldown = 1f;
         public const float PlayerRecoilForce = 12f;
         public const float PlayerProjectileSpeed = 30f;
+        public const float PlayerProjectileLifetime = 2f;
+        public const float PlayerProjectileDamage = 1f;
+        public const float PlayerProjectileKnockback = 0f;
+        public const bool PlayerProjectileDestroysOnUnknownCollision = true;
+        public const float ProjectileNearMissDistance = 1.35f;
         // The EE5 realScene player does not own a generic impact-damage
         // component. Keep the reusable experiment available, but do not let
         // ordinary arena-wall contact alter the gold-standard hull loop.
@@ -38,6 +43,9 @@ namespace ExtraterrestrialExhaust.Core
         public const float EnemyGunnerFireCooldown = 1f;
         public const float EnemyGunnerProjectileSpeed = 6f;
         public const float EnemyGunnerProjectileLifetime = 5f;
+        public const float EnemyGunnerProjectileDamage = 1f;
+        public const float EnemyGunnerProjectileKnockback = 2.5f;
+        public const bool EnemyGunnerProjectileDestroysOnUnknownCollision = false;
         public const bool EnemyGunnerRequiresAttackRange = false;
         public const bool EnemyGunnerRequiresLineOfSightToFire = false;
         public const bool EnemyGunnerDrawAimTelegraph = false;

@@ -756,6 +756,10 @@ namespace ExtraterrestrialExhaust.Editor
                         serializedWeapon,
                         "projectileLifetime",
                         Ee5SliceProfile.EnemyGunnerProjectileLifetime);
+                    changed |= SetFloat(
+                        serializedWeapon,
+                        "projectileKnockback",
+                        Ee5SliceProfile.EnemyGunnerProjectileKnockback);
                     changed |= SetBool(
                         serializedWeapon,
                         "requireTargetWithinAttackRange",
@@ -881,12 +885,15 @@ namespace ExtraterrestrialExhaust.Editor
                     float cooldown = serializedWeapon.FindProperty("fireCooldown").floatValue;
                     float projectileSpeed = serializedWeapon.FindProperty("projectileSpeed").floatValue;
                     float projectileLifetime = serializedWeapon.FindProperty("projectileLifetime").floatValue;
+                    float projectileKnockback = serializedWeapon.FindProperty("projectileKnockback").floatValue;
                     if (!Mathf.Approximately(cooldown, Ee5SliceProfile.EnemyGunnerFireCooldown))
                         issues.Add($"{prefabPath} fireCooldown={cooldown}");
                     if (!Mathf.Approximately(projectileSpeed, Ee5SliceProfile.EnemyGunnerProjectileSpeed))
                         issues.Add($"{prefabPath} projectileSpeed={projectileSpeed}");
                     if (!Mathf.Approximately(projectileLifetime, Ee5SliceProfile.EnemyGunnerProjectileLifetime))
                         issues.Add($"{prefabPath} projectileLifetime={projectileLifetime}");
+                    if (!Mathf.Approximately(projectileKnockback, Ee5SliceProfile.EnemyGunnerProjectileKnockback))
+                        issues.Add($"{prefabPath} projectileKnockback={projectileKnockback}");
                     SerializedProperty requiresRange =
                         serializedWeapon.FindProperty("requireTargetWithinAttackRange");
                     SerializedProperty requiresLineOfSight =
@@ -984,6 +991,24 @@ namespace ExtraterrestrialExhaust.Editor
                 issues.Add($"{label}={property.floatValue:0.###} (expected {expected:0.###})");
         }
 
+        static void CheckSerializedBool(
+            SerializedObject serialized,
+            string propertyName,
+            bool expected,
+            string label,
+            List<string> issues)
+        {
+            SerializedProperty property = serialized.FindProperty(propertyName);
+            if (property == null)
+            {
+                issues.Add($"{label} property missing");
+                return;
+            }
+
+            if (property.boolValue != expected)
+                issues.Add($"{label}={property.boolValue} (expected {expected})");
+        }
+
         static bool SetBool(SerializedObject serialized, string propertyName, bool value)
         {
             SerializedProperty property = serialized.FindProperty(propertyName);
@@ -1032,6 +1057,57 @@ namespace ExtraterrestrialExhaust.Editor
                     "Game State defeat slowdown duration",
                     issues);
             }
+
+            PlayerProjectile projectilePrefab =
+                AssetDatabase.LoadAssetAtPath<PlayerProjectile>(ProjectilePrefabPath);
+            if (!projectilePrefab)
+            {
+                issues.Add("PlayerProjectile prefab");
+            }
+            else
+            {
+                SerializedObject serializedProjectile = new SerializedObject(projectilePrefab);
+                CheckSerializedFloat(
+                    serializedProjectile,
+                    "speed",
+                    Ee5SliceProfile.PlayerProjectileSpeed,
+                    "PlayerProjectile speed",
+                    issues);
+                CheckSerializedFloat(
+                    serializedProjectile,
+                    "lifetime",
+                    Ee5SliceProfile.PlayerProjectileLifetime,
+                    "PlayerProjectile lifetime",
+                    issues);
+                CheckSerializedFloat(
+                    serializedProjectile,
+                    "damage",
+                    Ee5SliceProfile.PlayerProjectileDamage,
+                    "PlayerProjectile damage",
+                    issues);
+                CheckSerializedFloat(
+                    serializedProjectile,
+                    "knockback",
+                    Ee5SliceProfile.PlayerProjectileKnockback,
+                    "PlayerProjectile knockback",
+                    issues);
+                CheckSerializedFloat(
+                    serializedProjectile,
+                    "nearMissDistance",
+                    Ee5SliceProfile.ProjectileNearMissDistance,
+                    "PlayerProjectile near miss distance",
+                    issues);
+                CheckSerializedBool(
+                    serializedProjectile,
+                    "destroyOnUnrecognizedCollision",
+                    Ee5SliceProfile.PlayerProjectileDestroysOnUnknownCollision,
+                    "PlayerProjectile unknown-collision destruction",
+                    issues);
+                Collider2D projectileCollider = projectilePrefab.GetComponent<Collider2D>();
+                if (!projectileCollider || !projectileCollider.isTrigger)
+                    issues.Add("PlayerProjectile collider must be a trigger");
+            }
+
             if (!UnityEngine.Object.FindFirstObjectByType<EncounterController>())
                 issues.Add("EncounterController");
             if (!UnityEngine.Object.FindFirstObjectByType<SliceObjectiveDirector>())
@@ -1538,10 +1614,11 @@ namespace ExtraterrestrialExhaust.Editor
             serializedProjectile.FindProperty("enforceEe5Profile").boolValue = true;
             // EE5's linked player bullet travels at 30 units per second.
             serializedProjectile.FindProperty("speed").floatValue = Ee5SliceProfile.PlayerProjectileSpeed;
-            serializedProjectile.FindProperty("lifetime").floatValue = 2f;
-            serializedProjectile.FindProperty("damage").floatValue = 1f;
-            serializedProjectile.FindProperty("knockback").floatValue = 0f;
-            serializedProjectile.FindProperty("destroyOnUnrecognizedCollision").boolValue = true;
+            serializedProjectile.FindProperty("lifetime").floatValue = Ee5SliceProfile.PlayerProjectileLifetime;
+            serializedProjectile.FindProperty("damage").floatValue = Ee5SliceProfile.PlayerProjectileDamage;
+            serializedProjectile.FindProperty("knockback").floatValue = Ee5SliceProfile.PlayerProjectileKnockback;
+            serializedProjectile.FindProperty("destroyOnUnrecognizedCollision").boolValue =
+                Ee5SliceProfile.PlayerProjectileDestroysOnUnknownCollision;
             serializedProjectile.FindProperty("maxTrailPoints").intValue = 6;
             serializedProjectile.FindProperty("pointSpacing").floatValue = 0.03f;
             serializedProjectile.FindProperty("useImpactFade").boolValue = true;
@@ -1549,7 +1626,7 @@ namespace ExtraterrestrialExhaust.Editor
             serializedProjectile.FindProperty("trailStartColor").colorValue = Color.white;
             serializedProjectile.FindProperty("trailEndColor").colorValue =
                 new Color(1f, 0.1f, 0.04f, 1f);
-            serializedProjectile.FindProperty("nearMissDistance").floatValue = 1.35f;
+            serializedProjectile.FindProperty("nearMissDistance").floatValue = Ee5SliceProfile.ProjectileNearMissDistance;
             serializedProjectile.ApplyModifiedPropertiesWithoutUndo();
 
             ProjectileSpriteTrailPresentation spriteTrail =
@@ -1712,7 +1789,8 @@ namespace ExtraterrestrialExhaust.Editor
                 serializedWeapon.FindProperty("projectileSpeed").floatValue = Ee5SliceProfile.EnemyGunnerProjectileSpeed;
                 serializedWeapon.FindProperty("projectileLifetime").floatValue =
                     Ee5SliceProfile.EnemyGunnerProjectileLifetime;
-                serializedWeapon.FindProperty("projectileKnockback").floatValue = 2.5f;
+                serializedWeapon.FindProperty("projectileKnockback").floatValue =
+                    Ee5SliceProfile.EnemyGunnerProjectileKnockback;
                 serializedWeapon.FindProperty("projectileTint").colorValue = new Color(0.05f, 1f, 0.16f, 1f);
                 serializedWeapon.FindProperty("drawAimTelegraph").boolValue =
                     Ee5SliceProfile.EnemyGunnerDrawAimTelegraph;

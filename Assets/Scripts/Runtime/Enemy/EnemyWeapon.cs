@@ -26,7 +26,7 @@ namespace ExtraterrestrialExhaust.Enemy
         [SerializeField] bool requireLineOfSightToFire;
         [SerializeField, Min(0f)] float projectileSpeed = 6f;
         [SerializeField, Min(0.01f)] float projectileLifetime = Ee5SliceProfile.EnemyGunnerProjectileLifetime;
-        [SerializeField, Min(0f)] float projectileKnockback = 2.5f;
+        [SerializeField, Min(0f)] float projectileKnockback = Ee5SliceProfile.EnemyGunnerProjectileKnockback;
         [SerializeField] Color projectileTint = new Color(0.05f, 1f, 0.16f, 1f);
         [Header("Attack Telegraph")]
         [SerializeField] bool drawAimTelegraph = Ee5SliceProfile.EnemyGunnerDrawAimTelegraph;
@@ -131,8 +131,11 @@ namespace ExtraterrestrialExhaust.Enemy
             // its fire point sits noticeably to one side of the body.
             PlayerProjectile projectile = Instantiate(projectilePrefab, origin.position, Quaternion.identity);
             projectile.SetTeam(ProjectileTeam.Enemy);
+            projectile.SetDamage(Ee5SliceProfile.EnemyGunnerProjectileDamage);
             projectile.SetKnockback(projectileKnockback);
             projectile.SetLifetime(projectileLifetime);
+            projectile.SetDestroyOnUnrecognizedCollision(
+                Ee5SliceProfile.EnemyGunnerProjectileDestroysOnUnknownCollision);
             projectile.SetTint(projectileTint);
             projectile.Launch(direction, gameObject, projectileSpeed);
             cooldownRemaining = fireCooldown;

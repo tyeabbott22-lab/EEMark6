@@ -19,10 +19,10 @@ namespace ExtraterrestrialExhaust.Combat
         // Match the authored EE5 player bullet. Enemy projectiles still use
         // their own source override when the encounter needs different pacing.
         [SerializeField, Min(0f)] float speed = 30f;
-        [SerializeField, Min(0.01f)] float lifetime = 2f;
-        [SerializeField, Min(0f)] float damage = 1f;
-        [SerializeField, Min(0f)] float knockback;
-        [SerializeField] bool destroyOnUnrecognizedCollision;
+        [SerializeField, Min(0.01f)] float lifetime = Ee5SliceProfile.PlayerProjectileLifetime;
+        [SerializeField, Min(0f)] float damage = Ee5SliceProfile.PlayerProjectileDamage;
+        [SerializeField, Min(0f)] float knockback = Ee5SliceProfile.PlayerProjectileKnockback;
+        [SerializeField] bool destroyOnUnrecognizedCollision = Ee5SliceProfile.PlayerProjectileDestroysOnUnknownCollision;
         [SerializeField] ProjectileTeam team = ProjectileTeam.Player;
         [SerializeField] bool enforceEe5Profile = true;
         [Header("Trail")]
@@ -33,7 +33,7 @@ namespace ExtraterrestrialExhaust.Combat
         [SerializeField] Color trailStartColor = Color.white;
         [SerializeField] Color trailEndColor = new Color(1f, 0.1f, 0.04f, 1f);
         [Header("Enemy Near Miss")]
-        [SerializeField, Min(0f)] float nearMissDistance = 1.35f;
+        [SerializeField, Min(0f)] float nearMissDistance = Ee5SliceProfile.ProjectileNearMissDistance;
 
         Rigidbody2D body;
         SpriteRenderer spriteRenderer;
@@ -57,7 +57,14 @@ namespace ExtraterrestrialExhaust.Combat
         {
             body = GetComponent<Rigidbody2D>();
             if (enforceEe5Profile)
+            {
                 speed = Ee5SliceProfile.PlayerProjectileSpeed;
+                lifetime = Ee5SliceProfile.PlayerProjectileLifetime;
+                damage = Ee5SliceProfile.PlayerProjectileDamage;
+                knockback = Ee5SliceProfile.PlayerProjectileKnockback;
+                destroyOnUnrecognizedCollision = Ee5SliceProfile.PlayerProjectileDestroysOnUnknownCollision;
+                nearMissDistance = Ee5SliceProfile.ProjectileNearMissDistance;
+            }
 
             spriteRenderer = GetComponent<SpriteRenderer>();
             trailRenderer = GetComponent<LineRenderer>();
@@ -131,6 +138,10 @@ namespace ExtraterrestrialExhaust.Combat
         public void SetTeam(ProjectileTeam projectileTeam) => team = projectileTeam;
 
         public void SetKnockback(float value) => knockback = Mathf.Max(0f, value);
+
+        public void SetDamage(float value) => damage = Mathf.Max(0f, value);
+
+        public void SetDestroyOnUnrecognizedCollision(bool value) => destroyOnUnrecognizedCollision = value;
 
         /// <summary>
         /// Enemy bullets reuse the same impact presentation prefab but keep
