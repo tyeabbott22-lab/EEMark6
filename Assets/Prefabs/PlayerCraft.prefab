@@ -286,6 +286,7 @@ MonoBehaviour:
   boostedParticleEmissionMultiplier: 1.4
   boostedExhaustStartColor: {r: 0.75, g: 1, b: 1, a: 1}
   boostedExhaustEndColor: {r: 0.12, g: 0.4, b: 1, a: 0}
+  exhaustSideOffset: 0.28
   exhaustLength: 0.55
   turnExhaustAmount: 1
   squashScale: {x: 1.25, y: 0.75}
