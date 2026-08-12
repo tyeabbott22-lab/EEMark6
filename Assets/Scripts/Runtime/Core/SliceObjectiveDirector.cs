@@ -1,4 +1,5 @@
 using System;
+using System.Text;
 using UnityEngine;
 
 namespace ExtraterrestrialExhaust.Core
@@ -33,6 +34,12 @@ namespace ExtraterrestrialExhaust.Core
         EnergyKey subscribedEnergyKey;
         EnergyGate subscribedGate;
         GameStateMachine subscribedGameState;
+        bool encounterRecoveredAtRuntime;
+        bool energyKeyRecoveredAtRuntime;
+        bool gateRecoveredAtRuntime;
+        bool exitRecoveredAtRuntime;
+        bool gameStateRecoveredAtRuntime;
+        bool referenceRecoveryWarningIssued;
 
         void Awake()
         {
@@ -53,6 +60,7 @@ namespace ExtraterrestrialExhaust.Core
             // cannot briefly report CLEAR ENCOUNTER before its key, gate, and
             // exit references have settled.
             Refresh();
+            ReportReferenceRecovery();
         }
 
         void OnDisable() => Unsubscribe();
@@ -100,15 +108,65 @@ namespace ExtraterrestrialExhaust.Core
         void ResolveReferences()
         {
             if (!encounter)
+            {
                 encounter = FindFirstObjectByType<EncounterController>();
+                encounterRecoveredAtRuntime |= encounter != null;
+            }
             if (!energyKey)
+            {
                 energyKey = FindFirstObjectByType<EnergyKey>();
+                energyKeyRecoveredAtRuntime |= energyKey != null;
+            }
             if (!gate)
+            {
                 gate = FindFirstObjectByType<EnergyGate>();
+                gateRecoveredAtRuntime |= gate != null;
+            }
             if (!exit)
+            {
                 exit = FindFirstObjectByType<LevelExit>();
+                exitRecoveredAtRuntime |= exit != null;
+            }
             if (!gameState)
+            {
                 gameState = FindFirstObjectByType<GameStateMachine>();
+                gameStateRecoveredAtRuntime |= gameState != null;
+            }
+        }
+
+        void ReportReferenceRecovery()
+        {
+            if (referenceRecoveryWarningIssued)
+                return;
+
+            StringBuilder details = new StringBuilder();
+            AppendReferenceStatus(details, "encounter", encounter, encounterRecoveredAtRuntime);
+            AppendReferenceStatus(details, "energy key", energyKey, energyKeyRecoveredAtRuntime);
+            AppendReferenceStatus(details, "gate", gate, gateRecoveredAtRuntime);
+            AppendReferenceStatus(details, "exit", exit, exitRecoveredAtRuntime);
+            AppendReferenceStatus(details, "game state", gameState, gameStateRecoveredAtRuntime);
+            if (details.Length == 0)
+                return;
+
+            referenceRecoveryWarningIssued = true;
+            Debug.LogWarning(
+                "Slice objective flow is playable but its serialized contract is incomplete: "
+                + details
+                + "Run Extraterrestrial Exhaust > Repair Active FlightTest Objective Contract "
+                + "and save FlightTest so the scene is reproducible.",
+                this);
+        }
+
+        static void AppendReferenceStatus(
+            StringBuilder details,
+            string label,
+            UnityEngine.Object reference,
+            bool recoveredAtRuntime)
+        {
+            if (recoveredAtRuntime)
+                details.Append(label).Append(" recovered at runtime; ");
+            else if (!reference)
+                details.Append(label).Append(" missing; ");
         }
 
         void Subscribe()

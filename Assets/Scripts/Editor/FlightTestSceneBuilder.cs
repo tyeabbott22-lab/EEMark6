@@ -549,6 +549,97 @@ namespace ExtraterrestrialExhaust.Editor
                 + ". Run Extraterrestrial Exhaust > Build Flight Test Scene.");
         }
 
+        [MenuItem("Extraterrestrial Exhaust/Repair Active FlightTest Objective Contract")]
+        public static void RepairActiveFlightTestObjectiveContract()
+        {
+            Scene activeScene = SceneManager.GetActiveScene();
+            if (!activeScene.IsValid() || activeScene.path != ScenePath)
+            {
+                Debug.LogError(
+                    $"Open {ScenePath} before repairing the active FlightTest objective contract.");
+                return;
+            }
+
+            EncounterController encounter = UnityEngine.Object.FindFirstObjectByType<EncounterController>();
+            EnergyKey energyKey = UnityEngine.Object.FindFirstObjectByType<EnergyKey>();
+            EnergyGate gate = UnityEngine.Object.FindFirstObjectByType<EnergyGate>();
+            LevelExit exit = UnityEngine.Object.FindFirstObjectByType<LevelExit>();
+            SliceObjectiveDirector objective =
+                UnityEngine.Object.FindFirstObjectByType<SliceObjectiveDirector>();
+            GameStateMachine gameState = UnityEngine.Object.FindFirstObjectByType<GameStateMachine>();
+            EnemyController[] enemies =
+                UnityEngine.Object.FindObjectsByType<EnemyController>(FindObjectsSortMode.None);
+            Vector2 keyPosition = energyKey ? energyKey.transform.position : Vector2.zero;
+            EnemyController carrier = enemies
+                .Where(enemy => enemy && enemy.GetComponent<EnemyWeapon>())
+                .OrderBy(enemy => Vector2.Distance(
+                    keyPosition,
+                    enemy.transform.position))
+                .FirstOrDefault();
+            EnemyController melee = enemies
+                .Where(enemy => enemy && enemy.IsMelee)
+                .OrderBy(enemy => Vector2.Distance(
+                    keyPosition,
+                    enemy.transform.position))
+                .FirstOrDefault();
+
+            List<string> missing = new List<string>();
+            if (!encounter) missing.Add("EncounterController");
+            if (!energyKey) missing.Add("EnergyKey");
+            if (!gate) missing.Add("EnergyGate");
+            if (!exit) missing.Add("LevelExit");
+            if (!objective) missing.Add("SliceObjectiveDirector");
+            if (!gameState) missing.Add("GameStateMachine");
+            if (!carrier) missing.Add("ranged enemy carrier");
+            if (!melee) missing.Add("melee encounter enemy");
+            if (missing.Count > 0)
+            {
+                Debug.LogError(
+                    "Could not repair the FlightTest objective contract; missing: "
+                    + string.Join(", ", missing));
+                return;
+            }
+
+            Transform keyTarget = gate.transform.Find("Key Target");
+            if (!keyTarget)
+            {
+                keyTarget = new GameObject("Key Target").transform;
+                keyTarget.SetParent(gate.transform, false);
+                keyTarget.localPosition = Ee5SliceProfile.VerticalSliceGateKeyTarget;
+                EditorUtility.SetDirty(keyTarget.gameObject);
+            }
+
+            RepairEncounterRoster(encounter, melee, carrier);
+            RepairSceneReference(energyKey, "requiredEncounter", encounter);
+            RepairSceneReference(energyKey, "enemyTarget", carrier);
+            RepairSceneReference(energyKey, "targetGate", gate);
+            RepairSceneReference(gate, "keyTarget", keyTarget);
+            RepairSceneReference(exit, "encounter", encounter);
+            RepairSceneReference(exit, "requiredGate", gate);
+            RepairSceneReference(exit, "gameState", gameState);
+            RepairSceneReference(objective, "encounter", encounter);
+            RepairSceneReference(objective, "energyKey", energyKey);
+            RepairSceneReference(objective, "gate", gate);
+            RepairSceneReference(objective, "exit", exit);
+            RepairSceneReference(objective, "gameState", gameState);
+
+            EditorSceneManager.MarkSceneDirty(activeScene);
+            Selection.activeGameObject = objective.gameObject;
+            List<string> remainingIssues = GetGeneratedSceneContractIssues();
+            if (remainingIssues.Count == 0)
+            {
+                Debug.Log(
+                    "Repaired and validated the active FlightTest objective contract. "
+                    + "Save the scene to persist the serialized encounter, key, gate, exit, and game-state links.");
+            }
+            else
+            {
+                Debug.LogWarning(
+                    "Objective references were repaired, but the scene still has contract issues: "
+                    + string.Join("; ", remainingIssues));
+            }
+        }
+
         [MenuItem("Extraterrestrial Exhaust/Validate Active FlightTest Player Profile")]
         public static void ValidateActiveFlightTestPlayerProfile()
         {
@@ -2678,6 +2769,43 @@ namespace ExtraterrestrialExhaust.Editor
             property.objectReferenceValue = value;
             serialized.ApplyModifiedPropertiesWithoutUndo();
             PrefabUtility.RecordPrefabInstancePropertyModifications(component);
+        }
+
+        static void RepairSceneReference(
+            Component component,
+            string propertyName,
+            UnityEngine.Object value)
+        {
+            if (!component)
+                return;
+
+            SerializedObject serialized = new SerializedObject(component);
+            SerializedProperty property = serialized.FindProperty(propertyName);
+            if (property == null)
+                return;
+
+            Undo.RecordObject(component, "Repair FlightTest objective contract");
+            property.objectReferenceValue = value;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(component);
+        }
+
+        static void RepairEncounterRoster(
+            EncounterController encounter,
+            EnemyController melee,
+            EnemyController carrier)
+        {
+            SerializedObject serialized = new SerializedObject(encounter);
+            SerializedProperty roster = serialized.FindProperty("encounterEnemies");
+            if (roster == null)
+                return;
+
+            Undo.RecordObject(encounter, "Repair FlightTest encounter roster");
+            roster.arraySize = 2;
+            roster.GetArrayElementAtIndex(0).objectReferenceValue = melee;
+            roster.GetArrayElementAtIndex(1).objectReferenceValue = carrier;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(encounter);
         }
 
         static void SetSerializedFloat(Component component, string propertyName, float value)
