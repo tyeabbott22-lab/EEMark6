@@ -43,7 +43,11 @@ namespace ExtraterrestrialExhaust.Enemy
         void Awake()
         {
             controller = GetComponent<EnemyController>();
-            gameState = FindFirstObjectByType<GameStateMachine>();
+            // Generated scenes serialize the authoritative game-state owner;
+            // standalone prefabs still resolve one when they are dropped into
+            // a test scene without builder wiring.
+            if (!gameState)
+                gameState = FindFirstObjectByType<GameStateMachine>();
         }
 
         void OnEnable()

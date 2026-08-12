@@ -92,10 +92,12 @@ namespace ExtraterrestrialExhaust.Editor
             serializedScore.FindProperty("lateChainSurgeGrowth").floatValue = 1.08f;
             serializedScore.FindProperty("lateChainSurgeStartsAt").intValue = 20;
             serializedScore.FindProperty("maximumMultiplier").floatValue = 50f;
+            serializedScore.FindProperty("gameState").objectReferenceValue = gameState;
             serializedScore.ApplyModifiedPropertiesWithoutUndo();
-            PlayerCharacter player = CreatePlayer(inputAsset, projectilePrefab);
+            PlayerCharacter player = CreatePlayer(inputAsset, projectilePrefab, gameState);
             CreateCamera(player, backdrops);
             EnemyController meleeEnemy = CreateEnemy(
+                gameState,
                 projectilePrefab,
                 "Purple Melee Hunter",
                 new Vector2(3.25f, 2.25f),
@@ -105,6 +107,7 @@ namespace ExtraterrestrialExhaust.Editor
                 MeleeSpritePath,
                 MeleeDefeatSpritePath);
             EnemyController gunnerEnemy = CreateEnemy(
+                gameState,
                 projectilePrefab,
                 "White Gunner",
                 new Vector2(5f, -2f),
@@ -117,7 +120,7 @@ namespace ExtraterrestrialExhaust.Editor
                 gameState,
                 meleeEnemy,
                 gunnerEnemy);
-            CreateHud(objectiveDirector);
+            CreateHud(objectiveDirector, gameState);
             CreateInstructionTriggers();
 
             CreateArenaBoundaries();
@@ -265,7 +268,10 @@ namespace ExtraterrestrialExhaust.Editor
             return stateMachine;
         }
 
-        static PlayerCharacter CreatePlayer(InputActionAsset inputAsset, PlayerProjectile projectilePrefab)
+        static PlayerCharacter CreatePlayer(
+            InputActionAsset inputAsset,
+            PlayerProjectile projectilePrefab,
+            GameStateMachine gameState)
         {
             GameObject player = new GameObject("Player Craft");
             player.tag = "Player";
@@ -302,6 +308,9 @@ namespace ExtraterrestrialExhaust.Editor
             PlayerFlightInput input = player.GetComponent<PlayerFlightInput>();
             if (inputAsset)
                 input.ConfigureInputAsset(inputAsset);
+            SerializedObject serializedInput = new SerializedObject(input);
+            serializedInput.FindProperty("gameState").objectReferenceValue = gameState;
+            serializedInput.ApplyModifiedPropertiesWithoutUndo();
             PlayerRespawnController recovery = player.AddComponent<PlayerRespawnController>();
             SerializedObject serializedRecovery = new SerializedObject(recovery);
             // EE5 reloads the authored room on death, resetting the encounter
@@ -314,9 +323,13 @@ namespace ExtraterrestrialExhaust.Editor
             PlayerWeaponInput weaponInput = player.AddComponent<PlayerWeaponInput>();
             if (inputAsset)
                 weaponInput.ConfigureInputAsset(inputAsset);
+            SerializedObject serializedWeaponInput = new SerializedObject(weaponInput);
+            serializedWeaponInput.FindProperty("gameState").objectReferenceValue = gameState;
+            serializedWeaponInput.ApplyModifiedPropertiesWithoutUndo();
 
             PlayerWeapon weapon = player.AddComponent<PlayerWeapon>();
             SerializedObject serializedWeapon = new SerializedObject(weapon);
+            serializedWeapon.FindProperty("gameState").objectReferenceValue = gameState;
             serializedWeapon.FindProperty("projectilePrefab").objectReferenceValue = projectilePrefab;
             serializedWeapon.FindProperty("enforceEe5Profile").boolValue = true;
             // Match EE5's authored sniper prefab rather than the faster
@@ -535,6 +548,7 @@ namespace ExtraterrestrialExhaust.Editor
         }
 
         static EnemyController CreateEnemy(
+            GameStateMachine gameState,
             PlayerProjectile projectilePrefab,
             string objectName,
             Vector2 position,
@@ -599,6 +613,7 @@ namespace ExtraterrestrialExhaust.Editor
             serializedController.FindProperty("nearMissExitDistance").floatValue = 2.15f;
             serializedController.FindProperty("faceTurnSpeed").floatValue = ranged ? 7.4f : 7.6f;
             serializedController.FindProperty("keepSpriteUpright").boolValue = true;
+            serializedController.FindProperty("gameState").objectReferenceValue = gameState;
             serializedController.ApplyModifiedPropertiesWithoutUndo();
             if (!ranged)
             {
@@ -620,6 +635,7 @@ namespace ExtraterrestrialExhaust.Editor
                 firePoint.transform.SetParent(enemy.transform, false);
                 firePoint.transform.localPosition = new Vector3(-0.65f, 0f, 0f);
                 SerializedObject serializedWeapon = new SerializedObject(weapon);
+                serializedWeapon.FindProperty("gameState").objectReferenceValue = gameState;
                 serializedWeapon.FindProperty("projectilePrefab").objectReferenceValue = projectilePrefab;
                 serializedWeapon.FindProperty("firePoint").objectReferenceValue = firePoint.transform;
                 serializedWeapon.FindProperty("attackRange").floatValue = 7f;
@@ -851,6 +867,7 @@ namespace ExtraterrestrialExhaust.Editor
             LevelExit levelExit = exit.AddComponent<LevelExit>();
             SerializedObject serializedExit = new SerializedObject(levelExit);
             serializedExit.FindProperty("requiredGate").objectReferenceValue = energyGate;
+            serializedExit.FindProperty("gameState").objectReferenceValue = gameState;
             serializedExit.ApplyModifiedPropertiesWithoutUndo();
             ExtractionPortalPresentation portal = exit.AddComponent<ExtractionPortalPresentation>();
             SerializedObject serializedPortal = new SerializedObject(portal);
@@ -871,7 +888,9 @@ namespace ExtraterrestrialExhaust.Editor
             return objectiveDirector;
         }
 
-        static void CreateHud(SliceObjectiveDirector objectiveDirector)
+        static void CreateHud(
+            SliceObjectiveDirector objectiveDirector,
+            GameStateMachine gameState)
         {
             GameObject canvasObject = new GameObject("Gameplay HUD");
             Canvas canvas = canvasObject.AddComponent<Canvas>();
@@ -978,6 +997,7 @@ namespace ExtraterrestrialExhaust.Editor
             serialized.FindProperty("objectiveBannerGroup").objectReferenceValue = bannerGroup;
             serialized.FindProperty("objectiveBannerDuration").floatValue = 1.35f;
             serialized.FindProperty("objectiveDirector").objectReferenceValue = objectiveDirector;
+            serialized.FindProperty("gameState").objectReferenceValue = gameState;
             serialized.ApplyModifiedPropertiesWithoutUndo();
             canvasObject.AddComponent<SliceInstructionDisplay>();
         }
