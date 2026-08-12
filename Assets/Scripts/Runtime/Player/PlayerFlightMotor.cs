@@ -240,6 +240,7 @@ namespace ExtraterrestrialExhaust.Player
             }
 
             inStopperZone = true;
+            input.ClearInputState();
             body.angularVelocity = 0f;
         }
 

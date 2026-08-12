@@ -145,6 +145,7 @@ MonoBehaviour:
   flipActionName: Player/Flip
   stateMachine: {fileID: 5013889060712747157}
   gameState: {fileID: 0}
+  includeEe5KeyboardFallback: 1
 --- !u!114 &3738852136710060132
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -167,6 +168,8 @@ MonoBehaviour:
   visual: {fileID: 0}
   allowFlip: 1
   enforceEe5Profile: 1
+  removeVelocityIntoColliders: 1
+  stopperTag: StopperZone
 --- !u!114 &5795851938182831067
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -180,7 +183,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: ExtraterrestrialExhaust.Runtime::ExtraterrestrialExhaust.Combat.HealthComponent
   maxHealth: 5
-  invulnerabilityDuration: 1
+  invulnerabilityDuration: 0.5
   destroyOnDeath: 0
 --- !u!114 &7060617344408276307
 MonoBehaviour:
@@ -460,7 +463,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 205365440271256836}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 2af45493fe14b0149867bff149af55b8, type: 3}
   m_Name: 

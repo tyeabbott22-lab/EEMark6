@@ -55,8 +55,7 @@ namespace ExtraterrestrialExhaust.Player
         {
             ResolvedMoveAction?.Disable();
             ResolvedFlipAction?.Disable();
-            Move = Vector2.zero;
-            WasFlipPressed = false;
+            ClearInputState();
         }
 
         void Update()
@@ -93,6 +92,17 @@ namespace ExtraterrestrialExhaust.Player
             }
 
             WasFlipPressed = canReadInput && ResolvedFlipAction != null && ResolvedFlipAction.WasPressedThisFrame();
+        }
+
+        /// <summary>
+        /// Clears the command edge when a gameplay volume or scripted state
+        /// takes control. The next Update may sample held hardware again, but
+        /// no stale flip pulse or thrust vector survives the hand-off.
+        /// </summary>
+        public void ClearInputState()
+        {
+            Move = Vector2.zero;
+            WasFlipPressed = false;
         }
 
         /// <summary>

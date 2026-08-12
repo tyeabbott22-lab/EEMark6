@@ -104,6 +104,7 @@ GameObject:
   - component: {fileID: 6535076997974277917}
   - component: {fileID: 4438453854456393944}
   - component: {fileID: 1349090994070017921}
+  - component: {fileID: 3449111732767329268}
   - component: {fileID: 2350252198390172321}
   - component: {fileID: 4788798763645463918}
   - component: {fileID: 8730172679222820623}
@@ -213,7 +214,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: ExtraterrestrialExhaust.Runtime::ExtraterrestrialExhaust.Combat.HealthComponent
   maxHealth: 5
-  invulnerabilityDuration: 0.1
+  invulnerabilityDuration: 0
   destroyOnDeath: 0
 --- !u!114 &1349090994070017921
 MonoBehaviour:
@@ -230,13 +231,16 @@ MonoBehaviour:
   detectionRange: 12
   wakeDistance: 6
   wakeDuration: 1.35
+  wakeIdleDurationMin: 1.1
+  wakeIdleDurationMax: 2.25
+  wakeScreamDuration: 0.71428573
   requireLineOfSightToWake: 1
-  wakeSignalDistanceMultiplier: 1
+  wakeSignalDistanceMultiplier: 4
   wakeSignalChargeDuration: 1.15
   wakeSignalChargeDecay: 1.8
   wakeFinalWarningDuration: 0.35
   attackRange: 7
-  chaseSpeed: 2.7
+  chaseSpeed: 2
   target: {fileID: 0}
   wallTag: Wall
   wallBuffer: 0.03
@@ -260,8 +264,24 @@ MonoBehaviour:
   nearMissDistance: 1.65
   nearMissExitDistance: 2.15
   faceTurnSpeed: 7.4
+  forwardIsLocalNegativeX: 1
   keepSpriteUpright: 1
   gameState: {fileID: 0}
+--- !u!114 &3449111732767329268
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1505159076451898056}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7aeab605e57945b449d11996045ff10a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ExtraterrestrialExhaust.Runtime::ExtraterrestrialExhaust.Enemy.EnemyContactDamage
+  damage: 1
+  cooldown: 0.75
+  knockback: 8
 --- !u!114 &2350252198390172321
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -290,12 +310,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: ExtraterrestrialExhaust.Runtime::ExtraterrestrialExhaust.Enemy.EnemyWeapon
   projectilePrefab: {fileID: 8335205200750898339, guid: 0f75bc740062bf24fa349acba5d18d38, type: 3}
   firePoint: {fileID: 4802847836105849160}
-  fireCooldown: 0.5
+  fireCooldown: 1
   attackRange: 7
-  projectileSpeed: 9.5
+  requireTargetWithinAttackRange: 0
+  requireLineOfSightToFire: 0
+  projectileSpeed: 6
+  projectileLifetime: 5
   projectileKnockback: 2.5
   projectileTint: {r: 0.05, g: 1, b: 0.16, a: 1}
-  drawAimTelegraph: 1
+  drawAimTelegraph: 0
   telegraphDuration: 0.18
   telegraphMinWidth: 0.018
   telegraphMaxWidth: 0.085
@@ -546,7 +569,11 @@ MonoBehaviour:
   wakeFramesPerSecond: 14
   defeatDisplayDuration: 0.3
   pingPongDormantAnimation: 1
+  randomizeDormantStartFrame: 1
   hideAfterDefeat: 1
+  faceDormantTowardTarget: 1
+  forwardIsLocalNegativeX: 1
+  restoreFacingAfterWake: 1
 --- !u!114 &4374971525420444491
 MonoBehaviour:
   m_ObjectHideFlags: 0

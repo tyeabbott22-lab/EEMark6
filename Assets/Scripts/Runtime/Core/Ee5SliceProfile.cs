@@ -89,12 +89,18 @@ namespace ExtraterrestrialExhaust.Core
         public const float CameraCatchupBoost = 2.2f;
         public const float CameraHardCatchupDistance = 5f;
         public const float CameraCloseEnoughSnap = 0.04f;
-        public const float CameraSpeedZoomStart = 6f;
+        // realScene2/realScene3 begin the zoom curve as soon as the craft moves.
+        // Keeping this in the shared profile prevents a scene rebuild from
+        // silently restoring the more conservative prototype value.
+        public const float CameraSpeedZoomStart = 0f;
         public const float CameraSpeedZoomFull = 18f;
         public const float CameraMaxZoomOut = 2.25f;
         public const float CameraZoomSmooth = 10f;
-        public const float CameraFlipZoomOut = 1.4f;
-        public const float CameraFlipZoomDuration = 0.45f;
+        // These deliberately long flip values are the authored realScene2/3
+        // presentation: flipping widens the read of the room and settles back
+        // over the maneuver instead of popping like a one-shot camera effect.
+        public const float CameraFlipZoomOut = 4f;
+        public const float CameraFlipZoomDuration = 10f;
         public const float CameraFarParallaxStrength = 0.06f;
         public const float CameraMidParallaxStrength = 0.14f;
         public const float CameraNearParallaxStrength = 0.24f;
