@@ -1565,6 +1565,21 @@ namespace ExtraterrestrialExhaust.Editor
                 if (!key.EnemyTarget || !key.EnemyTarget.GetComponent<EnemyWeapon>())
                     issues.Add("EnergyKey carrier (ranged gunner)");
 
+                Rigidbody2D keyBody = key.GetComponent<Rigidbody2D>();
+                if (!keyBody)
+                {
+                    issues.Add("EnergyKey Rigidbody2D");
+                }
+                else
+                {
+                    if (keyBody.bodyType != RigidbodyType2D.Kinematic)
+                        issues.Add("EnergyKey body type is not Kinematic");
+                    if (keyBody.interpolation != RigidbodyInterpolation2D.Interpolate)
+                        issues.Add("EnergyKey interpolation is not Interpolate");
+                    if (keyBody.collisionDetectionMode != CollisionDetectionMode2D.Continuous)
+                        issues.Add("EnergyKey collision detection is not Continuous");
+                }
+
                 SerializedObject serializedKey = new SerializedObject(key);
                 CheckObjectReference(serializedKey, "requiredEncounter", "EnergyKey encounter", issues);
                 CheckObjectReference(serializedKey, "enemyTarget", "EnergyKey carrier", issues);
@@ -2510,6 +2525,17 @@ namespace ExtraterrestrialExhaust.Editor
             CircleCollider2D keyCollider = key.AddComponent<CircleCollider2D>();
             keyCollider.isTrigger = true;
             EnergyKey energyKey = key.AddComponent<EnergyKey>();
+            Rigidbody2D keyBody = key.GetComponent<Rigidbody2D>();
+            if (keyBody)
+            {
+                // EnergyKey follows on FixedUpdate through MovePosition. Keep
+                // the EE5 kinematic/interpolated transport serialized in the
+                // generated scene instead of relying only on runtime Awake.
+                keyBody.bodyType = RigidbodyType2D.Kinematic;
+                keyBody.gravityScale = 0f;
+                keyBody.interpolation = RigidbodyInterpolation2D.Interpolate;
+                keyBody.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
+            }
             SerializedObject serializedKey = new SerializedObject(energyKey);
             serializedKey.FindProperty("requiredEncounter").objectReferenceValue = encounter;
             // EE5's key-lock beat is carried by the ranged gunner. The melee

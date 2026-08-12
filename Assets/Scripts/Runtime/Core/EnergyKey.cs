@@ -103,6 +103,12 @@ namespace ExtraterrestrialExhaust.Core
 
             body.bodyType = RigidbodyType2D.Kinematic;
             body.gravityScale = 0f;
+            // EE5's scene-authored key is a kinematic body with interpolation
+            // enabled. This component moves on the fixed step, so retaining
+            // that transport setting is what keeps the delicate orbit and
+            // gate-flight motion smooth at render rates above the physics tick.
+            body.interpolation = RigidbodyInterpolation2D.Interpolate;
+            body.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
             body.simulated = true;
             keyCollider.isTrigger = true;
             ResolvePlayer();
