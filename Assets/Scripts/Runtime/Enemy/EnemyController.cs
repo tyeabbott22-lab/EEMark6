@@ -114,6 +114,8 @@ namespace ExtraterrestrialExhaust.Enemy
 
         public EnemyState State { get; private set; }
         public PlayerCharacter Target => target;
+        /// <summary>Authoritative Rigidbody position for physics-step followers.</summary>
+        public Vector2 PhysicsPosition => body ? body.position : (Vector2)transform.position;
         public bool ForwardIsLocalNegativeX => forwardIsLocalNegativeX;
         public bool CanAttack => State == EnemyState.Attacking;
         public bool IsCombatActive => State == EnemyState.Chasing || State == EnemyState.Attacking;

@@ -1802,6 +1802,12 @@ namespace ExtraterrestrialExhaust.Editor
                 }
 
                 SerializedObject serializedKey = new SerializedObject(key);
+                CheckSerializedBool(
+                    serializedKey,
+                    "enforceEe5Profile",
+                    true,
+                    "EnergyKey enforceEe5Profile",
+                    issues);
                 CheckObjectReference(serializedKey, "requiredEncounter", "EnergyKey encounter", issues);
                 CheckObjectReference(serializedKey, "enemyTarget", "EnergyKey carrier", issues);
                 CheckObjectReference(serializedKey, "targetGate", "EnergyKey target gate", issues);
@@ -1825,6 +1831,42 @@ namespace ExtraterrestrialExhaust.Editor
                     issues);
                 CheckSerializedFloat(
                     serializedKey,
+                    "orbitRadiusX",
+                    Ee5SliceProfile.EnergyKeyOrbitRadiusX,
+                    "EnergyKey player orbit radius X",
+                    issues);
+                CheckSerializedFloat(
+                    serializedKey,
+                    "orbitRadiusY",
+                    Ee5SliceProfile.EnergyKeyOrbitRadiusY,
+                    "EnergyKey player orbit radius Y",
+                    issues);
+                CheckSerializedFloat(
+                    serializedKey,
+                    "orbitSpeed",
+                    Ee5SliceProfile.EnergyKeyOrbitSpeed,
+                    "EnergyKey player orbit speed",
+                    issues);
+                CheckSerializedFloat(
+                    serializedKey,
+                    "orbitSharpness",
+                    Ee5SliceProfile.EnergyKeyOrbitSharpness,
+                    "EnergyKey player orbit sharpness",
+                    issues);
+                CheckSerializedFloat(
+                    serializedKey,
+                    "radiusEase",
+                    Ee5SliceProfile.EnergyKeyRadiusEase,
+                    "EnergyKey player orbit radius ease",
+                    issues);
+                CheckSerializedFloat(
+                    serializedKey,
+                    "centerFollowSharpness",
+                    Ee5SliceProfile.EnergyKeyCenterFollowSharpness,
+                    "EnergyKey player orbit center follow",
+                    issues);
+                CheckSerializedFloat(
+                    serializedKey,
                     "collectDistance",
                     Ee5SliceProfile.EnergyKeyCollectDistance,
                     "EnergyKey collect distance",
@@ -1841,6 +1883,12 @@ namespace ExtraterrestrialExhaust.Editor
                     Ee5SliceProfile.EnergyKeyPlayerFollowSharpness,
                     "EnergyKey player follow sharpness",
                     issues);
+                CheckSerializedFloat(
+                    serializedKey,
+                    "gateFlySpeed",
+                    Ee5SliceProfile.EnergyKeyGateFlySpeed,
+                    "EnergyKey gate flight speed",
+                    issues);
             }
 
             EnergyGate gate = UnityEngine.Object.FindFirstObjectByType<EnergyGate>();
@@ -1849,6 +1897,12 @@ namespace ExtraterrestrialExhaust.Editor
             else
             {
                 SerializedObject serializedGate = new SerializedObject(gate);
+                CheckSerializedBool(
+                    serializedGate,
+                    "enforceEe5Profile",
+                    true,
+                    "EnergyGate enforceEe5Profile",
+                    issues);
                 CheckObjectReference(serializedGate, "keyTarget", "EnergyGate key target", issues);
                 CheckSerializedFloat(
                     serializedGate,
@@ -2908,6 +2962,7 @@ namespace ExtraterrestrialExhaust.Editor
             keyTarget.transform.SetParent(gate.transform, false);
             keyTarget.transform.localPosition = Ee5SliceProfile.VerticalSliceGateKeyTarget;
             SerializedObject serializedGate = new SerializedObject(energyGate);
+            serializedGate.FindProperty("enforceEe5Profile").boolValue = true;
             serializedGate.FindProperty("liftDistance").floatValue =
                 Ee5SliceProfile.EnergyGateLiftDistance;
             serializedGate.FindProperty("liftSpeed").floatValue =
@@ -2957,6 +3012,7 @@ namespace ExtraterrestrialExhaust.Editor
                 keyBody.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
             }
             SerializedObject serializedKey = new SerializedObject(energyKey);
+            serializedKey.FindProperty("enforceEe5Profile").boolValue = true;
             serializedKey.FindProperty("requiredEncounter").objectReferenceValue = encounter;
             // EE5's key-lock beat is carried by the ranged gunner. The melee
             // hunter remains active pressure while the player chases the key,
@@ -2972,6 +3028,19 @@ namespace ExtraterrestrialExhaust.Editor
                 Ee5SliceProfile.EnergyKeyEnemyOrbitSpeed;
             serializedKey.FindProperty("enemyOrbitSharpness").floatValue =
                 Ee5SliceProfile.EnergyKeyEnemyOrbitSharpness;
+            serializedKey.FindProperty("orbitRadiusX").floatValue =
+                Ee5SliceProfile.EnergyKeyOrbitRadiusX;
+            serializedKey.FindProperty("orbitRadiusY").floatValue =
+                Ee5SliceProfile.EnergyKeyOrbitRadiusY;
+            serializedKey.FindProperty("orbitSpeed").floatValue =
+                Ee5SliceProfile.EnergyKeyOrbitSpeed;
+            serializedKey.FindProperty("orbitSharpness").floatValue =
+                Ee5SliceProfile.EnergyKeyOrbitSharpness;
+            serializedKey.FindProperty("orbitRotationSpeed").floatValue = 0f;
+            serializedKey.FindProperty("radiusEase").floatValue =
+                Ee5SliceProfile.EnergyKeyRadiusEase;
+            serializedKey.FindProperty("centerFollowSharpness").floatValue =
+                Ee5SliceProfile.EnergyKeyCenterFollowSharpness;
             serializedKey.FindProperty("playerOffset").vector3Value =
                 Ee5SliceProfile.EnergyKeyPlayerOffset;
             serializedKey.FindProperty("gateUnlockRange").floatValue =
@@ -2980,6 +3049,8 @@ namespace ExtraterrestrialExhaust.Editor
                 Ee5SliceProfile.EnergyKeyCollectDistance;
             serializedKey.FindProperty("playerFollowSharpness").floatValue =
                 Ee5SliceProfile.EnergyKeyPlayerFollowSharpness;
+            serializedKey.FindProperty("gateFlySpeed").floatValue =
+                Ee5SliceProfile.EnergyKeyGateFlySpeed;
             serializedKey.FindProperty("releasePulseDuration").floatValue = Ee5SliceProfile.KeyReleasePulseDuration;
             serializedKey.FindProperty("releasePulseScale").floatValue = Ee5SliceProfile.KeyReleasePulseScale;
             serializedKey.ApplyModifiedPropertiesWithoutUndo();

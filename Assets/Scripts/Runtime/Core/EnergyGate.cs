@@ -11,6 +11,7 @@ namespace ExtraterrestrialExhaust.Core
         // EE5's DoorController clears the route by lifting the authored door,
         // not by scaling it out. Keep the motion readable for the key-to-exit
         // handoff and let the collider disable immediately at activation.
+        [SerializeField] bool enforceEe5Profile = true;
         [SerializeField, Min(0f)] float liftDistance = Ee5SliceProfile.EnergyGateLiftDistance;
         [SerializeField, Min(0.01f)] float liftSpeed = Ee5SliceProfile.EnergyGateLiftSpeed;
 
@@ -31,6 +32,12 @@ namespace ExtraterrestrialExhaust.Core
 
         void Awake()
         {
+            if (enforceEe5Profile)
+            {
+                liftDistance = Ee5SliceProfile.EnergyGateLiftDistance;
+                liftSpeed = Ee5SliceProfile.EnergyGateLiftSpeed;
+            }
+
             gateCollider = GetComponent<BoxCollider2D>();
             line = GetComponent<LineRenderer>();
             targetPosition = transform.position + Vector3.up * liftDistance;

@@ -20,6 +20,14 @@ namespace ExtraterrestrialExhaust.Player
         public PlayerFlightMotor FlightMotor { get; private set; }
         public HealthComponent Health { get; private set; }
         public GameStateMachine GameState { get; private set; }
+        /// <summary>
+        /// Physics-space position for systems that update in FixedUpdate.
+        /// Reading an interpolated Transform from a physics tick can introduce
+        /// a visible one-frame chase correction in carried objectives.
+        /// </summary>
+        public Vector2 PhysicsPosition => FlightMotor && FlightMotor.Body
+            ? FlightMotor.Body.position
+            : (Vector2)transform.position;
         public bool CanReceiveGameplayInput => Health && Health.IsAlive
             && (!FlightState || FlightState.AcceptsPlayerInput)
             && (!GameState || GameState.IsPlaying);

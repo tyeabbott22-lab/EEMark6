@@ -25,6 +25,7 @@ namespace ExtraterrestrialExhaust.Core
     public sealed class EnergyKey : MonoBehaviour
     {
         [Header("References")]
+        [SerializeField] bool enforceEe5Profile = true;
         [SerializeField] EncounterController requiredEncounter;
         [SerializeField] EnemyController enemyTarget;
         [SerializeField] EnergyGate targetGate;
@@ -36,13 +37,13 @@ namespace ExtraterrestrialExhaust.Core
         [SerializeField, Min(0f)] float enemyOrbitSharpness = Ee5SliceProfile.EnergyKeyEnemyOrbitSharpness;
 
         [Header("Player Orbit")]
-        [SerializeField, Min(0f)] float orbitRadiusX = 4.4f;
-        [SerializeField, Min(0f)] float orbitRadiusY = 1.9f;
-        [SerializeField, Min(0f)] float orbitSpeed = 2f;
-        [SerializeField, Min(0f)] float orbitSharpness = 8f;
+        [SerializeField, Min(0f)] float orbitRadiusX = Ee5SliceProfile.EnergyKeyOrbitRadiusX;
+        [SerializeField, Min(0f)] float orbitRadiusY = Ee5SliceProfile.EnergyKeyOrbitRadiusY;
+        [SerializeField, Min(0f)] float orbitSpeed = Ee5SliceProfile.EnergyKeyOrbitSpeed;
+        [SerializeField, Min(0f)] float orbitSharpness = Ee5SliceProfile.EnergyKeyOrbitSharpness;
         [SerializeField] float orbitRotationSpeed;
-        [SerializeField, Min(0f)] float radiusEase = 3.5f;
-        [SerializeField, Min(0f)] float centerFollowSharpness = 5.5f;
+        [SerializeField, Min(0f)] float radiusEase = Ee5SliceProfile.EnergyKeyRadiusEase;
+        [SerializeField, Min(0f)] float centerFollowSharpness = Ee5SliceProfile.EnergyKeyCenterFollowSharpness;
 
         [Header("Collection")]
         [SerializeField, Min(0f)] float collectDistance = Ee5SliceProfile.EnergyKeyCollectDistance;
@@ -53,7 +54,7 @@ namespace ExtraterrestrialExhaust.Core
 
         [Header("Gate")]
         [SerializeField, Min(0f)] float gateUnlockRange = Ee5SliceProfile.EnergyKeyGateUnlockRange;
-        [SerializeField, Min(0f)] float gateFlySpeed = 14f;
+        [SerializeField, Min(0f)] float gateFlySpeed = Ee5SliceProfile.EnergyKeyGateFlySpeed;
 
         [Header("Visual")]
         [SerializeField] Transform visual;
@@ -91,6 +92,9 @@ namespace ExtraterrestrialExhaust.Core
 
         void Awake()
         {
+            if (enforceEe5Profile)
+                ApplyEe5Profile();
+
             if (!requiredEncounter)
                 requiredEncounter = FindFirstObjectByType<EncounterController>();
             if (!enemyTarget)
@@ -120,6 +124,26 @@ namespace ExtraterrestrialExhaust.Core
             keyCollider.isTrigger = true;
             ResolvePlayer();
             UpdateAvailabilityVisual();
+        }
+
+        void ApplyEe5Profile()
+        {
+            enemyOffset = Ee5SliceProfile.EnergyKeyEnemyOffset;
+            enemyOrbitRadius = Ee5SliceProfile.EnergyKeyEnemyOrbitRadius;
+            enemyOrbitSpeed = Ee5SliceProfile.EnergyKeyEnemyOrbitSpeed;
+            enemyOrbitSharpness = Ee5SliceProfile.EnergyKeyEnemyOrbitSharpness;
+            orbitRadiusX = Ee5SliceProfile.EnergyKeyOrbitRadiusX;
+            orbitRadiusY = Ee5SliceProfile.EnergyKeyOrbitRadiusY;
+            orbitSpeed = Ee5SliceProfile.EnergyKeyOrbitSpeed;
+            orbitSharpness = Ee5SliceProfile.EnergyKeyOrbitSharpness;
+            orbitRotationSpeed = 0f;
+            radiusEase = Ee5SliceProfile.EnergyKeyRadiusEase;
+            centerFollowSharpness = Ee5SliceProfile.EnergyKeyCenterFollowSharpness;
+            collectDistance = Ee5SliceProfile.EnergyKeyCollectDistance;
+            playerOffset = Ee5SliceProfile.EnergyKeyPlayerOffset;
+            playerFollowSharpness = Ee5SliceProfile.EnergyKeyPlayerFollowSharpness;
+            gateUnlockRange = Ee5SliceProfile.EnergyKeyGateUnlockRange;
+            gateFlySpeed = Ee5SliceProfile.EnergyKeyGateFlySpeed;
         }
 
         void OnEnable()
@@ -224,7 +248,7 @@ namespace ExtraterrestrialExhaust.Core
                 return;
 
             phase += enemyOrbitSpeed * Time.fixedDeltaTime;
-            Vector3 center = enemyTarget.transform.position + enemyOffset;
+            Vector3 center = (Vector3)enemyTarget.PhysicsPosition + enemyOffset;
             Vector3 offset = new Vector3(Mathf.Cos(phase), Mathf.Sin(phase), 0f) * enemyOrbitRadius;
             body.MovePosition(Vector2.Lerp(
                 body.position,
@@ -238,7 +262,7 @@ namespace ExtraterrestrialExhaust.Core
                 return;
 
             float centerT = 1f - Mathf.Exp(-centerFollowSharpness * Time.fixedDeltaTime);
-            orbitCenter = Vector2.Lerp(orbitCenter, player.transform.position, centerT);
+            orbitCenter = Vector2.Lerp(orbitCenter, player.PhysicsPosition, centerT);
             phase += orbitSpeed * Time.fixedDeltaTime;
             currentRadiusX = Mathf.Lerp(currentRadiusX, orbitRadiusX, radiusEase * Time.fixedDeltaTime);
             currentRadiusY = Mathf.Lerp(currentRadiusY, orbitRadiusY, radiusEase * Time.fixedDeltaTime);
@@ -266,7 +290,7 @@ namespace ExtraterrestrialExhaust.Core
         {
             if (player && player.CanReceiveGameplayInput)
             {
-                Vector3 target = player.transform.position + playerOffset;
+                Vector3 target = (Vector3)player.PhysicsPosition + playerOffset;
                 body.MovePosition(Vector2.Lerp(
                     body.position,
                     target,
@@ -283,7 +307,7 @@ namespace ExtraterrestrialExhaust.Core
             if (!player || !player.CanReceiveGameplayInput || !targetGate)
                 return;
 
-            if (Vector2.Distance(player.transform.position, targetGate.KeyTarget.position) <= gateUnlockRange)
+            if (Vector2.Distance(player.PhysicsPosition, targetGate.KeyTarget.position) <= gateUnlockRange)
             {
                 SetState(EnergyKeyState.FlyingToGate);
                 keyCollider.enabled = false;
@@ -315,7 +339,7 @@ namespace ExtraterrestrialExhaust.Core
         void ReleaseFromEnemy()
         {
             SetState(EnergyKeyState.OrbitingPlayer);
-            orbitCenter = player ? (Vector2)player.transform.position : body.position;
+            orbitCenter = player ? player.PhysicsPosition : body.position;
             releasedAtTime = Time.time;
 
             Vector2 fromPlayer = body.position - orbitCenter;
@@ -363,7 +387,7 @@ namespace ExtraterrestrialExhaust.Core
                 || currentRadiusY < minRadiusBeforeCollect)
                 return;
 
-            if (Vector2.Distance(body.position, otherPlayer.transform.position) > collectDistance)
+            if (Vector2.Distance(body.position, otherPlayer.PhysicsPosition) > collectDistance)
                 return;
 
             player = otherPlayer;

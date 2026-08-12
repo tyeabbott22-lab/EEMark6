@@ -128,12 +128,19 @@ namespace ExtraterrestrialExhaust.Core
         public const float EnergyKeyEnemyOrbitRadius = 3f;
         public const float EnergyKeyEnemyOrbitSpeed = 3f;
         public const float EnergyKeyEnemyOrbitSharpness = 6f;
+        public const float EnergyKeyOrbitRadiusX = 4.4f;
+        public const float EnergyKeyOrbitRadiusY = 1.9f;
+        public const float EnergyKeyOrbitSpeed = 2f;
+        public const float EnergyKeyOrbitSharpness = 8f;
+        public const float EnergyKeyRadiusEase = 3.5f;
+        public const float EnergyKeyCenterFollowSharpness = 5.5f;
         public const float EnergyKeyVisualScale = 1.65f;
         // energy_key.png keeps its artwork in the upper half of a transparent
         // 96x64 canvas; move the visual down so the gameplay root stays centered.
         public static readonly Vector3 EnergyKeyVisualOffset = new Vector3(0f, -0.13f, 0f);
         public const float EnergyKeyCollectDistance = 0.65f;
         public const float EnergyKeyGateUnlockRange = 2f;
+        public const float EnergyKeyGateFlySpeed = 14f;
         public static readonly Vector3 EnergyKeyPlayerOffset =
             new Vector3(0.5f, 0.7f, 0f);
         public const float EnergyKeyPlayerFollowSharpness = 12f;
