@@ -2960,7 +2960,7 @@ namespace ExtraterrestrialExhaust.Editor
             line.startColor = Color.white;
             line.endColor = new Color(1f, 0.1f, 0.1f);
             line.sortingOrder = 20;
-            line.material = CreateLineMaterial();
+            AssignLineMaterial(line);
 
             GameObject prefab = PrefabUtility.SaveAsPrefabAsset(projectile, ProjectilePrefabPath);
             if (editingExisting)
@@ -3178,7 +3178,7 @@ namespace ExtraterrestrialExhaust.Editor
             line.endColor = ranged
                 ? new Color(1f, 0.65f, 0.1f)
                 : new Color(1f, 0.2f, 0.65f);
-            line.material = CreateLineMaterial();
+            AssignLineMaterial(line);
 
             SpriteRenderer sprite = enemy.AddComponent<SpriteRenderer>();
             sprite.sprite = LoadFirstSprite(activeSpritePath);
@@ -3665,7 +3665,7 @@ namespace ExtraterrestrialExhaust.Editor
             line.startColor = new Color(0.2f, 0.85f, 1f);
             line.endColor = new Color(0.8f, 0.2f, 1f);
             line.sortingOrder = 5;
-            line.material = CreateLineMaterial();
+            AssignLineMaterial(line);
         }
 
         static void CreateCamera(PlayerCharacter target, Transform[] parallaxBackdrops)
@@ -4170,7 +4170,7 @@ namespace ExtraterrestrialExhaust.Editor
             line.endWidth = 0.08f;
             line.startColor = color;
             line.endColor = color;
-            line.material = CreateLineMaterial();
+            AssignLineMaterial(line);
         }
 
         static void CreateCircleOutline(
@@ -4190,7 +4190,7 @@ namespace ExtraterrestrialExhaust.Editor
             line.endColor = color;
             line.sortingOrder = 14;
             line.numCornerVertices = 2;
-            line.material = CreateLineMaterial();
+            AssignLineMaterial(line);
 
             for (int i = 0; i < segments; i++)
             {
@@ -4214,12 +4214,36 @@ namespace ExtraterrestrialExhaust.Editor
                 shader = Shader.Find("Unlit/Color");
 
             if (shader)
-                return new Material(shader);
+            {
+                try
+                {
+                    return new Material(shader);
+                }
+                catch (System.Exception exception)
+                {
+                    Debug.LogWarning(
+                        $"FlightTest decorative line material could not be created: {exception.Message}");
+                }
+            }
 
             // The built-in line material is a safe final fallback for scene
             // composition. A missing decorative material must not prevent the
             // gameplay slice from being saved.
             return AssetDatabase.GetBuiltinExtraResource<Material>("Default-Line.mat");
+        }
+
+        static void AssignLineMaterial(LineRenderer line)
+        {
+            if (!line)
+                return;
+
+            Material material = CreateLineMaterial();
+            // A LineRenderer can still serialize its geometry without a
+            // material. Do not assign null through the material property: in
+            // Unity 6 that setter can throw inside the native renderer and
+            // abort the entire scene build.
+            if (material)
+                line.sharedMaterial = material;
         }
 
         static Sprite LoadFirstSprite(string assetPath)
