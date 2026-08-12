@@ -142,6 +142,14 @@ namespace ExtraterrestrialExhaust.Core
         // over the maneuver instead of popping like a one-shot camera effect.
         public const float CameraFlipZoomOut = 4f;
         public const float CameraFlipZoomDuration = 10f;
+        // realScene sends wall impact feedback through the flight motor even
+        // when generic collision damage is disabled. These values keep that
+        // readable slam response independent from the optional damage module.
+        public const float CameraWallSlamMinSpeed = 4.5f;
+        public const float CameraWallSlamMaxSpeed = 18f;
+        public const float CameraWallSlamShakeStrength = 0.14f;
+        public const float CameraWallSlamShakeDuration = 0.18f;
+        public const float CameraWallSlamCooldown = 0.14f;
         // These are the serialized realScene2/3 layer strengths: the far
         // nebula follows almost completely and the generated star field lags
         // just enough to sell depth.

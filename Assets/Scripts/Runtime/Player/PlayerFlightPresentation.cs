@@ -31,6 +31,17 @@ namespace ExtraterrestrialExhaust.Player
         [SerializeField] Color boostedExhaustStartColor = new Color(0.75f, 1f, 1f, 1f);
         [SerializeField] Color boostedExhaustEndColor = new Color(0.12f, 0.4f, 1f, 0f);
 
+        [Header("Particle Collision")]
+        // EE5 lets exhaust particles meet the room surfaces. This is visual
+        // feedback only; particles never become gameplay hitboxes.
+        [SerializeField] bool exhaustParticlesCollide = true;
+        [SerializeField] LayerMask exhaustCollisionMask = ~0;
+        [SerializeField, Range(0f, 1f)] float exhaustCollisionDampen = 0.72f;
+        [SerializeField, Range(0f, 1f)] float exhaustCollisionBounce = 0.04f;
+        [SerializeField, Range(0f, 1f)] float exhaustCollisionLifetimeLoss = 1f;
+        [SerializeField, Range(0.01f, 2f)] float exhaustCollisionRadiusScale = 0.35f;
+        [SerializeField] int exhaustSortingOrder = -1;
+
         [Header("Exhaust Anchors")]
         [SerializeField, Min(0f)] float exhaustSideOffset = 0.28f;
         [SerializeField, Min(0f)] float exhaustLength = 0.55f;
@@ -381,10 +392,33 @@ namespace ExtraterrestrialExhaust.Player
 
             ParticleSystemRenderer renderer = particles.GetComponent<ParticleSystemRenderer>();
             renderer.renderMode = ParticleSystemRenderMode.Billboard;
-            renderer.sortingOrder = 8;
+            renderer.sortingOrder = exhaustSortingOrder;
             if (!renderer.sharedMaterial)
                 renderer.sharedMaterial = CreateRuntimeMaterial($"{name} Particle Material");
+            ConfigureExhaustParticleCollision(particles);
             particles.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        }
+
+        void ConfigureExhaustParticleCollision(ParticleSystem particles)
+        {
+            if (!particles)
+                return;
+
+            ParticleSystem.CollisionModule collision = particles.collision;
+            collision.enabled = exhaustParticlesCollide;
+            if (!exhaustParticlesCollide)
+                return;
+
+            collision.type = ParticleSystemCollisionType.World;
+            collision.mode = ParticleSystemCollisionMode.Collision2D;
+            collision.collidesWith = exhaustCollisionMask;
+            collision.enableDynamicColliders = true;
+            collision.dampen = new ParticleSystem.MinMaxCurve(exhaustCollisionDampen);
+            collision.bounce = new ParticleSystem.MinMaxCurve(exhaustCollisionBounce);
+            collision.lifetimeLoss = new ParticleSystem.MinMaxCurve(exhaustCollisionLifetimeLoss);
+            collision.radiusScale = exhaustCollisionRadiusScale;
+            collision.quality = ParticleSystemCollisionQuality.High;
+            collision.sendCollisionMessages = false;
         }
 
         Material CreateRuntimeMaterial(string materialName)

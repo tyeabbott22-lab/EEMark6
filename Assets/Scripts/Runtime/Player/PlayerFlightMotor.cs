@@ -208,6 +208,11 @@ namespace ExtraterrestrialExhaust.Player
         {
             if (collision != null && IsStopper(collision.collider))
                 EnterStopperZone();
+
+            // EE5 routes collision feedback through the flight motor itself,
+            // not through hull damage. The gold slice keeps wall contact
+            // non-damaging, but a hard slam must still read in the camera.
+            PlayerCameraFollow.Instance?.TryShakeForWallImpact(collision);
         }
 
         void OnCollisionStay2D(Collision2D collision)

@@ -101,6 +101,11 @@ namespace ExtraterrestrialExhaust.CameraSystem
             flipZoomOut = Ee5SliceProfile.CameraFlipZoomOut;
             flipZoomDuration = Ee5SliceProfile.CameraFlipZoomDuration;
             wallTag = Ee5SliceProfile.WallTag;
+            wallSlamMinSpeed = Ee5SliceProfile.CameraWallSlamMinSpeed;
+            wallSlamMaxSpeed = Ee5SliceProfile.CameraWallSlamMaxSpeed;
+            wallSlamShakeStrength = Ee5SliceProfile.CameraWallSlamShakeStrength;
+            wallSlamShakeDuration = Ee5SliceProfile.CameraWallSlamShakeDuration;
+            wallSlamCooldown = Ee5SliceProfile.CameraWallSlamCooldown;
         }
 
         void OnDestroy()

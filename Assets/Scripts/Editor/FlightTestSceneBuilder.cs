@@ -1164,6 +1164,36 @@ namespace ExtraterrestrialExhaust.Editor
                         Ee5SliceProfile.CameraFlipZoomDuration,
                         "Camera flip zoom duration",
                         issues);
+                    CheckSerializedFloat(
+                        serializedFollow,
+                        "wallSlamMinSpeed",
+                        Ee5SliceProfile.CameraWallSlamMinSpeed,
+                        "Camera wall slam minimum speed",
+                        issues);
+                    CheckSerializedFloat(
+                        serializedFollow,
+                        "wallSlamMaxSpeed",
+                        Ee5SliceProfile.CameraWallSlamMaxSpeed,
+                        "Camera wall slam maximum speed",
+                        issues);
+                    CheckSerializedFloat(
+                        serializedFollow,
+                        "wallSlamShakeStrength",
+                        Ee5SliceProfile.CameraWallSlamShakeStrength,
+                        "Camera wall slam shake strength",
+                        issues);
+                    CheckSerializedFloat(
+                        serializedFollow,
+                        "wallSlamShakeDuration",
+                        Ee5SliceProfile.CameraWallSlamShakeDuration,
+                        "Camera wall slam shake duration",
+                        issues);
+                    CheckSerializedFloat(
+                        serializedFollow,
+                        "wallSlamCooldown",
+                        Ee5SliceProfile.CameraWallSlamCooldown,
+                        "Camera wall slam cooldown",
+                        issues);
 
                     SerializedProperty parallaxLayers = serializedFollow.FindProperty("parallaxLayers");
                     if (parallaxLayers == null || parallaxLayers.arraySize != 2)
@@ -2555,6 +2585,16 @@ namespace ExtraterrestrialExhaust.Editor
             serializedFollow.FindProperty("zoomSmooth").floatValue = Ee5SliceProfile.CameraZoomSmooth;
             serializedFollow.FindProperty("flipZoomOut").floatValue = Ee5SliceProfile.CameraFlipZoomOut;
             serializedFollow.FindProperty("flipZoomDuration").floatValue = Ee5SliceProfile.CameraFlipZoomDuration;
+            serializedFollow.FindProperty("wallSlamMinSpeed").floatValue =
+                Ee5SliceProfile.CameraWallSlamMinSpeed;
+            serializedFollow.FindProperty("wallSlamMaxSpeed").floatValue =
+                Ee5SliceProfile.CameraWallSlamMaxSpeed;
+            serializedFollow.FindProperty("wallSlamShakeStrength").floatValue =
+                Ee5SliceProfile.CameraWallSlamShakeStrength;
+            serializedFollow.FindProperty("wallSlamShakeDuration").floatValue =
+                Ee5SliceProfile.CameraWallSlamShakeDuration;
+            serializedFollow.FindProperty("wallSlamCooldown").floatValue =
+                Ee5SliceProfile.CameraWallSlamCooldown;
             SerializedProperty parallaxLayers = serializedFollow.FindProperty("parallaxLayers");
             parallaxLayers.arraySize = parallaxBackdrops?.Length ?? 0;
             float[] parallaxStrengths =
