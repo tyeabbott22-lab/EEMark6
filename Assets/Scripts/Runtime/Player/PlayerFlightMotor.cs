@@ -28,6 +28,7 @@ namespace ExtraterrestrialExhaust.Player
         PlayerFlightInput input;
         PlayerFlightStateMachine stateMachine;
         bool facingRight = true;
+        bool initialFacingRight = true;
 
         public Rigidbody2D Body => body;
         public Transform Visual => visual;
@@ -47,6 +48,7 @@ namespace ExtraterrestrialExhaust.Player
             if (!visual)
                 visual = transform;
             facingRight = visual.localScale.x >= 0f;
+            initialFacingRight = facingRight;
         }
 
         void ApplyEe5Profile()
@@ -77,6 +79,10 @@ namespace ExtraterrestrialExhaust.Player
         {
             if (stateMachine.CurrentState != PlayerFlightState.FreeFlight)
             {
+                // Scripted capture and death own the transform explicitly.
+                // Do not let gravity or residual drag create a second motion
+                // source while those state machines are in control.
+                body.linearVelocity = Vector2.zero;
                 body.angularVelocity = 0f;
                 return;
             }
@@ -127,12 +133,12 @@ namespace ExtraterrestrialExhaust.Player
         /// </summary>
         public void ResetFacingForRespawn()
         {
-            facingRight = true;
+            facingRight = initialFacingRight;
             if (!visual)
                 return;
 
             Vector3 scale = visual.localScale;
-            scale.x = Mathf.Abs(scale.x);
+            scale.x = Mathf.Abs(scale.x) * (facingRight ? 1f : -1f);
             visual.localScale = scale;
         }
     }

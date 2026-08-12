@@ -248,6 +248,232 @@ namespace ExtraterrestrialExhaust.Editor
                 Debug.LogWarning(message, prefab);
         }
 
+        [MenuItem("Extraterrestrial Exhaust/Repair Active FlightTest Player Profile")]
+        public static void RepairActiveFlightTestPlayerProfile()
+        {
+            Scene activeScene = SceneManager.GetActiveScene();
+            if (!activeScene.IsValid() || activeScene.path != ScenePath)
+            {
+                Debug.LogError(
+                    $"Open {ScenePath} before repairing the active FlightTest player profile.");
+                return;
+            }
+
+            GameObject playerObject = GameObject.Find("Player Craft");
+            GameStateMachine gameState = UnityEngine.Object.FindFirstObjectByType<GameStateMachine>();
+            InputActionAsset inputAsset = AssetDatabase.LoadAssetAtPath<InputActionAsset>(InputAssetPath);
+            PlayerProjectile projectilePrefab = AssetDatabase.LoadAssetAtPath<PlayerProjectile>(ProjectilePrefabPath);
+            Sprite[] craftSprites = LoadSprites(
+                PlayerCraftSpriteAssetPath,
+                LegacyPlayerCraftSpriteAssetPath);
+
+            if (!playerObject || !gameState || !inputAsset || !projectilePrefab || craftSprites.Length == 0)
+            {
+                Debug.LogError(
+                    "FlightTest player repair needs Player Craft, Game State, input actions, projectile prefab, and the verified orange craft sprite.");
+                return;
+            }
+
+            RepairPlayerCraftRoot(playerObject, craftSprites);
+            ApplyGoldStandardPlayerProfile(
+                playerObject,
+                gameState,
+                inputAsset,
+                projectilePrefab);
+            EditorUtility.SetDirty(playerObject);
+            EditorSceneManager.MarkSceneDirty(activeScene);
+            AssetDatabase.SaveAssets();
+
+            Debug.Log(
+                "Repaired the active FlightTest player to the EE5 profile: "
+                + "55 thrust, 0.35 linear damping, one-second player shots, "
+                + "12 recoil, orange craft sprite, and room-reset death flow. "
+                + "Save the scene to persist the migration.");
+        }
+
+        [MenuItem("Extraterrestrial Exhaust/Validate Active FlightTest Player Profile")]
+        public static void ValidateActiveFlightTestPlayerProfile()
+        {
+            Scene activeScene = SceneManager.GetActiveScene();
+            GameObject playerObject = activeScene.IsValid() && activeScene.path == ScenePath
+                ? GameObject.Find("Player Craft")
+                : null;
+            if (!playerObject)
+            {
+                Debug.LogWarning(
+                    $"Active scene is not the generated FlightTest scene. Open {ScenePath} to validate the gold-standard player profile.");
+                return;
+            }
+
+            List<string> mismatches = new List<string>();
+            Rigidbody2D body = playerObject.GetComponent<Rigidbody2D>();
+            if (!body || !Mathf.Approximately(body.mass, Ee5SliceProfile.PlayerMass))
+                mismatches.Add($"mass={(body ? body.mass : -1f)} (expected {Ee5SliceProfile.PlayerMass})");
+            if (!body || !Mathf.Approximately(body.gravityScale, Ee5SliceProfile.PlayerGravityScale))
+                mismatches.Add($"gravityScale={(body ? body.gravityScale : -1f)} (expected {Ee5SliceProfile.PlayerGravityScale})");
+            if (!body || !Mathf.Approximately(body.linearDamping, Ee5SliceProfile.PlayerLinearDamping))
+                mismatches.Add($"linearDamping={(body ? body.linearDamping : -1f)} (expected {Ee5SliceProfile.PlayerLinearDamping})");
+
+            PlayerWeapon weapon = playerObject.GetComponent<PlayerWeapon>();
+            if (weapon)
+            {
+                SerializedObject serializedWeapon = new SerializedObject(weapon);
+                float cooldown = serializedWeapon.FindProperty("fireCooldown").floatValue;
+                float recoil = serializedWeapon.FindProperty("recoilForce").floatValue;
+                if (!Mathf.Approximately(cooldown, Ee5SliceProfile.PlayerFireCooldown))
+                    mismatches.Add($"fireCooldown={cooldown} (expected {Ee5SliceProfile.PlayerFireCooldown})");
+                if (!Mathf.Approximately(recoil, Ee5SliceProfile.PlayerRecoilForce))
+                    mismatches.Add($"recoilForce={recoil} (expected {Ee5SliceProfile.PlayerRecoilForce})");
+            }
+            else
+            {
+                mismatches.Add("PlayerWeapon is missing");
+            }
+
+            string message = mismatches.Count == 0
+                ? "Active FlightTest player matches the EE5 gold-standard profile."
+                : "Active FlightTest player profile is stale: " + string.Join(", ", mismatches)
+                    + ". Run Extraterrestrial Exhaust > Repair Active FlightTest Player Profile.";
+            if (mismatches.Count == 0)
+                Debug.Log(message);
+            else
+                Debug.LogWarning(message, playerObject);
+        }
+
+        static void ApplyGoldStandardPlayerProfile(
+            GameObject playerObject,
+            GameStateMachine gameState,
+            InputActionAsset inputAsset,
+            PlayerProjectile projectilePrefab)
+        {
+            Rigidbody2D body = playerObject.GetComponent<Rigidbody2D>();
+            if (body)
+            {
+                body.mass = Ee5SliceProfile.PlayerMass;
+                body.gravityScale = Ee5SliceProfile.PlayerGravityScale;
+                body.linearDamping = Ee5SliceProfile.PlayerLinearDamping;
+                body.angularDamping = Ee5SliceProfile.PlayerAngularDamping;
+                body.interpolation = RigidbodyInterpolation2D.Interpolate;
+                body.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
+                EditorUtility.SetDirty(body);
+            }
+
+            PlayerFlightStateMachine stateMachine = playerObject.GetComponent<PlayerFlightStateMachine>();
+            if (stateMachine)
+            {
+                SerializedObject serializedState = new SerializedObject(stateMachine);
+                serializedState.FindProperty("initialState").enumValueIndex = (int)PlayerFlightState.FreeFlight;
+                serializedState.ApplyModifiedPropertiesWithoutUndo();
+            }
+
+            PlayerFlightMotor motor = playerObject.GetComponent<PlayerFlightMotor>();
+            if (motor)
+            {
+                SerializedObject serializedMotor = new SerializedObject(motor);
+                serializedMotor.FindProperty("enforceEe5Profile").boolValue = true;
+                serializedMotor.FindProperty("thrustForce").floatValue = Ee5SliceProfile.ThrustForce;
+                serializedMotor.FindProperty("rotationTorque").floatValue = Ee5SliceProfile.RotationTorque;
+                serializedMotor.FindProperty("rotationAddsThrust").boolValue = true;
+                serializedMotor.FindProperty("rotationBoostMultiplier").floatValue = Ee5SliceProfile.RotationBoostMultiplier;
+                serializedMotor.FindProperty("stabilizationSpeed").floatValue = Ee5SliceProfile.StabilizationSpeed;
+                serializedMotor.FindProperty("angularDamping").floatValue = Ee5SliceProfile.FlightAngularDamping;
+                serializedMotor.FindProperty("stabilizationAngle").floatValue = 0f;
+                serializedMotor.ApplyModifiedPropertiesWithoutUndo();
+            }
+
+            HealthComponent health = playerObject.GetComponent<HealthComponent>();
+            if (health)
+            {
+                SerializedObject serializedHealth = new SerializedObject(health);
+                serializedHealth.FindProperty("maxHealth").floatValue = 5f;
+                serializedHealth.FindProperty("invulnerabilityDuration").floatValue = 1f;
+                serializedHealth.ApplyModifiedPropertiesWithoutUndo();
+            }
+
+            PlayerFlightInput flightInput = playerObject.GetComponent<PlayerFlightInput>();
+            if (flightInput)
+            {
+                flightInput.ConfigureInputAsset(inputAsset);
+                SerializedObject serializedInput = new SerializedObject(flightInput);
+                serializedInput.FindProperty("gameState").objectReferenceValue = gameState;
+                serializedInput.ApplyModifiedPropertiesWithoutUndo();
+            }
+
+            PlayerRespawnController recovery = playerObject.GetComponent<PlayerRespawnController>();
+            if (recovery)
+            {
+                SerializedObject serializedRecovery = new SerializedObject(recovery);
+                serializedRecovery.FindProperty("reloadSceneOnDeath").boolValue = true;
+                serializedRecovery.FindProperty("reloadDelay").floatValue = 0f;
+                serializedRecovery.FindProperty("respawnAutomatically").boolValue = false;
+                serializedRecovery.ApplyModifiedPropertiesWithoutUndo();
+            }
+
+            PlayerWeaponInput weaponInput = playerObject.GetComponent<PlayerWeaponInput>();
+            if (weaponInput)
+            {
+                weaponInput.ConfigureInputAsset(inputAsset);
+                SerializedObject serializedWeaponInput = new SerializedObject(weaponInput);
+                serializedWeaponInput.FindProperty("gameState").objectReferenceValue = gameState;
+                serializedWeaponInput.ApplyModifiedPropertiesWithoutUndo();
+            }
+
+            PlayerWeapon weapon = playerObject.GetComponent<PlayerWeapon>();
+            if (weapon)
+            {
+                SerializedObject serializedWeapon = new SerializedObject(weapon);
+                serializedWeapon.FindProperty("gameState").objectReferenceValue = gameState;
+                serializedWeapon.FindProperty("projectilePrefab").objectReferenceValue = projectilePrefab;
+                serializedWeapon.FindProperty("enforceEe5Profile").boolValue = true;
+                serializedWeapon.FindProperty("keepFirePointRightOfOrigin").boolValue = true;
+                serializedWeapon.FindProperty("firePointLocalOffset").vector2Value = new Vector2(0.55f, 0f);
+                serializedWeapon.FindProperty("fireCooldown").floatValue = Ee5SliceProfile.PlayerFireCooldown;
+                serializedWeapon.FindProperty("recoilForce").floatValue = Ee5SliceProfile.PlayerRecoilForce;
+                serializedWeapon.FindProperty("drawAimLine").boolValue = true;
+                serializedWeapon.FindProperty("aimLineMaxDistance").floatValue = 120f;
+                serializedWeapon.FindProperty("aimLineWidth").floatValue = 0.035f;
+                serializedWeapon.FindProperty("aimLineColor").colorValue = new Color(1f, 1f, 1f, 0.32f);
+                serializedWeapon.FindProperty("aimLineEnemyColor").colorValue = new Color(1f, 0.08f, 0.04f, 0.58f);
+                serializedWeapon.FindProperty("aimLineSortingOrder").intValue = 5000;
+                serializedWeapon.ApplyModifiedPropertiesWithoutUndo();
+            }
+
+            PlayerFlightPresentation presentation = playerObject.GetComponent<PlayerFlightPresentation>();
+            if (presentation)
+            {
+                SerializedObject serializedPresentation = new SerializedObject(presentation);
+                serializedPresentation.FindProperty("boostedExhaustLengthMultiplier").floatValue = 1.25f;
+                serializedPresentation.FindProperty("boostedExhaustWidthMultiplier").floatValue = 1.15f;
+                serializedPresentation.FindProperty("boostedParticleEmissionMultiplier").floatValue = 1.4f;
+                serializedPresentation.FindProperty("exhaustSideOffset").floatValue = 0.28f;
+                serializedPresentation.FindProperty("exhaustLength").floatValue = 0.55f;
+                serializedPresentation.FindProperty("turnExhaustAmount").floatValue = 1f;
+                serializedPresentation.FindProperty("squashScale").vector2Value = new Vector2(1.25f, 0.75f);
+                serializedPresentation.FindProperty("squashDuration").floatValue = 0.12f;
+                serializedPresentation.FindProperty("squashReturnSpeed").floatValue = 14f;
+                serializedPresentation.FindProperty("animationFramesPerSecond").floatValue = 8f;
+                serializedPresentation.FindProperty("thrustFramesPerSecond").floatValue = 8f;
+                serializedPresentation.ApplyModifiedPropertiesWithoutUndo();
+            }
+
+            Transform firePoint = playerObject.transform.Find("Fire Point");
+            PlayerWeaponPresentation weaponPresentation = playerObject.GetComponent<PlayerWeaponPresentation>();
+            if (weaponPresentation && firePoint)
+            {
+                SerializedObject serializedWeaponPresentation = new SerializedObject(weaponPresentation);
+                serializedWeaponPresentation.FindProperty("firePoint").objectReferenceValue = firePoint;
+                serializedWeaponPresentation.FindProperty("flashDuration").floatValue = 0.08f;
+                serializedWeaponPresentation.FindProperty("flashLength").floatValue = 0.34f;
+                serializedWeaponPresentation.FindProperty("flashWidth").floatValue = 0.11f;
+                serializedWeaponPresentation.FindProperty("sideFlashLength").floatValue = 0.22f;
+                serializedWeaponPresentation.FindProperty("sideFlashWidth").floatValue = 0.12f;
+                serializedWeaponPresentation.FindProperty("sortingOrder").intValue = 34;
+                serializedWeaponPresentation.FindProperty("cameraShakeStrength").floatValue = 0.025f;
+                serializedWeaponPresentation.FindProperty("cameraShakeDuration").floatValue = 0.05f;
+                serializedWeaponPresentation.ApplyModifiedPropertiesWithoutUndo();
+            }
+        }
+
         static bool RepairPlayerCraftRoot(GameObject root, Sprite[] craftSprites)
         {
             if (!root)
