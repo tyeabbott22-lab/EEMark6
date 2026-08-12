@@ -78,6 +78,7 @@ namespace ExtraterrestrialExhaust.Core
         public bool IsAvailable => state == EnergyKeyState.OrbitingPlayer;
         public bool IsCollected => state == EnergyKeyState.FollowingPlayer || state == EnergyKeyState.FlyingToGate;
         public PlayerCharacter CurrentPlayer => player;
+        public EnemyController EnemyTarget => enemyTarget;
         public EnergyGate TargetGate => targetGate;
         public event Action<EnergyKeyState, EnergyKeyState> StateChanged;
 

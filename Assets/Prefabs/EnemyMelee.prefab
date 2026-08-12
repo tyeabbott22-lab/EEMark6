@@ -259,6 +259,7 @@ MonoBehaviour:
   nearMissExitDistance: 2.15
   faceTurnSpeed: 7.6
   keepSpriteUpright: 1
+  gameState: {fileID: 0}
 --- !u!114 &77499968659203883
 MonoBehaviour:
   m_ObjectHideFlags: 0

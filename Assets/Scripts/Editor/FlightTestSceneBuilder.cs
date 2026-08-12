@@ -230,22 +230,31 @@ namespace ExtraterrestrialExhaust.Editor
                 LegacyPlayerCraftSpriteAssetPath);
             Sprite expectedSprite = LoadFirstSprite(expectedPath);
             GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PlayerPrefabPath);
-            SpriteRenderer prefabRenderer = prefab
-                ? prefab.transform.Find("Craft Visual")?.GetComponent<SpriteRenderer>()
-                : null;
-            string actualPath = prefabRenderer && prefabRenderer.sprite
-                ? AssetDatabase.GetAssetPath(prefabRenderer.sprite)
-                : "<missing>";
+            List<string> issues = GetPlayerCraftSpriteIssues(prefab, expectedSprite, "Prefab");
 
-            bool matches = expectedSprite && prefabRenderer && prefabRenderer.sprite == expectedSprite;
-            string message = matches
-                ? $"Player craft sprite contract is valid: {actualPath}."
-                : $"Player craft sprite contract is stale. Expected {expectedPath}, found {actualPath}. "
-                    + "Run Extraterrestrial Exhaust > Repair Player Craft Sprite Wiring, then save FlightTest.";
-            if (matches)
-                Debug.Log(message);
-            else
-                Debug.LogWarning(message, prefab);
+            Scene activeScene = SceneManager.GetActiveScene();
+            if (activeScene.IsValid() && activeScene.path == ScenePath)
+            {
+                GameObject scenePlayer = GameObject.Find("Player Craft");
+                issues.AddRange(GetPlayerCraftSpriteIssues(
+                    scenePlayer,
+                    expectedSprite,
+                    "Active FlightTest scene"));
+            }
+
+            if (issues.Count == 0)
+            {
+                Debug.Log(
+                    $"Player craft sprite contract is valid for {expectedPath}: "
+                    + "renderer, flight frames, and thrust frames all use the verified player asset.");
+                return;
+            }
+
+            Debug.LogWarning(
+                "Player craft sprite contract is stale: " + string.Join("; ", issues)
+                + ". Run Extraterrestrial Exhaust > Repair Player Craft Sprite Wiring, "
+                + "then save FlightTest.",
+                prefab);
         }
 
         [MenuItem("Extraterrestrial Exhaust/Repair Active FlightTest Player Profile")]
@@ -512,16 +521,30 @@ namespace ExtraterrestrialExhaust.Editor
         static List<string> GetGeneratedSceneContractIssues()
         {
             List<string> issues = new List<string>();
-            if (!GameObject.Find("Player Craft"))
+            GameObject player = GameObject.Find("Player Craft");
+            if (!player)
                 issues.Add("Player Craft");
+            else
+            {
+                Sprite expectedSprite = LoadFirstSprite(ResolveAssetPath(
+                    PlayerCraftSpriteAssetPath,
+                    LegacyPlayerCraftSpriteAssetPath));
+                issues.AddRange(GetPlayerCraftSpriteIssues(
+                    player,
+                    expectedSprite,
+                    "Player Craft"));
+            }
             if (!UnityEngine.Object.FindFirstObjectByType<GameStateMachine>())
                 issues.Add("Game State");
             if (!UnityEngine.Object.FindFirstObjectByType<EncounterController>())
                 issues.Add("EncounterController");
             if (!UnityEngine.Object.FindFirstObjectByType<SliceObjectiveDirector>())
                 issues.Add("SliceObjectiveDirector");
-            if (!UnityEngine.Object.FindFirstObjectByType<EnergyKey>())
+            EnergyKey key = UnityEngine.Object.FindFirstObjectByType<EnergyKey>();
+            if (!key)
                 issues.Add("EnergyKey");
+            else if (!key.EnemyTarget || !key.EnemyTarget.GetComponent<EnemyWeapon>())
+                issues.Add("EnergyKey carrier (ranged gunner)");
             if (!UnityEngine.Object.FindFirstObjectByType<EnergyGate>())
                 issues.Add("EnergyGate");
             if (!UnityEngine.Object.FindFirstObjectByType<LevelExit>())
@@ -533,6 +556,82 @@ namespace ExtraterrestrialExhaust.Editor
             if (enemies == null || enemies.Length < 2)
                 issues.Add($"Enemy roster ({enemies?.Length ?? 0}/2)");
             return issues;
+        }
+
+        static List<string> GetPlayerCraftSpriteIssues(
+            GameObject player,
+            Sprite expectedSprite,
+            string label)
+        {
+            List<string> issues = new List<string>();
+            if (!player)
+            {
+                issues.Add($"{label}: missing Player Craft");
+                return issues;
+            }
+
+            if (!expectedSprite)
+            {
+                issues.Add($"{label}: verified player sprite is missing");
+                return issues;
+            }
+
+            Transform visual = player.transform.Find("Craft Visual");
+            SpriteRenderer renderer = visual ? visual.GetComponent<SpriteRenderer>() : null;
+            if (!renderer)
+                issues.Add($"{label}: Craft Visual SpriteRenderer is missing");
+            else if (renderer.sprite != expectedSprite)
+            {
+                string actualPath = renderer.sprite
+                    ? AssetDatabase.GetAssetPath(renderer.sprite)
+                    : "<missing>";
+                issues.Add($"{label}: renderer uses {actualPath}");
+            }
+
+            PlayerFlightPresentation presentation = player.GetComponent<PlayerFlightPresentation>();
+            if (!presentation)
+            {
+                issues.Add($"{label}: PlayerFlightPresentation is missing");
+                return issues;
+            }
+
+            SerializedObject serializedPresentation = new SerializedObject(presentation);
+            CheckSpriteArray(
+                serializedPresentation.FindProperty("flightFrames"),
+                expectedSprite,
+                $"{label}: flightFrames",
+                issues);
+            CheckSpriteArray(
+                serializedPresentation.FindProperty("thrustFrames"),
+                expectedSprite,
+                $"{label}: thrustFrames",
+                issues);
+            return issues;
+        }
+
+        static void CheckSpriteArray(
+            SerializedProperty array,
+            Sprite expectedSprite,
+            string label,
+            List<string> issues)
+        {
+            if (array == null || !array.isArray || array.arraySize == 0)
+            {
+                issues.Add($"{label} is empty");
+                return;
+            }
+
+            for (int i = 0; i < array.arraySize; i++)
+            {
+                Sprite sprite = array.GetArrayElementAtIndex(i).objectReferenceValue as Sprite;
+                if (sprite == expectedSprite)
+                    continue;
+
+                string actualPath = sprite
+                    ? AssetDatabase.GetAssetPath(sprite)
+                    : "<missing>";
+                issues.Add($"{label}[{i}] uses {actualPath}");
+            }
         }
 
         static bool RepairPlayerCraftRoot(GameObject root, Sprite[] craftSprites)
@@ -1222,7 +1321,11 @@ namespace ExtraterrestrialExhaust.Editor
             EnergyKey energyKey = key.AddComponent<EnergyKey>();
             SerializedObject serializedKey = new SerializedObject(energyKey);
             serializedKey.FindProperty("requiredEncounter").objectReferenceValue = encounter;
-            serializedKey.FindProperty("enemyTarget").objectReferenceValue = meleeEnemy;
+            // EE5's key-lock beat is carried by the ranged gunner. The melee
+            // hunter remains active pressure while the player chases the key,
+            // which is the authored reason this objective does not require the
+            // entire encounter to be cleared before it can progress.
+            serializedKey.FindProperty("enemyTarget").objectReferenceValue = gunnerEnemy;
             serializedKey.FindProperty("targetGate").objectReferenceValue = energyGate;
             serializedKey.FindProperty("enemyOrbitRadius").floatValue = 1f;
             serializedKey.FindProperty("enemyOrbitSpeed").floatValue = 4f;
