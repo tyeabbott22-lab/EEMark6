@@ -65,10 +65,12 @@ namespace ExtraterrestrialExhaust.Editor
         const string EnemyBurstSpritePath = "Assets/Art/Reference/Effects/enemy_defeat_burst.png";
         const string LegacyEnemyBurstSpritePath = "Assets/Art/Reference/Effects/sprExplode.png";
         const string EnemyBurstAudioPath = "Assets/Audio/Reference/sfxExplode.wav";
+        static bool lastBuildSucceeded;
 
         [MenuItem("Extraterrestrial Exhaust/Build Flight Test Scene")]
         public static void Build()
         {
+            lastBuildSucceeded = false;
             if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
             {
                 Debug.Log("FlightTest build cancelled before replacing the active scene.");
@@ -151,9 +153,11 @@ namespace ExtraterrestrialExhaust.Editor
             // hidden objective requirements.
 
             EditorSceneManager.SaveScene(scene, ScenePath);
+            lastBuildSucceeded = true;
             ConfigureBuildSettings();
                 Selection.activeGameObject = GameObject.Find("Player Craft");
-                Debug.Log($"Built {ScenePath}. Use W/S to thrust or stabilize and A/D to rotate.");
+                Debug.Log(
+                    $"Built {ScenePath}. Controls: W/Space thrust, A/D or Q/E rotate, S/C stabilize, X flip.");
             }
             catch (System.Exception exception)
             {
@@ -178,7 +182,11 @@ namespace ExtraterrestrialExhaust.Editor
             RepairPlayerCraftPhysicsProfile();
             RepairPlayerCraftSpriteWiring();
             Build();
-            ValidateActiveFlightTestSceneContract();
+            if (lastBuildSucceeded)
+                ValidateActiveFlightTestSceneContract();
+            else
+                Debug.LogWarning(
+                    "FlightTest rebuild did not complete; validation was skipped so a restored legacy scene cannot be reported as a valid slice.");
         }
 
         static bool BackupExistingFlightTestScene()
@@ -2207,6 +2215,22 @@ namespace ExtraterrestrialExhaust.Editor
                 changed |= SetFloat(serializedMotor, "stabilizationAngle", 0f);
                 changed |= SetBool(
                     serializedMotor,
+                    "uprightAssistEnabled",
+                    Ee5SliceProfile.UprightAssistEnabled);
+                changed |= SetFloat(
+                    serializedMotor,
+                    "uprightAssistWindow",
+                    Ee5SliceProfile.UprightAssistWindow);
+                changed |= SetFloat(
+                    serializedMotor,
+                    "uprightAssistSpeed",
+                    Ee5SliceProfile.UprightAssistSpeed);
+                changed |= SetFloat(
+                    serializedMotor,
+                    "uprightAssistAngularBrake",
+                    Ee5SliceProfile.UprightAssistAngularBrake);
+                changed |= SetBool(
+                    serializedMotor,
                     "removeVelocityIntoColliders",
                     Ee5SliceProfile.PlayerRemoveVelocityIntoColliders);
                 SerializedProperty stopperTag = serializedMotor.FindProperty("stopperTag");
@@ -2268,6 +2292,30 @@ namespace ExtraterrestrialExhaust.Editor
             CheckSerializedFloat(serializedMotor, "rotationTorque", Ee5SliceProfile.RotationTorque, $"{label}: rotationTorque", issues);
             CheckSerializedFloat(serializedMotor, "stabilizationSpeed", Ee5SliceProfile.StabilizationSpeed, $"{label}: stabilizationSpeed", issues);
             CheckSerializedFloat(serializedMotor, "angularDamping", Ee5SliceProfile.FlightAngularDamping, $"{label}: flight angular damping", issues);
+            CheckSerializedBool(
+                serializedMotor,
+                "uprightAssistEnabled",
+                Ee5SliceProfile.UprightAssistEnabled,
+                $"{label}: uprightAssistEnabled",
+                issues);
+            CheckSerializedFloat(
+                serializedMotor,
+                "uprightAssistWindow",
+                Ee5SliceProfile.UprightAssistWindow,
+                $"{label}: upright assist window",
+                issues);
+            CheckSerializedFloat(
+                serializedMotor,
+                "uprightAssistSpeed",
+                Ee5SliceProfile.UprightAssistSpeed,
+                $"{label}: upright assist speed",
+                issues);
+            CheckSerializedFloat(
+                serializedMotor,
+                "uprightAssistAngularBrake",
+                Ee5SliceProfile.UprightAssistAngularBrake,
+                $"{label}: upright assist angular brake",
+                issues);
             CheckSerializedBool(
                 serializedMotor,
                 "removeVelocityIntoColliders",
@@ -2417,6 +2465,10 @@ namespace ExtraterrestrialExhaust.Editor
             serializedMotor.FindProperty("stabilizationSpeed").floatValue = Ee5SliceProfile.StabilizationSpeed;
             serializedMotor.FindProperty("angularDamping").floatValue = Ee5SliceProfile.FlightAngularDamping;
             serializedMotor.FindProperty("stabilizationAngle").floatValue = 0f;
+            serializedMotor.FindProperty("uprightAssistEnabled").boolValue = Ee5SliceProfile.UprightAssistEnabled;
+            serializedMotor.FindProperty("uprightAssistWindow").floatValue = Ee5SliceProfile.UprightAssistWindow;
+            serializedMotor.FindProperty("uprightAssistSpeed").floatValue = Ee5SliceProfile.UprightAssistSpeed;
+            serializedMotor.FindProperty("uprightAssistAngularBrake").floatValue = Ee5SliceProfile.UprightAssistAngularBrake;
             serializedMotor.FindProperty("removeVelocityIntoColliders").boolValue =
                 Ee5SliceProfile.PlayerRemoveVelocityIntoColliders;
             SerializedProperty stopperTag = serializedMotor.FindProperty("stopperTag");

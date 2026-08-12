@@ -23,6 +23,13 @@ namespace ExtraterrestrialExhaust.Player
         [SerializeField] Transform visual;
         [SerializeField] bool allowFlip = true;
         [SerializeField] bool enforceEe5Profile = true;
+
+        [Header("Neutral Upright Assist")]
+        [Tooltip("Gently returns small uncommanded tilt toward the authored neutral angle. Rotation input disables this for intentional flips.")]
+        [SerializeField] bool uprightAssistEnabled = true;
+        [SerializeField, Min(0f)] float uprightAssistWindow = 16f;
+        [SerializeField, Min(0f)] float uprightAssistSpeed = 24f;
+        [SerializeField, Min(0f)] float uprightAssistAngularBrake = 7f;
         [Tooltip("Removes only velocity directed into a contacted surface, preserving EE5-style tangential follow-through.")]
         [SerializeField] bool removeVelocityIntoColliders = true;
 
@@ -71,6 +78,10 @@ namespace ExtraterrestrialExhaust.Player
             stabilizationSpeed = Ee5SliceProfile.StabilizationSpeed;
             angularDamping = Ee5SliceProfile.FlightAngularDamping;
             stabilizationAngle = 0f;
+            uprightAssistEnabled = Ee5SliceProfile.UprightAssistEnabled;
+            uprightAssistWindow = Ee5SliceProfile.UprightAssistWindow;
+            uprightAssistSpeed = Ee5SliceProfile.UprightAssistSpeed;
+            uprightAssistAngularBrake = Ee5SliceProfile.UprightAssistAngularBrake;
             removeVelocityIntoColliders = Ee5SliceProfile.PlayerRemoveVelocityIntoColliders;
 
             body.mass = Ee5SliceProfile.PlayerMass;
@@ -128,6 +139,9 @@ namespace ExtraterrestrialExhaust.Player
 
             ApplyRotation(input.Move.x);
 
+            if (Mathf.Abs(input.Move.x) < 0.01f)
+                ApplyNeutralUprightAssist();
+
             if (input.Move.y > 0.2f)
                 body.AddRelativeForce(Vector2.up * thrustForce, ForceMode2D.Force);
 
@@ -154,6 +168,28 @@ namespace ExtraterrestrialExhaust.Player
 
             body.MoveRotation(targetAngle);
             body.angularVelocity *= angularDamping;
+        }
+
+        void ApplyNeutralUprightAssist()
+        {
+            if (!uprightAssistEnabled || uprightAssistWindow <= 0f)
+                return;
+
+            float error = Mathf.DeltaAngle(body.rotation, stabilizationAngle);
+            if (Mathf.Abs(error) > uprightAssistWindow)
+                return;
+
+            // Do not apply a hidden flip: this is a close-range settle assist,
+            // not a second stabilization button. Braking the residual spin
+            // and easing the angle independently keeps Q/E responsive.
+            body.angularVelocity = Mathf.MoveTowards(
+                body.angularVelocity,
+                0f,
+                uprightAssistAngularBrake * Time.fixedDeltaTime);
+            body.MoveRotation(Mathf.MoveTowardsAngle(
+                body.rotation,
+                stabilizationAngle,
+                uprightAssistSpeed * Time.fixedDeltaTime));
         }
 
         /// <summary>

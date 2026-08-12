@@ -111,6 +111,7 @@ namespace ExtraterrestrialExhaust.Enemy
         float wanderTimer;
         bool nearPlayer;
         bool touchedPlayerDuringNearPass;
+        bool spriteFlippedUpright;
 
         public EnemyState State { get; private set; }
         public PlayerCharacter Target => target;
@@ -916,7 +917,14 @@ namespace ExtraterrestrialExhaust.Enemy
             if (spriteRenderer && keepSpriteUpright)
             {
                 float signedAngle = Mathf.DeltaAngle(0f, targetAngle);
-                spriteRenderer.flipY = signedAngle > 90f || signedAngle < -90f;
+                float absoluteAngle = Mathf.Abs(signedAngle);
+                float hysteresis = Ee5SliceProfile.EnemyFacingFlipHysteresisDegrees;
+                if (!spriteFlippedUpright && absoluteAngle >= 90f + hysteresis)
+                    spriteFlippedUpright = true;
+                else if (spriteFlippedUpright && absoluteAngle <= 90f - hysteresis)
+                    spriteFlippedUpright = false;
+
+                spriteRenderer.flipY = spriteFlippedUpright;
             }
         }
     }

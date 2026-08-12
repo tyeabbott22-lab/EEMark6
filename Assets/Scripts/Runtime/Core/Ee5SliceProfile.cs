@@ -29,6 +29,13 @@ namespace ExtraterrestrialExhaust.Core
         public const float StabilizationSpeed = 720f;
         public const float FlightAngularDamping = 0.85f;
         public const float RotationBoostMultiplier = 0.225f;
+        // A small neutral-only correction keeps the craft readable around its
+        // authored upright angle. It disengages as soon as Q/E or A/D is held,
+        // so a deliberate flip still behaves like the EE5 flight contract.
+        public const bool UprightAssistEnabled = true;
+        public const float UprightAssistWindow = 16f;
+        public const float UprightAssistSpeed = 24f;
+        public const float UprightAssistAngularBrake = 7f;
         public const bool PlayerRemoveVelocityIntoColliders = true;
         public const float PlayerBoostedExhaustLengthMultiplier = 1.25f;
         public const float PlayerBoostedExhaustWidthMultiplier = 1.15f;
@@ -61,6 +68,10 @@ namespace ExtraterrestrialExhaust.Core
         public const float EnemyGunnerChaseSpeed = 2f;
         public const float EnemyMeleeChaseSpeed = 3f;
         public const float EnemyFaceTurnSpeed = 5f;
+        // Enemy art uses flipY to stay upright while the body turns. A small
+        // dead band prevents a target hovering on the vertical threshold from
+        // toggling the sprite orientation every render frame.
+        public const float EnemyFacingFlipHysteresisDegrees = 8f;
         // Stop just outside the combined player/melee collider radii. This
         // keeps contact damage active without making a dynamic enemy repeatedly
         // push into the player's body and jitter at the attack threshold.

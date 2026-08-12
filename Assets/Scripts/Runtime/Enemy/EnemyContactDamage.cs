@@ -54,7 +54,7 @@ namespace ExtraterrestrialExhaust.Enemy
             if (!player || !player.CanReceiveGameplayInput || Time.time < nextDamageTime)
                 return;
 
-            Vector2 direction = ((Vector2)player.transform.position - (Vector2)transform.position).normalized;
+            Vector2 direction = (player.PhysicsPosition - controller.PhysicsPosition).normalized;
             if (direction.sqrMagnitude <= 0.001f && collision.contactCount > 0)
                 direction = -collision.GetContact(0).normal;
 
