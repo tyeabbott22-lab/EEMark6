@@ -5,6 +5,22 @@ using ExtraterrestrialExhaust.Core;
 
 namespace ExtraterrestrialExhaust.Player
 {
+    /// <summary>
+    /// The mutually exclusive control contracts used by physics and
+    /// presentation. Keeping this explicit prevents a stale visual input read
+    /// from disagreeing with the motor's stabilize/stopper/scripted branch.
+    /// </summary>
+    public enum PlayerFlightControlMode
+    {
+        Scripted,
+        Stopper,
+        Coasting,
+        Stabilizing,
+        Turning,
+        Thrusting,
+        TurningAndThrusting
+    }
+
     [RequireComponent(typeof(Rigidbody2D))]
     [RequireComponent(typeof(PlayerFlightInput))]
     [RequireComponent(typeof(PlayerFlightStateMachine))]
@@ -24,8 +40,8 @@ namespace ExtraterrestrialExhaust.Player
         [SerializeField] bool allowFlip = true;
         [SerializeField] bool enforceEe5Profile = true;
 
-        [Header("Neutral Upright Assist")]
-        [Tooltip("Gently returns small uncommanded tilt toward the authored neutral angle. Rotation input disables this for intentional flips.")]
+        [Header("Optional Neutral Upright Assist")]
+        [Tooltip("Prototype/accessibility assist. Disabled by the EE5 gold profile; S/C remains the authored stabilize command.")]
         [SerializeField] bool uprightAssistEnabled = true;
         [SerializeField, Min(0f)] float uprightAssistWindow = Ee5SliceProfile.UprightAssistWindow;
         [SerializeField, Min(0f)] float uprightAssistSpeed = Ee5SliceProfile.UprightAssistSpeed;
@@ -55,6 +71,9 @@ namespace ExtraterrestrialExhaust.Player
         public Transform Visual => visual;
         public bool FacingRight => facingRight;
         public bool IsInStopperZone => inStopperZone;
+        public PlayerFlightControlMode ControlMode { get; private set; } =
+            PlayerFlightControlMode.Scripted;
+        public Vector2 CurrentFlightInput => input ? input.Move : Vector2.zero;
         public event Action<bool> Flipped;
 
         void Awake()
@@ -121,6 +140,7 @@ namespace ExtraterrestrialExhaust.Player
                 body.linearVelocity = Vector2.zero;
                 body.angularVelocity = 0f;
                 turnReleaseTimer = 0f;
+                ControlMode = PlayerFlightControlMode.Scripted;
                 return;
             }
 
@@ -131,6 +151,7 @@ namespace ExtraterrestrialExhaust.Player
                 // craft's linear momentum while it coasts through the strip.
                 body.angularVelocity = 0f;
                 turnReleaseTimer = 0f;
+                ControlMode = PlayerFlightControlMode.Stopper;
                 return;
             }
 
@@ -139,15 +160,24 @@ namespace ExtraterrestrialExhaust.Player
             // turning, and collision-velocity cleanup for that physics step.
             // Keeping this branch early prevents a held turn input from
             // fighting the stabilizer and preserves the reference's clean
-            // “hit C/S, settle” feel.
+            // "hit C/S, settle" feel.
             if (input.Move.y < -0.2f)
             {
                 turnReleaseTimer = 0f;
+                ControlMode = PlayerFlightControlMode.Stabilizing;
                 Stabilize();
                 return;
             }
 
             bool turning = Mathf.Abs(input.Move.x) >= 0.01f;
+            bool thrusting = input.Move.y > 0.2f;
+            ControlMode = turning
+                ? (thrusting
+                    ? PlayerFlightControlMode.TurningAndThrusting
+                    : PlayerFlightControlMode.Turning)
+                : (thrusting
+                    ? PlayerFlightControlMode.Thrusting
+                    : PlayerFlightControlMode.Coasting);
             if (turning)
                 turnReleaseTimer = 0f;
             else
@@ -158,7 +188,7 @@ namespace ExtraterrestrialExhaust.Player
             if (!turning && turnReleaseTimer >= uprightAssistReleaseDelay)
                 ApplyNeutralUprightAssist();
 
-            if (input.Move.y > 0.2f)
+            if (thrusting)
                 body.AddRelativeForce(Vector2.up * thrustForce, ForceMode2D.Force);
 
             if (removeVelocityIntoColliders)
@@ -195,11 +225,9 @@ namespace ExtraterrestrialExhaust.Player
             bool spinWithinAssistRange = uprightAssistMaxAngularSpeed <= 0f
                 || Mathf.Abs(body.angularVelocity) <= uprightAssistMaxAngularSpeed;
 
-            // Do not apply a hidden flip: this is a released-turn settle assist,
-            // not a second stabilization button. Bleed a little residual spin
-            // even outside the angle window, then ease the final tilt only when
-            // the craft is close enough. This keeps Q/E responsive while making
-            // a short accidental tap settle instead of becoming a full flip.
+            // This is intentionally an optional prototype aid, not part of the
+            // EE5 gold contract. When enabled, it still never becomes a hidden
+            // flip or a replacement for the explicit stabilize command.
             body.angularVelocity = Mathf.MoveTowards(
                 body.angularVelocity,
                 0f,

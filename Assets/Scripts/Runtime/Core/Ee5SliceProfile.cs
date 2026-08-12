@@ -29,24 +29,19 @@ namespace ExtraterrestrialExhaust.Core
         public const float StabilizationSpeed = 720f;
         public const float FlightAngularDamping = 0.85f;
         public const float RotationBoostMultiplier = 0.225f;
-        // A small neutral-only correction keeps the craft readable around its
-        // authored upright angle. It disengages as soon as Q/E or A/D is held,
-        // so a deliberate flip still behaves like the EE5 flight contract.
-        public const bool UprightAssistEnabled = true;
+        // EE5 has no hidden neutral-rotation correction. Upright recovery is
+        // an explicit S/C stabilize command; keeping the assist opt-in avoids
+        // a second control authority fighting the authored torque on release.
+        // The optional values remain available for a future accessibility or
+        // prototype profile, but the career slice stays faithful to JetpackMotor.
+        public const bool UprightAssistEnabled = false;
         public const float UprightAssistWindow = 16f;
-        // The assist is deliberately stronger than a full S/C stabilize, but
-        // only runs after rotation input is released. This keeps the craft
-        // upright during ordinary flight without stealing an intentional flip.
+        // Optional comfort-profile values; not used by the EE5 gold slice.
         public const float UprightAssistSpeed = 36f;
         public const float UprightAssistAngularBrake = 30f;
-        // Give the EE5 torque impulse a short handoff window after Q/E or A/D
-        // is released. Without this, the neutral assist begins on the very
-        // next physics tick and makes a deliberate turn feel sticky at its
-        // release point.
+        // Optional comfort-profile release delay.
         public const float UprightAssistReleaseDelay = 0.08f;
-        // Do not let the neutral correction catch a craft halfway through an
-        // intentional spin. Once residual rotation is calm, the assist can
-        // settle the final tilt without making a flip feel sticky.
+        // Optional comfort-profile spin ceiling.
         public const float UprightAssistMaxAngularSpeed = 75f;
         // The keyboard bindings remain full-strength, while a drifting analog
         // stick must not become an invisible rotation command. These are input

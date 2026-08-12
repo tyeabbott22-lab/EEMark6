@@ -80,26 +80,31 @@ namespace ExtraterrestrialExhaust.Player
             if (canReadInput && includeEe5KeyboardFallback && Keyboard.current != null)
             {
                 float legacyTurn = 0f;
+                float legacyThrust = 0f;
+                if (Keyboard.current.aKey.isPressed)
+                    legacyTurn -= 1f;
+                if (Keyboard.current.dKey.isPressed)
+                    legacyTurn += 1f;
                 if (Keyboard.current.qKey.isPressed)
                     legacyTurn -= 1f;
                 if (Keyboard.current.eKey.isPressed)
                     legacyTurn += 1f;
 
-                if (!Mathf.Approximately(legacyTurn, 0f))
-                {
-                    // Add instead of replacing the action value so Q/E remain
-                    // compatible with A/D and gamepad rotation, including the
-                    // authored cancellation behavior when opposite keys overlap.
-                    Move = new Vector2(
-                        Mathf.Clamp(Move.x + legacyTurn, -1f, 1f),
-                        Move.y);
-                }
+                if (Keyboard.current.wKey.isPressed || Keyboard.current.spaceKey.isPressed)
+                    legacyThrust += 1f;
+                if (Keyboard.current.sKey.isPressed || Keyboard.current.cKey.isPressed)
+                    legacyThrust -= 1f;
 
-                if (Keyboard.current.cKey.isPressed)
-                    Move = new Vector2(Move.x, Mathf.Min(Move.y, -1f));
+                // Add instead of replacing the action value so the old EE5
+                // keyboard contract remains usable alongside a gamepad or a
+                // partially authored action asset. Clamping preserves the
+                // expected full-strength button response.
+                Move = new Vector2(
+                    Mathf.Clamp(Move.x + legacyTurn, -1f, 1f),
+                    Mathf.Clamp(Move.y + legacyThrust, -1f, 1f));
 
-                // Re-apply the horizontal deadzone after Q/E is combined with
-                // an action-asset value. Keyboard values remain exactly -1/0/1.
+                // Re-apply deadzones after the legacy keys are combined with
+                // the action asset. Keyboard values remain full strength.
                 Move = SanitizeMove(Move);
             }
 
