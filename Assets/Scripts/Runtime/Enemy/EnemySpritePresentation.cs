@@ -301,7 +301,11 @@ namespace ExtraterrestrialExhaust.Enemy
             if (!target)
                 return;
 
-            bool playerIsRight = target.transform.position.x >= transform.position.x;
+            // Enemy bodies and the player both interpolate for rendering. Use
+            // their fixed-step positions for this role-facing decision so the
+            // dormant/wake sprite cannot chatter when the player hovers on the
+            // horizontal midpoint.
+            bool playerIsRight = target.PhysicsPosition.x >= controller.PhysicsPosition.x;
             bool flipFromDefault = forwardIsLocalNegativeX ? playerIsRight : !playerIsRight;
             spriteRenderer.flipX = authoredFlipX ^ flipFromDefault;
         }

@@ -154,6 +154,20 @@ namespace ExtraterrestrialExhaust.Editor
             Debug.Log($"Built {ScenePath}. Use W/S to thrust or stabilize and A/D to rotate.");
         }
 
+        [MenuItem("Extraterrestrial Exhaust/Rebuild Flight Test Scene (Full Repair + Validate)")]
+        public static void RebuildAndValidate()
+        {
+            // Keep the common recovery path one deliberate operation. The
+            // individual repair menus remain useful for diagnosis, but a
+            // reviewer or a fresh checkout should not have to remember which
+            // stale prefab profile was repaired before rebuilding the slice.
+            RepairEnemyPrefabProfiles();
+            RepairPlayerCraftPhysicsProfile();
+            RepairPlayerCraftSpriteWiring();
+            Build();
+            ValidateActiveFlightTestSceneContract();
+        }
+
         static bool BackupExistingFlightTestScene()
         {
             if (!File.Exists(ScenePath))
@@ -1752,11 +1766,26 @@ namespace ExtraterrestrialExhaust.Editor
                 Ee5SliceProfile.VerticalSliceGunnerSpawn,
                 "White Gunner",
                 issues);
+            GameObject energyGateObject = GameObject.Find("Energy Gate");
             CheckSceneObjectPosition(
-                GameObject.Find("Energy Gate"),
+                energyGateObject,
                 Ee5SliceProfile.VerticalSliceGatePosition,
                 "Energy Gate",
                 issues);
+            Transform gateArtwork = energyGateObject
+                ? energyGateObject.transform.Find("Gate Artwork")
+                : null;
+            if (!gateArtwork)
+            {
+                issues.Add("Energy Gate artwork");
+            }
+            else
+            {
+                if (Vector3.Distance(gateArtwork.localPosition, new Vector3(-2.02f, -0.15f, 0f)) > 0.02f)
+                    issues.Add("Energy Gate artwork is not centered against its collider");
+                if (Vector3.Distance(gateArtwork.localScale, Vector3.one * 2.6f) > 0.02f)
+                    issues.Add("Energy Gate artwork scale does not match the authored collider");
+            }
             CheckSceneObjectPosition(
                 GameObject.Find("Level Exit"),
                 Ee5SliceProfile.VerticalSliceExitPosition,
@@ -3802,7 +3831,14 @@ namespace ExtraterrestrialExhaust.Editor
             GameObject visual = new GameObject("Gate Artwork");
             visual.transform.SetParent(parent, false);
             visual.transform.localRotation = Quaternion.Euler(0f, 0f, 90f);
-            visual.transform.localScale = Vector3.one * 1.35f;
+            // energy_gate.png is a 256px transparent canvas whose authored
+            // red strip occupies only x=45..226, y=220..235. Rotate the strip
+            // into the vertical EE5 gate, scale it to the 3.8-unit collider,
+            // and cancel the source canvas offset so artwork and collision
+            // share one center instead of leaving the gate apparently absent.
+            const float artworkScale = 2.6f;
+            visual.transform.localScale = Vector3.one * artworkScale;
+            visual.transform.localPosition = new Vector3(-2.02f, -0.15f, 0f);
 
             SpriteRenderer renderer = visual.AddComponent<SpriteRenderer>();
             renderer.sprite = gateSprite;
