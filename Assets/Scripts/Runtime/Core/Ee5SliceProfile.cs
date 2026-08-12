@@ -39,6 +39,10 @@ namespace ExtraterrestrialExhaust.Core
         // upright during ordinary flight without stealing an intentional flip.
         public const float UprightAssistSpeed = 36f;
         public const float UprightAssistAngularBrake = 30f;
+        // Do not let the neutral correction catch a craft halfway through an
+        // intentional spin. Once residual rotation is calm, the assist can
+        // settle the final tilt without making a flip feel sticky.
+        public const float UprightAssistMaxAngularSpeed = 75f;
         public const bool PlayerRemoveVelocityIntoColliders = true;
         public const float PlayerBoostedExhaustLengthMultiplier = 1.25f;
         public const float PlayerBoostedExhaustWidthMultiplier = 1.15f;

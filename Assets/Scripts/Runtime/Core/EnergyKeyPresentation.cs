@@ -41,7 +41,7 @@ namespace ExtraterrestrialExhaust.Core
                 energyKey.StateChanged -= HandleStateChanged;
         }
 
-        void Update()
+        void LateUpdate()
         {
             if (!tether || !energyKey)
                 return;

@@ -27,9 +27,10 @@ namespace ExtraterrestrialExhaust.Player
         [Header("Neutral Upright Assist")]
         [Tooltip("Gently returns small uncommanded tilt toward the authored neutral angle. Rotation input disables this for intentional flips.")]
         [SerializeField] bool uprightAssistEnabled = true;
-        [SerializeField, Min(0f)] float uprightAssistWindow = 16f;
-        [SerializeField, Min(0f)] float uprightAssistSpeed = 24f;
-        [SerializeField, Min(0f)] float uprightAssistAngularBrake = 7f;
+        [SerializeField, Min(0f)] float uprightAssistWindow = Ee5SliceProfile.UprightAssistWindow;
+        [SerializeField, Min(0f)] float uprightAssistSpeed = Ee5SliceProfile.UprightAssistSpeed;
+        [SerializeField, Min(0f)] float uprightAssistAngularBrake = Ee5SliceProfile.UprightAssistAngularBrake;
+        [SerializeField, Min(0f)] float uprightAssistMaxAngularSpeed = Ee5SliceProfile.UprightAssistMaxAngularSpeed;
         [Tooltip("Removes only velocity directed into a contacted surface, preserving EE5-style tangential follow-through.")]
         [SerializeField] bool removeVelocityIntoColliders = true;
 
@@ -82,6 +83,7 @@ namespace ExtraterrestrialExhaust.Player
             uprightAssistWindow = Ee5SliceProfile.UprightAssistWindow;
             uprightAssistSpeed = Ee5SliceProfile.UprightAssistSpeed;
             uprightAssistAngularBrake = Ee5SliceProfile.UprightAssistAngularBrake;
+            uprightAssistMaxAngularSpeed = Ee5SliceProfile.UprightAssistMaxAngularSpeed;
             removeVelocityIntoColliders = Ee5SliceProfile.PlayerRemoveVelocityIntoColliders;
 
             body.mass = Ee5SliceProfile.PlayerMass;
@@ -177,6 +179,10 @@ namespace ExtraterrestrialExhaust.Player
 
             float error = Mathf.DeltaAngle(body.rotation, stabilizationAngle);
             if (Mathf.Abs(error) > uprightAssistWindow)
+                return;
+
+            if (uprightAssistMaxAngularSpeed > 0f
+                && Mathf.Abs(body.angularVelocity) > uprightAssistMaxAngularSpeed)
                 return;
 
             // Do not apply a hidden flip: this is a close-range settle assist,

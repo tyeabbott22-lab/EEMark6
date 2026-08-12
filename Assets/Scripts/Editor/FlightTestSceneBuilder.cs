@@ -2237,6 +2237,10 @@ namespace ExtraterrestrialExhaust.Editor
                     serializedMotor,
                     "uprightAssistAngularBrake",
                     Ee5SliceProfile.UprightAssistAngularBrake);
+                changed |= SetFloat(
+                    serializedMotor,
+                    "uprightAssistMaxAngularSpeed",
+                    Ee5SliceProfile.UprightAssistMaxAngularSpeed);
                 changed |= SetBool(
                     serializedMotor,
                     "removeVelocityIntoColliders",
@@ -2323,6 +2327,12 @@ namespace ExtraterrestrialExhaust.Editor
                 "uprightAssistAngularBrake",
                 Ee5SliceProfile.UprightAssistAngularBrake,
                 $"{label}: upright assist angular brake",
+                issues);
+            CheckSerializedFloat(
+                serializedMotor,
+                "uprightAssistMaxAngularSpeed",
+                Ee5SliceProfile.UprightAssistMaxAngularSpeed,
+                $"{label}: upright assist max angular speed",
                 issues);
             CheckSerializedBool(
                 serializedMotor,
@@ -2477,6 +2487,8 @@ namespace ExtraterrestrialExhaust.Editor
             serializedMotor.FindProperty("uprightAssistWindow").floatValue = Ee5SliceProfile.UprightAssistWindow;
             serializedMotor.FindProperty("uprightAssistSpeed").floatValue = Ee5SliceProfile.UprightAssistSpeed;
             serializedMotor.FindProperty("uprightAssistAngularBrake").floatValue = Ee5SliceProfile.UprightAssistAngularBrake;
+            serializedMotor.FindProperty("uprightAssistMaxAngularSpeed").floatValue =
+                Ee5SliceProfile.UprightAssistMaxAngularSpeed;
             serializedMotor.FindProperty("removeVelocityIntoColliders").boolValue =
                 Ee5SliceProfile.PlayerRemoveVelocityIntoColliders;
             SerializedProperty stopperTag = serializedMotor.FindProperty("stopperTag");

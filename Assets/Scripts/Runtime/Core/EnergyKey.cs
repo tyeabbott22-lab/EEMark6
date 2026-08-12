@@ -73,6 +73,7 @@ namespace ExtraterrestrialExhaust.Core
         LineRenderer line;
         PlayerCharacter player;
         Vector3 baseScale;
+        Quaternion baseVisualRotation;
         Vector2 orbitCenter;
         float phase;
         float currentRadiusX;
@@ -110,6 +111,7 @@ namespace ExtraterrestrialExhaust.Core
                 spriteRenderer = GetComponent<SpriteRenderer>();
             line = GetComponent<LineRenderer>();
             baseScale = visual.localScale;
+            baseVisualRotation = visual.localRotation;
 
             body.bodyType = RigidbodyType2D.Kinematic;
             body.gravityScale = 0f;
@@ -173,7 +175,14 @@ namespace ExtraterrestrialExhaust.Core
                 // trigger appear to jitter during delicate handoffs.
                 bool hasSeparateVisual = visual && visual != transform;
                 if (hasSeparateVisual)
-                    visual.Rotate(0f, 0f, rotateSpeed * Time.deltaTime);
+                {
+                    // Rebuild the authored pose from absolute time instead
+                    // of accumulating floating-point rotation deltas. The
+                    // gameplay root remains a fixed-step transport body while
+                    // only this child receives the presentation spin.
+                    visual.localRotation = baseVisualRotation
+                        * Quaternion.Euler(0f, 0f, Time.time * rotateSpeed);
+                }
 
                 float pulse = hasSeparateVisual
                     ? 1f + Mathf.Sin(Time.time * pulseSpeed) * pulseAmount
