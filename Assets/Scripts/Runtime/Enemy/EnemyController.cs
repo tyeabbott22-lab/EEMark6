@@ -61,6 +61,7 @@ namespace ExtraterrestrialExhaust.Enemy
         [Header("Facing")]
         [SerializeField, Min(0f)] float faceTurnSpeed = 5f;
         [SerializeField] bool keepSpriteUpright = true;
+        [SerializeField] GameStateMachine gameState;
 
         Rigidbody2D body;
         Collider2D bodyCollider;
@@ -108,6 +109,8 @@ namespace ExtraterrestrialExhaust.Enemy
             bodyCollider = GetComponent<Collider2D>();
             health = GetComponent<HealthComponent>();
             spriteRenderer = GetComponent<SpriteRenderer>();
+            if (!gameState)
+                gameState = FindFirstObjectByType<GameStateMachine>();
             State = EnemyState.Dormant;
             lastChasePosition = body.position;
             homePosition = body.position;
@@ -140,6 +143,16 @@ namespace ExtraterrestrialExhaust.Enemy
         {
             if (State == EnemyState.Defeated)
                 return;
+
+            // Pausing must suspend the current enemy state rather than making
+            // a wake-capable enemy forget its progress. Game-over likewise
+            // freezes the room while the extraction handoff finishes.
+            if (gameState && !gameState.IsPlaying)
+            {
+                if (gameState.CurrentState == GameState.GameOver)
+                    ClearWakeSignal();
+                return;
+            }
 
             if (!target)
                 target = FindFirstObjectByType<PlayerCharacter>();
@@ -303,6 +316,12 @@ namespace ExtraterrestrialExhaust.Enemy
 
         void FixedUpdate()
         {
+            if (gameState && !gameState.IsPlaying)
+            {
+                body.linearVelocity = Vector2.zero;
+                return;
+            }
+
             if (!target || !bodyCollider)
             {
                 body.linearVelocity = Vector2.zero;
