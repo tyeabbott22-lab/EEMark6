@@ -50,6 +50,8 @@ namespace ExtraterrestrialExhaust.Enemy
         [SerializeField, Min(0f)] float wakeSignalChargeSpeedAtClose = Ee5SliceProfile.EnemyWakeSignalChargeSpeedAtClose;
         [SerializeField, Min(0f)] float wakeFinalWarningDuration = Ee5SliceProfile.EnemyWakeFinalWarningDuration;
         [SerializeField, Min(0f)] float attackRange = 1.2f;
+        [Tooltip("Melee attack remains latched until this wider radius is crossed, preventing state chatter at the stopping distance.")]
+        [SerializeField, Min(0f)] float attackExitRange = Ee5SliceProfile.EnemyMeleeAttackExitRange;
         [SerializeField, Min(0f)] float chaseSpeed = 2.5f;
         [SerializeField] PlayerCharacter target;
 
@@ -112,6 +114,7 @@ namespace ExtraterrestrialExhaust.Enemy
 
         public EnemyState State { get; private set; }
         public PlayerCharacter Target => target;
+        public bool ForwardIsLocalNegativeX => forwardIsLocalNegativeX;
         public bool CanAttack => State == EnemyState.Attacking;
         public bool IsCombatActive => State == EnemyState.Chasing || State == EnemyState.Attacking;
         public float WakeProgress => State == EnemyState.Waking && wakeTotalDuration > 0f
@@ -164,6 +167,11 @@ namespace ExtraterrestrialExhaust.Enemy
             body.angularDamping = 0.05f;
             body.interpolation = RigidbodyInterpolation2D.Interpolate;
             body.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
+
+            // The EE5 enemy prefabs all use the same deliberate five-degree
+            // turn response. Runtime repair keeps a stale inspector override
+            // from reintroducing a twitchy melee presentation.
+            faceTurnSpeed = Ee5SliceProfile.EnemyFaceTurnSpeed;
         }
 
         void OnEnable()
@@ -259,7 +267,16 @@ namespace ExtraterrestrialExhaust.Enemy
                 return;
             }
 
-            SetState(distance > attackRange ? EnemyState.Chasing : EnemyState.Attacking);
+            float attackStartRange = Mathf.Max(0f, attackRange);
+            float attackStopRange = Mathf.Max(
+                attackStartRange,
+                Mathf.Max(0f, attackExitRange));
+            bool stayInAttack = State == EnemyState.Attacking
+                && distance <= attackStopRange;
+            SetState(
+                stayInAttack || distance <= attackStartRange
+                    ? EnemyState.Attacking
+                    : EnemyState.Chasing);
         }
 
         void UpdateWakeSignal(float distance)

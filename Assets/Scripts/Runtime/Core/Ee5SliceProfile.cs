@@ -65,6 +65,11 @@ namespace ExtraterrestrialExhaust.Core
         // keeps contact damage active without making a dynamic enemy repeatedly
         // push into the player's body and jitter at the attack threshold.
         public const float EnemyMeleeAttackRange = 1.25f;
+        // A small exit band prevents a melee hunter from alternating between
+        // Chasing and Attacking when the player hovers exactly on its brake
+        // radius. The authored EE5 movement remains the reference; this band
+        // only makes the EE6 state-machine handoff deterministic.
+        public const float EnemyMeleeAttackExitRange = 1.45f;
         // realScene2's enemyGun uses MoveType.Wander: after its intro it
         // patrols a small authored radius and keeps firing, rather than
         // converting into a chase/orbit enemy when the player moves away.

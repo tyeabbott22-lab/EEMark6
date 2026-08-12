@@ -59,6 +59,13 @@ namespace ExtraterrestrialExhaust.Enemy
                 controller = GetComponent<EnemyController>();
             if (!spriteRenderer)
                 spriteRenderer = GetComponent<SpriteRenderer>();
+
+            // Presentation used to carry its own copy of the authored forward
+            // axis. If an older prefab says melee faces like the gunner, the
+            // controller is the authoritative role-specific source at runtime.
+            if (controller)
+                forwardIsLocalNegativeX = controller.ForwardIsLocalNegativeX;
+
             renderers = GetComponentsInChildren<Renderer>(true);
             authoredFlipX = spriteRenderer && spriteRenderer.flipX;
         }
