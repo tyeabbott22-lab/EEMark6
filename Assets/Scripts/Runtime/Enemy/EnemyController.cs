@@ -68,6 +68,8 @@ namespace ExtraterrestrialExhaust.Enemy
         [SerializeField, Min(0f)] float stuckEscapeCommitTime = 0.5f;
         [SerializeField] bool blockOtherEnemies = true;
         [SerializeField, Min(0f)] float otherEnemyBuffer = 0.025f;
+        [Tooltip("Extra separation from the player so contact damage does not become a physics tug-of-war.")]
+        [SerializeField, Min(0f)] float targetBuffer = 0.04f;
 
         [Header("Attack Movement")]
         [SerializeField] bool orbitWhileAttacking;
@@ -647,6 +649,14 @@ namespace ExtraterrestrialExhaust.Enemy
                 if (hit.collider == null)
                     continue;
 
+                if (IsBlockingTargetCollider(hit.collider))
+                {
+                    allowedDistance = Mathf.Min(
+                        allowedDistance,
+                        Mathf.Max(0f, hit.distance - targetBuffer));
+                    continue;
+                }
+
                 if (!IsWallCollider(hit.collider))
                 {
                     if (!IsBlockingEnemyCollider(hit.collider))
@@ -790,7 +800,9 @@ namespace ExtraterrestrialExhaust.Enemy
             {
                 RaycastHit2D hit = castHits[i];
                 if (hit.collider != null
-                    && (IsWallCollider(hit.collider) || IsBlockingEnemyCollider(hit.collider)))
+                    && (IsWallCollider(hit.collider)
+                        || IsBlockingEnemyCollider(hit.collider)
+                        || IsBlockingTargetCollider(hit.collider)))
                     return false;
             }
 
@@ -804,6 +816,15 @@ namespace ExtraterrestrialExhaust.Enemy
 
             EnemyController other = hitCollider.GetComponentInParent<EnemyController>();
             return other && other != this;
+        }
+
+        bool IsBlockingTargetCollider(Collider2D hitCollider)
+        {
+            if (!target || !hitCollider)
+                return false;
+
+            PlayerCharacter hitPlayer = hitCollider.GetComponentInParent<PlayerCharacter>();
+            return hitPlayer == target;
         }
 
         bool IsWallCollider(Collider2D hitCollider)

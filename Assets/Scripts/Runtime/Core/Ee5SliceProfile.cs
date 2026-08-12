@@ -12,8 +12,13 @@ namespace ExtraterrestrialExhaust.Core
     {
         public const float PlayerMass = 8f;
         public const float PlayerGravityScale = 0.285f;
+        // These two values are the serialized EE5 Rigidbody2D reference. The
+        // Unity 6 vertical slice keeps them documented for comparison, but the
+        // playable EE6 pass uses the lighter free-flight overlay below.
         public const float PlayerLinearDamping = 0.35f;
         public const float PlayerAngularDamping = 3.25f;
+        public const float PlayerFlightLinearDamping = 0.08f;
+        public const float PlayerFlightAngularDamping = 0.7f;
         public const float PlayerMaxHealth = 5f;
         public const float PlayerInvulnerabilityDuration = 0.5f;
 
@@ -53,6 +58,10 @@ namespace ExtraterrestrialExhaust.Core
         public const float EnemyWakeSignalDistanceMultiplier = 4f;
         public const float EnemyGunnerChaseSpeed = 2f;
         public const float EnemyMeleeChaseSpeed = 3f;
+        // Stop just outside the combined player/melee collider radii. This
+        // keeps contact damage active without making a dynamic enemy repeatedly
+        // push into the player's body and jitter at the attack threshold.
+        public const float EnemyMeleeAttackRange = 1.25f;
         // realScene2's enemyGun uses MoveType.Wander: after its intro it
         // patrols a small authored radius and keeps firing, rather than
         // converting into a chase/orbit enemy when the player moves away.
@@ -101,6 +110,9 @@ namespace ExtraterrestrialExhaust.Core
         public const float EnergyGateLiftSpeed = 7f;
         public const float EnergyKeyCarrierSpawnOffsetY = 1.35f;
         public const float EnergyKeyVisualScale = 1.65f;
+        // energy_key.png keeps its artwork in the upper half of a transparent
+        // 96x64 canvas; move the visual down so the gameplay root stays centered.
+        public static readonly Vector3 EnergyKeyVisualOffset = new Vector3(0f, -0.13f, 0f);
         public const float EnergyKeyCollectDistance = 0.85f;
         public const float EnergyKeyGateUnlockRange = 2.25f;
         public const float EnergyKeyPlayerFollowSharpness = 14f;

@@ -56,6 +56,7 @@ namespace ExtraterrestrialExhaust.Core
         [SerializeField, Min(0f)] float gateFlySpeed = 14f;
 
         [Header("Visual")]
+        [SerializeField] Transform visual;
         [SerializeField, Min(0f)] float rotateSpeed = 180f;
         [SerializeField, Min(0f)] float pulseSpeed = 8f;
         [SerializeField, Range(0f, 0.5f)] float pulseAmount = 0.08f;
@@ -97,9 +98,15 @@ namespace ExtraterrestrialExhaust.Core
 
             body = GetComponent<Rigidbody2D>();
             keyCollider = GetComponent<Collider2D>();
-            spriteRenderer = GetComponent<SpriteRenderer>();
+            if (!visual)
+                visual = transform.Find("Key Visual");
+            if (!visual)
+                visual = transform;
+            spriteRenderer = visual.GetComponent<SpriteRenderer>();
+            if (!spriteRenderer)
+                spriteRenderer = GetComponent<SpriteRenderer>();
             line = GetComponent<LineRenderer>();
-            baseScale = transform.localScale;
+            baseScale = visual.localScale;
 
             body.bodyType = RigidbodyType2D.Kinematic;
             body.gravityScale = 0f;
@@ -142,7 +149,10 @@ namespace ExtraterrestrialExhaust.Core
 
             if (state != EnergyKeyState.Consumed)
             {
-                transform.Rotate(0f, 0f, rotateSpeed * Time.deltaTime);
+                // Keep presentation off the interpolated transport root. This
+                // prevents the sprite rotation/pulse from making the key's
+                // trigger appear to jitter during delicate handoffs.
+                visual.Rotate(0f, 0f, rotateSpeed * Time.deltaTime);
                 float pulse = 1f + Mathf.Sin(Time.time * pulseSpeed) * pulseAmount;
                 if (releasePulseRemaining > 0f)
                 {
@@ -159,7 +169,7 @@ namespace ExtraterrestrialExhaust.Core
                     pulse *= releaseScale;
                 }
 
-                transform.localScale = baseScale * pulse;
+                visual.localScale = baseScale * pulse;
             }
 
             switch (state)

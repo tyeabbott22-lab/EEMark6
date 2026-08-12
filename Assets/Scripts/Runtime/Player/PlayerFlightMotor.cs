@@ -75,8 +75,11 @@ namespace ExtraterrestrialExhaust.Player
 
             body.mass = Ee5SliceProfile.PlayerMass;
             body.gravityScale = Ee5SliceProfile.PlayerGravityScale;
-            body.linearDamping = Ee5SliceProfile.PlayerLinearDamping;
-            body.angularDamping = Ee5SliceProfile.PlayerAngularDamping;
+            // The EE5 prefab values are the reference point, but this Unity 6
+            // pass needs a little more carry-through so a held Q/E turn can
+            // complete a readable flip instead of feeling submerged in syrup.
+            body.linearDamping = Ee5SliceProfile.PlayerFlightLinearDamping;
+            body.angularDamping = Ee5SliceProfile.PlayerFlightAngularDamping;
             body.interpolation = RigidbodyInterpolation2D.Interpolate;
             body.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
         }

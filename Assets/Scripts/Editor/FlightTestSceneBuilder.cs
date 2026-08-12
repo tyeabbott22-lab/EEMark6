@@ -48,7 +48,8 @@ namespace ExtraterrestrialExhaust.Editor
         const string EnemySpritePath = "Assets/Art/Reference/Enemies/sprAlienWhiteGunner.png";
         const string EnemyIdleSpritePath = "Assets/Art/Reference/Enemies/sprAlienWhiteSleep.png";
         const string EnemyDefeatSpritePath = "Assets/Art/Reference/Enemies/sprAlienWhiteScream.png";
-        const string MeleeSpritePath = "Assets/Art/Reference/Enemies/sprPurpleEat.png";
+        const string MeleeSpritePath = "Assets/Art/Reference/Enemies/sprAlienPurpleSword.png";
+        const string MeleeIdleSpritePath = "Assets/Art/Reference/Enemies/sprAlienPurpleSleep.png";
         const string MeleeDefeatSpritePath = "Assets/Art/Reference/Enemies/sprAlienPurpleScream.png";
         const string EnergyKeySpriteAssetPath = "Assets/Art/Reference/Objectives/energy_key.png";
         const string LegacyEnergyKeySpriteAssetPath = "Assets/Art/Reference/Objectives/keyfinal.png";
@@ -119,7 +120,7 @@ namespace ExtraterrestrialExhaust.Editor
                 false,
                 EnemyMeleePrefabPath,
                 MeleeSpritePath,
-                MeleeSpritePath,
+                MeleeIdleSpritePath,
                 MeleeDefeatSpritePath);
             EnemyController gunnerEnemy = CreateEnemy(
                 gameState,
@@ -429,8 +430,8 @@ namespace ExtraterrestrialExhaust.Editor
                 mismatches.Add($"mass={(body ? body.mass : -1f)} (expected {Ee5SliceProfile.PlayerMass})");
             if (!body || !Mathf.Approximately(body.gravityScale, Ee5SliceProfile.PlayerGravityScale))
                 mismatches.Add($"gravityScale={(body ? body.gravityScale : -1f)} (expected {Ee5SliceProfile.PlayerGravityScale})");
-            if (!body || !Mathf.Approximately(body.linearDamping, Ee5SliceProfile.PlayerLinearDamping))
-                mismatches.Add($"linearDamping={(body ? body.linearDamping : -1f)} (expected {Ee5SliceProfile.PlayerLinearDamping})");
+            if (!body || !Mathf.Approximately(body.linearDamping, Ee5SliceProfile.PlayerFlightLinearDamping))
+                mismatches.Add($"linearDamping={(body ? body.linearDamping : -1f)} (expected {Ee5SliceProfile.PlayerFlightLinearDamping})");
 
             PlayerFlightMotor motor = playerObject.GetComponent<PlayerFlightMotor>();
             if (!motor)
@@ -558,8 +559,8 @@ namespace ExtraterrestrialExhaust.Editor
             {
                 body.mass = Ee5SliceProfile.PlayerMass;
                 body.gravityScale = Ee5SliceProfile.PlayerGravityScale;
-                body.linearDamping = Ee5SliceProfile.PlayerLinearDamping;
-                body.angularDamping = Ee5SliceProfile.PlayerAngularDamping;
+                body.linearDamping = Ee5SliceProfile.PlayerFlightLinearDamping;
+                body.angularDamping = Ee5SliceProfile.PlayerFlightAngularDamping;
                 body.interpolation = RigidbodyInterpolation2D.Interpolate;
                 body.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
                 EditorUtility.SetDirty(body);
@@ -737,6 +738,11 @@ namespace ExtraterrestrialExhaust.Editor
                     serializedController,
                     "chaseSpeed",
                     ranged ? Ee5SliceProfile.EnemyGunnerChaseSpeed : Ee5SliceProfile.EnemyMeleeChaseSpeed);
+                changed |= SetFloat(
+                    serializedController,
+                    "attackRange",
+                    ranged ? 7f : Ee5SliceProfile.EnemyMeleeAttackRange);
+                changed |= SetFloat(serializedController, "targetBuffer", 0.04f);
                 changed |= SetEnum(
                     serializedController,
                     "movementMode",
@@ -803,6 +809,19 @@ namespace ExtraterrestrialExhaust.Editor
             EnemySpritePresentation presentation = prefabContents.GetComponent<EnemySpritePresentation>();
             if (presentation)
             {
+                SpriteRenderer spriteRenderer = prefabContents.GetComponent<SpriteRenderer>();
+                if (spriteRenderer)
+                {
+                    Sprite activeSprite = LoadFirstSprite(
+                        ranged ? EnemySpritePath : MeleeSpritePath);
+                    if (spriteRenderer.sprite != activeSprite)
+                    {
+                        spriteRenderer.sprite = activeSprite;
+                        EditorUtility.SetDirty(spriteRenderer);
+                        changed = true;
+                    }
+                }
+
                 SerializedObject serializedPresentation = new SerializedObject(presentation);
                 changed |= SetBool(serializedPresentation, "faceDormantTowardTarget", ranged);
                 changed |= SetBool(serializedPresentation, "forwardIsLocalNegativeX", true);
@@ -813,7 +832,7 @@ namespace ExtraterrestrialExhaust.Editor
                 changed |= SetFloat(serializedPresentation, "dormantFramesPerSecond", 8f);
                 changed |= SetFloat(serializedPresentation, "wakeFramesPerSecond", 14f);
                 Sprite[] dormantSprites = LoadSprites(
-                    ranged ? EnemyIdleSpritePath : MeleeSpritePath);
+                    ranged ? EnemyIdleSpritePath : MeleeIdleSpritePath);
                 Sprite[] activeSprites = LoadSprites(
                     ranged ? EnemySpritePath : MeleeSpritePath);
                 Sprite[] wakeSprites = LoadSprites(
@@ -1119,7 +1138,7 @@ namespace ExtraterrestrialExhaust.Editor
                 if (randomizeDormant == null || !randomizeDormant.boolValue)
                     issues.Add($"{prefabPath} randomizeDormantStartFrame=false");
                 Sprite[] expectedDormantSprites = LoadSprites(
-                    ranged ? EnemyIdleSpritePath : MeleeSpritePath);
+                    ranged ? EnemyIdleSpritePath : MeleeIdleSpritePath);
                 Sprite[] expectedActiveSprites = LoadSprites(
                     ranged ? EnemySpritePath : MeleeSpritePath);
                 Sprite[] expectedWakeSprites = LoadSprites(
@@ -1974,8 +1993,8 @@ namespace ExtraterrestrialExhaust.Editor
             Rigidbody2D body = player.AddComponent<Rigidbody2D>();
             body.mass = Ee5SliceProfile.PlayerMass;
             body.gravityScale = Ee5SliceProfile.PlayerGravityScale;
-            body.linearDamping = Ee5SliceProfile.PlayerLinearDamping;
-            body.angularDamping = Ee5SliceProfile.PlayerAngularDamping;
+            body.linearDamping = Ee5SliceProfile.PlayerFlightLinearDamping;
+            body.angularDamping = Ee5SliceProfile.PlayerFlightAngularDamping;
             body.interpolation = RigidbodyInterpolation2D.Interpolate;
             body.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
 
@@ -2329,7 +2348,10 @@ namespace ExtraterrestrialExhaust.Editor
                 Ee5SliceProfile.EnemyWakeSignalChargeSpeedAtClose;
             serializedController.FindProperty("wakeFinalWarningDuration").floatValue =
                 Ee5SliceProfile.EnemyWakeFinalWarningDuration;
-            serializedController.FindProperty("attackRange").floatValue = ranged ? 7f : 0.8f;
+            serializedController.FindProperty("attackRange").floatValue = ranged
+                ? 7f
+                : Ee5SliceProfile.EnemyMeleeAttackRange;
+            serializedController.FindProperty("targetBuffer").floatValue = 0.04f;
             // Match the authored EE5 roles: the white gunner moves at 2 and
             // the purple close hunter at 3 units per second.
             serializedController.FindProperty("chaseSpeed").floatValue = ranged
@@ -2590,7 +2612,7 @@ namespace ExtraterrestrialExhaust.Editor
             // old compact-slice spawn was detached from the carrier, which
             // made the objective appear to teleport at scene start.
             key.transform.position = gunnerEnemy.transform.position
-                + new Vector3(0f, Ee5SliceProfile.EnergyKeyCarrierSpawnOffsetY, 0f);
+                + new Vector3(1f, Ee5SliceProfile.EnergyKeyCarrierSpawnOffsetY, 0f);
             CircleCollider2D keyCollider = key.AddComponent<CircleCollider2D>();
             keyCollider.isTrigger = true;
             EnergyKey energyKey = key.AddComponent<EnergyKey>();
@@ -2636,13 +2658,18 @@ namespace ExtraterrestrialExhaust.Editor
             serializedKeyPresentation.FindProperty("tetherMinAlpha").floatValue = 0.2f;
             serializedKeyPresentation.FindProperty("tetherMaxAlpha").floatValue = 0.72f;
             serializedKeyPresentation.ApplyModifiedPropertiesWithoutUndo();
-            SpriteRenderer keySprite = key.AddComponent<SpriteRenderer>();
+            GameObject keyVisual = new GameObject("Key Visual");
+            keyVisual.transform.SetParent(key.transform, false);
+            keyVisual.transform.localPosition = Ee5SliceProfile.EnergyKeyVisualOffset;
+            keyVisual.transform.localScale = Vector3.one * Ee5SliceProfile.EnergyKeyVisualScale;
+            SpriteRenderer keySprite = keyVisual.AddComponent<SpriteRenderer>();
             keySprite.sprite = LoadFirstSprite(
                 EnergyKeySpriteAssetPath,
                 LegacyEnergyKeySpriteAssetPath);
             keySprite.sortingOrder = 10;
-            key.transform.localScale = Vector3.one * Ee5SliceProfile.EnergyKeyVisualScale;
-            CreateSquareOutline(key.transform, Vector2.one * 0.5f, new Color(1f, 0.8f, 0.1f));
+            serializedKey.FindProperty("visual").objectReferenceValue = keyVisual.transform;
+            serializedKey.ApplyModifiedPropertiesWithoutUndo();
+            CreateSquareOutline(keyVisual.transform, Vector2.one * 0.5f, new Color(1f, 0.8f, 0.1f));
 
             GameObject exit = new GameObject("Level Exit");
             exit.transform.position = Ee5SliceProfile.VerticalSliceExitPosition;
