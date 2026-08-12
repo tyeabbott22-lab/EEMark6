@@ -79,8 +79,13 @@ namespace ExtraterrestrialExhaust.Player
 
         public void ConfigureInputAsset(InputActionAsset asset, string actionName = "Player/Attack")
         {
+            InputAction previousAttackAction = ResolvedAttackAction;
+            previousAttackAction?.Disable();
+
             inputActions = asset;
             attackActionName = actionName;
+            if (isActiveAndEnabled)
+                ResolvedAttackAction?.Enable();
         }
     }
 }
