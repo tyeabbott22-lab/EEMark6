@@ -955,10 +955,12 @@ namespace ExtraterrestrialExhaust.Enemy
                 targetAngle += 180f;
             float turnT = 1f - Mathf.Exp(-faceTurnSpeed * Time.fixedDeltaTime);
             float angleError = Mathf.DeltaAngle(body.rotation, targetAngle);
+            // Hold inside the deadband instead of copying a moving target angle
+            // directly into the body. The latter looks like sprite jitter when
+            // the player hovers beside a melee hunter; EE5's turn response stays
+            // damped all the way to rest.
             if (Mathf.Abs(angleError) > Ee5SliceProfile.EnemyFacingDeadbandDegrees)
                 body.MoveRotation(Mathf.LerpAngle(body.rotation, targetAngle, turnT));
-            else
-                body.MoveRotation(targetAngle);
 
             if (spriteRenderer && keepSpriteUpright)
             {
