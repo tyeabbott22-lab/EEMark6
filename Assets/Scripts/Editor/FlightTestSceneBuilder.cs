@@ -1067,9 +1067,10 @@ namespace ExtraterrestrialExhaust.Editor
             visual.transform.localScale = Vector3.one * 1.5f;
 
             SpriteRenderer sprite = visual.AddComponent<SpriteRenderer>();
-            sprite.sprite = LoadFirstSprite(
-                PlayerCraftSpriteAssetPath,
-                LegacyPlayerCraftSpriteAssetPath);
+            sprite.sprite = LoadFirstSprite(PlayerCraftFlightSheetAssetPath)
+                ?? LoadFirstSprite(
+                    PlayerCraftSpriteAssetPath,
+                    LegacyPlayerCraftSpriteAssetPath);
             sprite.sortingOrder = 10;
 
             LineRenderer line = visual.AddComponent<LineRenderer>();
