@@ -380,9 +380,73 @@ namespace ExtraterrestrialExhaust.Editor
 
             Debug.Log(
                 "Repaired the active FlightTest player to the EE5 profile: "
-                + "55 thrust, 0.35 linear damping, one-second player shots, "
+                + $"55 thrust, {Ee5SliceProfile.PlayerFlightLinearDamping:0.##} linear damping, one-second player shots, "
                 + "12 recoil, orange craft sprite, and room-reset death flow. "
                 + "Save the scene to persist the migration.");
+        }
+
+        [MenuItem("Extraterrestrial Exhaust/Repair Player Craft Physics Profile")]
+        public static void RepairPlayerCraftPhysicsProfile()
+        {
+            GameObject prefabContents = PrefabUtility.LoadPrefabContents(PlayerPrefabPath);
+            if (!prefabContents)
+            {
+                Debug.LogError($"Could not open player prefab at {PlayerPrefabPath}.");
+                return;
+            }
+
+            bool prefabRepaired = ApplyPlayerCraftPhysicsProfile(prefabContents);
+            if (prefabRepaired)
+                PrefabUtility.SaveAsPrefabAsset(prefabContents, PlayerPrefabPath);
+            PrefabUtility.UnloadPrefabContents(prefabContents);
+
+            bool sceneRepaired = false;
+            Scene activeScene = SceneManager.GetActiveScene();
+            if (activeScene.IsValid() && activeScene.path == ScenePath)
+            {
+                GameObject scenePlayer = GameObject.Find("Player Craft");
+                if (scenePlayer)
+                {
+                    sceneRepaired = ApplyPlayerCraftPhysicsProfile(scenePlayer);
+                    if (sceneRepaired)
+                    {
+                        EditorUtility.SetDirty(scenePlayer);
+                        EditorSceneManager.MarkSceneDirty(activeScene);
+                    }
+                }
+            }
+
+            AssetDatabase.SaveAssets();
+            Debug.Log(
+                "Applied the EE5 player Rigidbody2D and flight-motor profile. "
+                + $"Prefab changed: {prefabRepaired}; active FlightTest changed: {sceneRepaired}. "
+                + "The intended Unity 6 feel is 0.08 linear damping with 3.25 angular damping.");
+        }
+
+        [MenuItem("Extraterrestrial Exhaust/Validate Player Craft Physics Profile")]
+        public static void ValidatePlayerCraftPhysicsProfile()
+        {
+            List<string> issues = new List<string>();
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PlayerPrefabPath);
+            AddPlayerCraftPhysicsIssues(prefab, "Prefab", issues);
+
+            Scene activeScene = SceneManager.GetActiveScene();
+            if (activeScene.IsValid() && activeScene.path == ScenePath)
+                AddPlayerCraftPhysicsIssues(GameObject.Find("Player Craft"), "Active FlightTest", issues);
+
+            if (issues.Count == 0)
+            {
+                Debug.Log(
+                    "Player craft physics matches the EE5 profile: "
+                    + $"mass {Ee5SliceProfile.PlayerMass}, gravity {Ee5SliceProfile.PlayerGravityScale}, "
+                    + $"linear damping {Ee5SliceProfile.PlayerFlightLinearDamping}, "
+                    + $"angular damping {Ee5SliceProfile.PlayerFlightAngularDamping}.");
+                return;
+            }
+
+            Debug.LogWarning(
+                "Player craft physics profile is stale: " + string.Join("; ", issues)
+                + ". Run Extraterrestrial Exhaust > Repair Player Craft Physics Profile.");
         }
 
         [MenuItem("Extraterrestrial Exhaust/Validate Active FlightTest Scene Contract")]
@@ -1942,6 +2006,152 @@ namespace ExtraterrestrialExhaust.Editor
             EditorUtility.SetDirty(renderer);
             EditorUtility.SetDirty(presentation);
             return true;
+        }
+
+        static bool ApplyPlayerCraftPhysicsProfile(GameObject root)
+        {
+            if (!root)
+                return false;
+
+            bool changed = false;
+            Rigidbody2D body = root.GetComponent<Rigidbody2D>();
+            if (body)
+            {
+                if (body.bodyType != RigidbodyType2D.Dynamic)
+                {
+                    body.bodyType = RigidbodyType2D.Dynamic;
+                    changed = true;
+                }
+                if (!Mathf.Approximately(body.mass, Ee5SliceProfile.PlayerMass))
+                {
+                    body.mass = Ee5SliceProfile.PlayerMass;
+                    changed = true;
+                }
+                if (!Mathf.Approximately(body.gravityScale, Ee5SliceProfile.PlayerGravityScale))
+                {
+                    body.gravityScale = Ee5SliceProfile.PlayerGravityScale;
+                    changed = true;
+                }
+                if (!Mathf.Approximately(body.linearDamping, Ee5SliceProfile.PlayerFlightLinearDamping))
+                {
+                    body.linearDamping = Ee5SliceProfile.PlayerFlightLinearDamping;
+                    changed = true;
+                }
+                if (!Mathf.Approximately(body.angularDamping, Ee5SliceProfile.PlayerFlightAngularDamping))
+                {
+                    body.angularDamping = Ee5SliceProfile.PlayerFlightAngularDamping;
+                    changed = true;
+                }
+                if (body.interpolation != RigidbodyInterpolation2D.Interpolate)
+                {
+                    body.interpolation = RigidbodyInterpolation2D.Interpolate;
+                    changed = true;
+                }
+                if (body.collisionDetectionMode != CollisionDetectionMode2D.Continuous)
+                {
+                    body.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
+                    changed = true;
+                }
+                if (!body.simulated)
+                {
+                    body.simulated = true;
+                    changed = true;
+                }
+
+                if (changed)
+                    EditorUtility.SetDirty(body);
+            }
+
+            PlayerFlightMotor motor = root.GetComponent<PlayerFlightMotor>();
+            if (motor)
+            {
+                SerializedObject serializedMotor = new SerializedObject(motor);
+                changed |= SetBool(serializedMotor, "enforceEe5Profile", true);
+                changed |= SetFloat(serializedMotor, "thrustForce", Ee5SliceProfile.ThrustForce);
+                changed |= SetFloat(serializedMotor, "rotationTorque", Ee5SliceProfile.RotationTorque);
+                changed |= SetBool(serializedMotor, "rotationAddsThrust", true);
+                changed |= SetFloat(
+                    serializedMotor,
+                    "rotationBoostMultiplier",
+                    Ee5SliceProfile.RotationBoostMultiplier);
+                changed |= SetFloat(
+                    serializedMotor,
+                    "stabilizationSpeed",
+                    Ee5SliceProfile.StabilizationSpeed);
+                changed |= SetFloat(
+                    serializedMotor,
+                    "angularDamping",
+                    Ee5SliceProfile.FlightAngularDamping);
+                changed |= SetFloat(serializedMotor, "stabilizationAngle", 0f);
+                changed |= SetBool(
+                    serializedMotor,
+                    "removeVelocityIntoColliders",
+                    Ee5SliceProfile.PlayerRemoveVelocityIntoColliders);
+                SerializedProperty stopperTag = serializedMotor.FindProperty("stopperTag");
+                if (stopperTag != null && stopperTag.stringValue != "StopperZone")
+                {
+                    stopperTag.stringValue = "StopperZone";
+                    changed = true;
+                }
+                serializedMotor.ApplyModifiedPropertiesWithoutUndo();
+            }
+
+            return changed;
+        }
+
+        static void AddPlayerCraftPhysicsIssues(
+            GameObject root,
+            string label,
+            List<string> issues)
+        {
+            if (!root)
+            {
+                issues.Add($"{label}: missing Player Craft");
+                return;
+            }
+
+            Rigidbody2D body = root.GetComponent<Rigidbody2D>();
+            if (!body)
+            {
+                issues.Add($"{label}: Rigidbody2D missing");
+            }
+            else
+            {
+                if (body.bodyType != RigidbodyType2D.Dynamic)
+                    issues.Add($"{label}: bodyType={body.bodyType} (expected Dynamic)");
+                if (!Mathf.Approximately(body.mass, Ee5SliceProfile.PlayerMass))
+                    issues.Add($"{label}: mass={body.mass} (expected {Ee5SliceProfile.PlayerMass})");
+                if (!Mathf.Approximately(body.gravityScale, Ee5SliceProfile.PlayerGravityScale))
+                    issues.Add($"{label}: gravityScale={body.gravityScale} (expected {Ee5SliceProfile.PlayerGravityScale})");
+                if (!Mathf.Approximately(body.linearDamping, Ee5SliceProfile.PlayerFlightLinearDamping))
+                    issues.Add($"{label}: linearDamping={body.linearDamping} (expected {Ee5SliceProfile.PlayerFlightLinearDamping})");
+                if (!Mathf.Approximately(body.angularDamping, Ee5SliceProfile.PlayerFlightAngularDamping))
+                    issues.Add($"{label}: angularDamping={body.angularDamping} (expected {Ee5SliceProfile.PlayerFlightAngularDamping})");
+                if (body.interpolation != RigidbodyInterpolation2D.Interpolate)
+                    issues.Add($"{label}: interpolation={body.interpolation} (expected Interpolate)");
+                if (body.collisionDetectionMode != CollisionDetectionMode2D.Continuous)
+                    issues.Add($"{label}: collisionDetection={body.collisionDetectionMode} (expected Continuous)");
+            }
+
+            PlayerFlightMotor motor = root.GetComponent<PlayerFlightMotor>();
+            if (!motor)
+            {
+                issues.Add($"{label}: PlayerFlightMotor missing");
+                return;
+            }
+
+            SerializedObject serializedMotor = new SerializedObject(motor);
+            CheckSerializedBool(serializedMotor, "enforceEe5Profile", true, $"{label}: enforceEe5Profile", issues);
+            CheckSerializedFloat(serializedMotor, "thrustForce", Ee5SliceProfile.ThrustForce, $"{label}: thrustForce", issues);
+            CheckSerializedFloat(serializedMotor, "rotationTorque", Ee5SliceProfile.RotationTorque, $"{label}: rotationTorque", issues);
+            CheckSerializedFloat(serializedMotor, "stabilizationSpeed", Ee5SliceProfile.StabilizationSpeed, $"{label}: stabilizationSpeed", issues);
+            CheckSerializedFloat(serializedMotor, "angularDamping", Ee5SliceProfile.FlightAngularDamping, $"{label}: flight angular damping", issues);
+            CheckSerializedBool(
+                serializedMotor,
+                "removeVelocityIntoColliders",
+                Ee5SliceProfile.PlayerRemoveVelocityIntoColliders,
+                $"{label}: removeVelocityIntoColliders",
+                issues);
         }
 
         static int RenameImportedAsset(string legacyPath, string semanticPath)
