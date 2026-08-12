@@ -413,6 +413,10 @@ namespace ExtraterrestrialExhaust.Player
             velocity.space = ParticleSystemSimulationSpace.Local;
             velocity.x = new ParticleSystem.MinMaxCurve(-0.12f, 0.12f);
             velocity.y = new ParticleSystem.MinMaxCurve(-1.5f, -0.55f);
+            // Unity 6 requires all linear velocity axes to use the same
+            // MinMaxCurve mode. Author the unused Z axis explicitly instead
+            // of inheriting its default constant mode from the module.
+            velocity.z = new ParticleSystem.MinMaxCurve(0f, 0f);
 
             ParticleSystem.ColorOverLifetimeModule color = particles.colorOverLifetime;
             color.enabled = true;

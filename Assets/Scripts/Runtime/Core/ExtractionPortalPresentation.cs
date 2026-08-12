@@ -406,7 +406,16 @@ namespace ExtraterrestrialExhaust.Core
             ParticleSystem.VelocityOverLifetimeModule velocity = particles.velocityOverLifetime;
             velocity.enabled = true;
             velocity.space = ParticleSystemSimulationSpace.Local;
+            // Unity 6 validates the three linear and three orbital axes as
+            // complete curve groups. Set unused axes explicitly so the
+            // generated portal keeps its inward/orbital motion without
+            // serialization warnings.
+            velocity.x = new ParticleSystem.MinMaxCurve(0f, 0f);
+            velocity.y = new ParticleSystem.MinMaxCurve(0f, 0f);
+            velocity.z = new ParticleSystem.MinMaxCurve(0f, 0f);
             velocity.radial = new ParticleSystem.MinMaxCurve(-1.1f, -0.45f);
+            velocity.orbitalX = new ParticleSystem.MinMaxCurve(0f, 0f);
+            velocity.orbitalY = new ParticleSystem.MinMaxCurve(0f, 0f);
             velocity.orbitalZ = new ParticleSystem.MinMaxCurve(-0.8f, 0.8f);
 
             ParticleSystem.ColorOverLifetimeModule colorOverLifetime = particles.colorOverLifetime;

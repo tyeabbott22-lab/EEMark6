@@ -1350,6 +1350,9 @@ namespace ExtraterrestrialExhaust.Editor
                 }
                 else
                 {
+                    if (!sceneCamera.GetComponent<AudioListener>())
+                        issues.Add("Main Camera AudioListener");
+
                     SerializedObject serializedFollow = new SerializedObject(cameraFollow);
                     CheckSerializedFloat(
                         serializedFollow,
@@ -2842,6 +2845,7 @@ namespace ExtraterrestrialExhaust.Editor
             cameraObject.transform.position = new Vector3(0f, 0f, -10f);
 
             Camera camera = cameraObject.AddComponent<Camera>();
+            cameraObject.AddComponent<AudioListener>();
             camera.orthographic = true;
             camera.orthographicSize = Ee5SliceProfile.CameraOrthographicSize;
             camera.backgroundColor = Ee5SliceProfile.CameraBackgroundColor;

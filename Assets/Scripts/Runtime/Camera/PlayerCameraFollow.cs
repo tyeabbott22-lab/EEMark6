@@ -8,6 +8,7 @@ namespace ExtraterrestrialExhaust.CameraSystem
     /// Camera follow with velocity lead, speed zoom, and reusable screen shake.
     /// </summary>
     [RequireComponent(typeof(Camera))]
+    [RequireComponent(typeof(AudioListener))]
     public sealed class PlayerCameraFollow : MonoBehaviour
     {
         [System.Serializable]
@@ -64,6 +65,11 @@ namespace ExtraterrestrialExhaust.CameraSystem
         {
             Instance = this;
             cameraComponent = GetComponent<Camera>();
+            // Self-heal older FlightTest scenes so a stale serialized scene
+            // cannot launch with Unity's "no audio listeners" warning and a
+            // silent thruster/weapon presentation pass.
+            if (!GetComponent<AudioListener>())
+                gameObject.AddComponent<AudioListener>();
             if (enforceEe5Profile)
                 ApplyEe5Profile();
 
