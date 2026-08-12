@@ -56,9 +56,9 @@ namespace ExtraterrestrialExhaust.Core
         public bool IsCapturing => capturing;
         public bool IsComplete => extractionComplete;
         // EE5's door state is the extraction gate. Once the delivered key has
-        // disabled it, remaining enemies are pressure rather than a hidden
-        // second exit condition.
-        public bool IsUnlocked => requiredGate == null || requiredGate.IsDisabled;
+        // finished the authored lift and cleared the route, remaining enemies
+        // are pressure rather than a hidden second exit condition.
+        public bool IsUnlocked => requiredGate == null || requiredGate.IsRouteClear;
 
         void Reset() => GetComponent<Collider2D>().isTrigger = true;
 
@@ -78,7 +78,10 @@ namespace ExtraterrestrialExhaust.Core
             if (encounter)
                 encounter.Completed += UpdateVisual;
             if (requiredGate)
+            {
                 requiredGate.Disabled += UpdateVisual;
+                requiredGate.RouteCleared += UpdateVisual;
+            }
         }
 
         void OnDisable()
@@ -86,7 +89,10 @@ namespace ExtraterrestrialExhaust.Core
             if (encounter)
                 encounter.Completed -= UpdateVisual;
             if (requiredGate)
+            {
                 requiredGate.Disabled -= UpdateVisual;
+                requiredGate.RouteCleared -= UpdateVisual;
+            }
 
             if (capturing && !extractionComplete)
                 CancelCapture();

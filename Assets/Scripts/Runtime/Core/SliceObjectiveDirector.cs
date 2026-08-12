@@ -71,9 +71,13 @@ namespace ExtraterrestrialExhaust.Core
             {
                 nextState = SliceObjectiveState.ReachExtraction;
             }
-            else if (energyKey && energyKey.IsCollected)
+            else if (energyKey && energyKey.IsCollected && gate && !gate.IsRouteClear)
             {
                 nextState = SliceObjectiveState.OpenExtractionGate;
+            }
+            else if (energyKey && energyKey.IsCollected)
+            {
+                nextState = SliceObjectiveState.ReachExtraction;
             }
             else if (energyKey && energyKey.IsAvailable)
             {
@@ -89,6 +93,7 @@ namespace ExtraterrestrialExhaust.Core
 
         void HandleEncounterCompleted() => Refresh();
         void HandleGateDisabled() => Refresh();
+        void HandleGateRouteCleared() => Refresh();
         void HandleKeyStateChanged(EnergyKeyState previous, EnergyKeyState next) => Refresh();
         void HandleGameStateChanged(GameState previous, GameState next) => Refresh();
 
@@ -118,7 +123,10 @@ namespace ExtraterrestrialExhaust.Core
             if (subscribedEnergyKey)
                 subscribedEnergyKey.StateChanged -= HandleKeyStateChanged;
             if (subscribedGate)
+            {
                 subscribedGate.Disabled -= HandleGateDisabled;
+                subscribedGate.RouteCleared -= HandleGateRouteCleared;
+            }
             if (subscribedGameState)
                 subscribedGameState.StateChanged -= HandleGameStateChanged;
 
@@ -151,10 +159,16 @@ namespace ExtraterrestrialExhaust.Core
             if (subscribedGate != gate)
             {
                 if (subscribedGate)
+                {
                     subscribedGate.Disabled -= HandleGateDisabled;
+                    subscribedGate.RouteCleared -= HandleGateRouteCleared;
+                }
                 subscribedGate = gate;
                 if (subscribedGate)
+                {
                     subscribedGate.Disabled += HandleGateDisabled;
+                    subscribedGate.RouteCleared += HandleGateRouteCleared;
+                }
             }
 
             if (subscribedGameState != gameState)

@@ -25,10 +25,18 @@ namespace ExtraterrestrialExhaust.Core
         LineRenderer line;
         Vector3 targetPosition;
         bool disabled;
+        bool routeClear;
 
         public bool IsDisabled => disabled;
+        /// <summary>
+        /// True only after the authored lift finishes and the blocking collider
+        /// is actually disabled. Objective flow and extraction use this rather
+        /// than treating key impact as an instantaneous teleport.
+        /// </summary>
+        public bool IsRouteClear => routeClear;
         public Transform KeyTarget => keyTarget ? keyTarget : transform;
         public event Action Disabled;
+        public event Action RouteCleared;
 
         void Awake()
         {
@@ -41,6 +49,7 @@ namespace ExtraterrestrialExhaust.Core
             gateCollider = GetComponent<BoxCollider2D>();
             line = GetComponent<LineRenderer>();
             targetPosition = transform.position + Vector3.up * liftDistance;
+            routeClear = gateCollider && !gateCollider.enabled;
             UpdateVisual(activeColor);
         }
 
@@ -72,6 +81,8 @@ namespace ExtraterrestrialExhaust.Core
             transform.position = targetPosition;
             if (gateCollider)
                 gateCollider.enabled = false;
+            routeClear = true;
+            RouteCleared?.Invoke();
             UpdateVisual(disabledColor);
         }
 
