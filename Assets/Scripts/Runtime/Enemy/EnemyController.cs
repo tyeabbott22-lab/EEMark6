@@ -54,6 +54,8 @@ namespace ExtraterrestrialExhaust.Enemy
         [SerializeField, Min(0f)] float attackExitRange = Ee5SliceProfile.EnemyMeleeAttackExitRange;
         [Tooltip("Actual melee damage reach. Keep this below the attack-state brake radius so knockback does not create a chase/attack tug-of-war.")]
         [SerializeField, Min(0f)] float contactDamageRange = Ee5SliceProfile.EnemyMeleeContactRange;
+        [Tooltip("Post-hit hold that lets the contact knockback read before the hunter resumes pursuit.")]
+        [SerializeField, Min(0f)] float attackRecoveryDuration = Ee5SliceProfile.EnemyMeleeAttackRecoveryDuration;
         [SerializeField, Min(0f)] float chaseSpeed = 2.5f;
         [SerializeField] PlayerCharacter target;
 
@@ -111,6 +113,7 @@ namespace ExtraterrestrialExhaust.Enemy
         float wakeTotalDuration;
         float wakeSignalCharge;
         float wanderTimer;
+        float attackRecoveryRemaining;
         bool nearPlayer;
         bool touchedPlayerDuringNearPass;
         bool spriteFlippedUpright;
@@ -213,6 +216,9 @@ namespace ExtraterrestrialExhaust.Enemy
             forwardIsLocalNegativeX = !isMelee;
             contactDamageRange = isMelee
                 ? Ee5SliceProfile.EnemyMeleeContactRange
+                : 0f;
+            attackRecoveryDuration = isMelee
+                ? Ee5SliceProfile.EnemyMeleeAttackRecoveryDuration
                 : 0f;
             if (bodyCollider)
             {
@@ -322,6 +328,18 @@ namespace ExtraterrestrialExhaust.Enemy
                 // beat halfway through.
                 if (wakeTimer < wakeTotalDuration)
                     return;
+            }
+
+            if (State == EnemyState.Attacking && attackRecoveryRemaining > 0f)
+            {
+                // A confirmed melee hit owns this short recovery beat. Keep
+                // the attack state latched while the player knockback travels
+                // outward; otherwise the distance threshold can make the
+                // hunter chase and brake again before the hit is readable.
+                attackRecoveryRemaining = Mathf.Max(
+                    0f,
+                    attackRecoveryRemaining - Time.deltaTime);
+                return;
             }
 
             if (movementMode == EnemyMovementMode.Wander)
@@ -638,6 +656,21 @@ namespace ExtraterrestrialExhaust.Enemy
         /// </summary>
         public void RegisterPlayerContact() => touchedPlayerDuringNearPass = true;
 
+        /// <summary>
+        /// Holds a melee hunter in its attack state for the authored recovery
+        /// beat after a successful contact hit. This is behavior timing, not a
+        /// second damage path; EnemyContactDamage remains the damage authority.
+        /// </summary>
+        public void RegisterAttackImpact()
+        {
+            if (!IsMelee || attackRecoveryDuration <= 0f)
+                return;
+
+            attackRecoveryRemaining = Mathf.Max(
+                attackRecoveryRemaining,
+                attackRecoveryDuration);
+        }
+
         void UpdateNearMiss(float distance)
         {
             if (State == EnemyState.Dormant || State == EnemyState.Defeated)
@@ -687,6 +720,8 @@ namespace ExtraterrestrialExhaust.Enemy
                 return;
 
             State = nextState;
+            if (nextState != EnemyState.Attacking)
+                attackRecoveryRemaining = 0f;
             if (nextState != EnemyState.Dormant && nextState != EnemyState.Waking)
                 ClearWakeSignal();
 

@@ -82,6 +82,7 @@ namespace ExtraterrestrialExhaust.Enemy
             controller?.RegisterPlayerContact();
             if (player.Health.TryTakeDamage(damageInfo))
             {
+                controller?.RegisterAttackImpact();
                 // Health owns whether the hit was lethal. Only shove a player
                 // who remains alive; the respawn controller owns dead-body reset.
                 if (player.Health.IsAlive && player.FlightMotor && player.FlightMotor.Body)
