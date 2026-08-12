@@ -130,11 +130,10 @@ namespace ExtraterrestrialExhaust.Enemy
             // same authored point. This matters when the gunner is rotated or
             // its fire point sits noticeably to one side of the body.
             PlayerProjectile projectile = Instantiate(projectilePrefab, origin.position, Quaternion.identity);
-            projectile.SetTeam(ProjectileTeam.Enemy);
-            projectile.SetDamage(Ee5SliceProfile.EnemyGunnerProjectileDamage);
-            projectile.SetKnockback(projectileKnockback);
-            projectile.SetLifetime(projectileLifetime);
-            projectile.SetDestroyOnUnrecognizedCollision(
+            projectile.ConfigureEnemyShot(
+                projectileLifetime,
+                Ee5SliceProfile.EnemyGunnerProjectileDamage,
+                projectileKnockback,
                 Ee5SliceProfile.EnemyGunnerProjectileDestroysOnUnknownCollision);
             projectile.SetTint(projectileTint);
             projectile.Launch(direction, gameObject, projectileSpeed);

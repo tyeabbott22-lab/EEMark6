@@ -9,15 +9,18 @@ namespace ExtraterrestrialExhaust.Combat
 {
     /// <summary>
     /// A small self-contained projectile used by the vertical slice.
-    /// Movement, ownership, lifetime, and impact rules live here; visuals can be
-    /// added to the prefab without changing the combat contract.
+    /// Movement, ownership, team filtering, lifetime, and impact rules live
+    /// here; visuals can be added to the prefab without changing the combat
+    /// contract. The historical PlayerProjectile name is retained because the
+    /// generated prefab and existing Unity references still use it; EnemyWeapon
+    /// configures the same component through the explicit enemy-shot API below.
     /// </summary>
     [RequireComponent(typeof(Rigidbody2D))]
     [RequireComponent(typeof(Collider2D))]
     public sealed class PlayerProjectile : MonoBehaviour
     {
-        // Match the authored EE5 player bullet. Enemy projectiles still use
-        // their own source override when the encounter needs different pacing.
+        // Match the authored EE5 player bullet. Enemy shots apply their own
+        // profile through ConfigureEnemyShot after instantiation.
         [SerializeField, Min(0f)] float speed = 30f;
         [SerializeField, Min(0.01f)] float lifetime = Ee5SliceProfile.PlayerProjectileLifetime;
         [SerializeField, Min(0f)] float damage = Ee5SliceProfile.PlayerProjectileDamage;
@@ -137,6 +140,24 @@ namespace ExtraterrestrialExhaust.Combat
 
         public void SetTeam(ProjectileTeam projectileTeam) => team = projectileTeam;
 
+        /// <summary>
+        /// Applies the vertical-slice enemy-bullet contract in one place.
+        /// Keeping this grouped prevents a future enemy weapon from changing
+        /// team filtering while forgetting the EE5 lifetime or wall behavior.
+        /// </summary>
+        public void ConfigureEnemyShot(
+            float shotLifetime,
+            float shotDamage,
+            float shotKnockback,
+            bool destroyOnUnknownCollision)
+        {
+            team = ProjectileTeam.Enemy;
+            lifetime = Mathf.Max(0.01f, shotLifetime);
+            damage = Mathf.Max(0f, shotDamage);
+            knockback = Mathf.Max(0f, shotKnockback);
+            this.destroyOnUnrecognizedCollision = destroyOnUnknownCollision;
+        }
+
         public void SetKnockback(float value) => knockback = Mathf.Max(0f, value);
 
         public void SetDamage(float value) => damage = Mathf.Max(0f, value);
@@ -144,9 +165,9 @@ namespace ExtraterrestrialExhaust.Combat
         public void SetDestroyOnUnrecognizedCollision(bool value) => destroyOnUnrecognizedCollision = value;
 
         /// <summary>
-        /// Enemy bullets reuse the same impact presentation prefab but keep
-        /// their own EE5 travel window instead of inheriting the player shot's
-        /// shorter lifetime.
+        /// Source-specific lifetime override for non-profile experiments.
+        /// Gold enemy shots should use ConfigureEnemyShot so their complete
+        /// collision contract is applied together.
         /// </summary>
         public void SetLifetime(float value) => lifetime = Mathf.Max(0.01f, value);
 
@@ -393,9 +414,12 @@ namespace ExtraterrestrialExhaust.Combat
         bool CanDamage(Collider2D other)
         {
             if (team == ProjectileTeam.Player)
-                return other.GetComponentInParent<PlayerCharacter>() == null;
+                return other.GetComponentInParent<EnemyController>() != null;
 
-            return other.GetComponentInParent<EnemyController>() == null;
+            // EE5 EnemyBullet only has a player impact path. Do not let an
+            // enemy shot accidentally damage a future destructible prop,
+            // gate, or another neutral IDamageable in the room.
+            return other.GetComponentInParent<PlayerCharacter>() != null;
         }
     }
 }

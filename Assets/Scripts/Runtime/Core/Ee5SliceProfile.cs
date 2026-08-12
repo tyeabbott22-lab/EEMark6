@@ -50,7 +50,11 @@ namespace ExtraterrestrialExhaust.Core
         public const float EnemyGunnerWanderDurationMax = 3f;
         public const float EnemyGunnerFireCooldown = 1f;
         public const float EnemyGunnerProjectileSpeed = 6f;
-        public const float EnemyGunnerProjectileLifetime = 5f;
+        // EnemyBullet's authored lifetime in the EE5 bullet prefab is two
+        // seconds. The gunner's six-unit speed and one-second cadence make
+        // that a readable pressure window without leaving stale shots around
+        // the room for the entire encounter.
+        public const float EnemyGunnerProjectileLifetime = 2f;
         public const float EnemyGunnerProjectileDamage = 1f;
         public const float EnemyGunnerProjectileKnockback = 2.5f;
         public const bool EnemyGunnerProjectileDestroysOnUnknownCollision = false;
