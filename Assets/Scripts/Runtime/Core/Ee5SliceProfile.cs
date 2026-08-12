@@ -186,6 +186,13 @@ namespace ExtraterrestrialExhaust.Core
         public static readonly Vector2 VerticalSliceGatePosition = new Vector2(5f, 0f);
         public static readonly Vector2 VerticalSliceGateColliderSize = new Vector2(0.35f, 3.8f);
         public static readonly Vector2 VerticalSliceGateKeyTarget = new Vector2(0f, 1.7f);
+        // The gate art is a bottom-aligned strip on a square source canvas.
+        // After the authored 90-degree rotation, this negative X offset
+        // cancels the source-pivot displacement and centers the red strip on
+        // the blocking collider.
+        public static readonly Vector3 EnergyGateArtworkLocalPosition =
+            new Vector3(-2.02f, -0.15f, 0f);
+        public const float EnergyGateArtworkScale = 2.6f;
         public static readonly Vector2 VerticalSliceExitPosition = new Vector2(6.8f, 0f);
         public const float VerticalSliceExitRadius = 1.45f;
         public static readonly Vector2 VerticalSliceArenaHalfExtents = new Vector2(8f, 6f);

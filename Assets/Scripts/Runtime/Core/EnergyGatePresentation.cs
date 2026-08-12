@@ -34,6 +34,7 @@ namespace ExtraterrestrialExhaust.Core
         void Awake()
         {
             energyGate = GetComponent<EnergyGate>();
+            RepairAuthoredGateArtwork();
             if (!gateLine)
                 gateLine = GetComponent<LineRenderer>();
             if (gateLine)
@@ -41,6 +42,21 @@ namespace ExtraterrestrialExhaust.Core
                 baseWidthMultiplier = gateLine.widthMultiplier;
                 baseColor = gateLine.startColor;
             }
+        }
+
+        void RepairAuthoredGateArtwork()
+        {
+            Transform artwork = transform.Find("Gate Artwork");
+            if (!artwork)
+                return;
+
+            // Keep older generated scenes on the same source-canvas correction
+            // as the current builder. This makes the visible strip and the
+            // blocking collider share a center without touching arbitrary
+            // custom child objects.
+            artwork.localPosition = Ee5SliceProfile.EnergyGateArtworkLocalPosition;
+            artwork.localRotation = Quaternion.Euler(0f, 0f, 90f);
+            artwork.localScale = Vector3.one * Ee5SliceProfile.EnergyGateArtworkScale;
         }
 
         void OnEnable()

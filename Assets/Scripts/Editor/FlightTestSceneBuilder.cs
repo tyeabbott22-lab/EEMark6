@@ -1843,9 +1843,13 @@ namespace ExtraterrestrialExhaust.Editor
             }
             else
             {
-                if (Vector3.Distance(gateArtwork.localPosition, new Vector3(-2.02f, -0.15f, 0f)) > 0.02f)
+                if (Vector3.Distance(
+                        gateArtwork.localPosition,
+                        Ee5SliceProfile.EnergyGateArtworkLocalPosition) > 0.02f)
                     issues.Add("Energy Gate artwork is not centered against its collider");
-                if (Vector3.Distance(gateArtwork.localScale, Vector3.one * 2.6f) > 0.02f)
+                if (Vector3.Distance(
+                        gateArtwork.localScale,
+                        Vector3.one * Ee5SliceProfile.EnergyGateArtworkScale) > 0.02f)
                     issues.Add("Energy Gate artwork scale does not match the authored collider");
             }
             CheckSceneObjectPosition(
@@ -3961,9 +3965,8 @@ namespace ExtraterrestrialExhaust.Editor
             // into the vertical EE5 gate, scale it to the 3.8-unit collider,
             // and cancel the source canvas offset so artwork and collision
             // share one center instead of leaving the gate apparently absent.
-            const float artworkScale = 2.6f;
-            visual.transform.localScale = Vector3.one * artworkScale;
-            visual.transform.localPosition = new Vector3(-2.02f, -0.15f, 0f);
+            visual.transform.localScale = Vector3.one * Ee5SliceProfile.EnergyGateArtworkScale;
+            visual.transform.localPosition = Ee5SliceProfile.EnergyGateArtworkLocalPosition;
 
             SpriteRenderer renderer = visual.AddComponent<SpriteRenderer>();
             renderer.sprite = gateSprite;
