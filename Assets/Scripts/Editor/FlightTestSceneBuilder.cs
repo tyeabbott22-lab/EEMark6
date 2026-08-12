@@ -984,6 +984,7 @@ namespace ExtraterrestrialExhaust.Editor
                 if (weapon)
                 {
                     SerializedObject serializedWeapon = new SerializedObject(weapon);
+                    changed |= SetBool(serializedWeapon, "enforceEe5Profile", true);
                     changed |= SetFloat(
                         serializedWeapon,
                         "fireCooldown",
@@ -1178,6 +1179,12 @@ namespace ExtraterrestrialExhaust.Editor
                 else
                 {
                     SerializedObject serializedWeapon = new SerializedObject(weapon);
+                    CheckSerializedBool(
+                        serializedWeapon,
+                        "enforceEe5Profile",
+                        true,
+                        $"{prefabPath} enforceEe5Profile",
+                        issues);
                     float cooldown = serializedWeapon.FindProperty("fireCooldown").floatValue;
                     float projectileSpeed = serializedWeapon.FindProperty("projectileSpeed").floatValue;
                     float projectileLifetime = serializedWeapon.FindProperty("projectileLifetime").floatValue;
@@ -2696,6 +2703,7 @@ namespace ExtraterrestrialExhaust.Editor
                 firePoint.transform.SetParent(enemy.transform, false);
                 firePoint.transform.localPosition = new Vector3(-0.65f, 0f, 0f);
                 SerializedObject serializedWeapon = new SerializedObject(weapon);
+                serializedWeapon.FindProperty("enforceEe5Profile").boolValue = true;
                 serializedWeapon.FindProperty("gameState").objectReferenceValue = gameState;
                 serializedWeapon.FindProperty("projectilePrefab").objectReferenceValue = projectilePrefab;
                 serializedWeapon.FindProperty("firePoint").objectReferenceValue = firePoint.transform;

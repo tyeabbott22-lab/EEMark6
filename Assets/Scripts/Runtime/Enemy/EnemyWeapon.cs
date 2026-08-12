@@ -12,6 +12,7 @@ namespace ExtraterrestrialExhaust.Enemy
     /// </summary>
     public sealed class EnemyWeapon : MonoBehaviour
     {
+        [SerializeField] bool enforceEe5Profile = true;
         [SerializeField] PlayerProjectile projectilePrefab;
         [SerializeField] Transform firePoint;
         // EE5's enemyGun prefab fires once per second and overrides its bullet
@@ -51,11 +52,26 @@ namespace ExtraterrestrialExhaust.Enemy
         void Awake()
         {
             controller = GetComponent<EnemyController>();
+            if (enforceEe5Profile)
+                ApplyEe5Profile();
+
             // Generated scenes serialize the authoritative game-state owner;
             // standalone prefabs still resolve one when they are dropped into
             // a test scene without builder wiring.
             if (!gameState)
                 gameState = FindFirstObjectByType<GameStateMachine>();
+        }
+
+        void ApplyEe5Profile()
+        {
+            fireCooldown = Ee5SliceProfile.EnemyGunnerFireCooldown;
+            attackRange = 7f;
+            requireTargetWithinAttackRange = Ee5SliceProfile.EnemyGunnerRequiresAttackRange;
+            requireLineOfSightToFire = Ee5SliceProfile.EnemyGunnerRequiresLineOfSightToFire;
+            projectileSpeed = Ee5SliceProfile.EnemyGunnerProjectileSpeed;
+            projectileLifetime = Ee5SliceProfile.EnemyGunnerProjectileLifetime;
+            projectileKnockback = Ee5SliceProfile.EnemyGunnerProjectileKnockback;
+            drawAimTelegraph = Ee5SliceProfile.EnemyGunnerDrawAimTelegraph;
         }
 
         void OnEnable()
