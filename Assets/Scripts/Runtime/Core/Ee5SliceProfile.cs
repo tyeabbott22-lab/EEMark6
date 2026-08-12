@@ -42,6 +42,8 @@ namespace ExtraterrestrialExhaust.Core
         public const float EnemyContactDamage = 1f;
         public const float EnemyContactCooldown = 0.75f;
         public const float EnemyContactKnockback = 8f;
+        public const float EnemyDefeatTimeScale = 0.16f;
+        public const float EnemyDefeatSlowdownDuration = 0.07f;
 
         // Objective handoff values are copied from RealSceneEncounterTool and
         // kept here so the builder and runtime defaults cannot drift apart.

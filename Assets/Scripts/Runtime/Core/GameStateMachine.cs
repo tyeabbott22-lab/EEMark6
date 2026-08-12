@@ -17,8 +17,8 @@ namespace ExtraterrestrialExhaust.Core
         [SerializeField] string pauseActionName = "Player/Pause";
         [SerializeField] bool allowPause = true;
         [SerializeField] bool enableEnemyDefeatSlowdown = true;
-        [SerializeField, Range(0.05f, 1f)] float enemyDefeatTimeScale = 0.16f;
-        [SerializeField, Min(0f)] float enemyDefeatSlowdownDuration = 0.07f;
+        [SerializeField, Range(0.05f, 1f)] float enemyDefeatTimeScale = Ee5SliceProfile.EnemyDefeatTimeScale;
+        [SerializeField, Min(0f)] float enemyDefeatSlowdownDuration = Ee5SliceProfile.EnemyDefeatSlowdownDuration;
 
         public GameState CurrentState { get; private set; }
         public bool IsPlaying => CurrentState == GameState.Playing;
@@ -26,6 +26,8 @@ namespace ExtraterrestrialExhaust.Core
 
         InputAction pauseAction;
         Coroutine enemyDefeatSlowdownRoutine;
+        float timeScaleBeforeEnemyDefeat = 1f;
+        bool enemyDefeatSlowdownActive;
 
         void Awake()
         {
@@ -42,6 +44,8 @@ namespace ExtraterrestrialExhaust.Core
         void OnDisable()
         {
             pauseAction?.Disable();
+            StopEnemyDefeatSlowdown();
+            Time.timeScale = 1f;
         }
 
         void Update()
@@ -52,15 +56,21 @@ namespace ExtraterrestrialExhaust.Core
 
         void OnDestroy()
         {
-            // A destroyed manager should never leave the editor or next scene paused.
-            if (pauseTimeWhenPaused)
-                Time.timeScale = 1f;
+            // A destroyed manager should never leave the editor or next scene
+            // paused or inside an enemy-defeat hit-stop.
+            StopEnemyDefeatSlowdown();
+            Time.timeScale = 1f;
         }
 
         public bool TrySetState(GameState nextState)
         {
             if (CurrentState == nextState)
                 return false;
+
+            // Pause and game-over transitions own the next global time state.
+            // Do not let an interrupted defeat pulse write over that decision.
+            if (nextState != GameState.Playing)
+                StopEnemyDefeatSlowdown();
 
             GameState previousState = CurrentState;
             CurrentState = nextState;
@@ -94,9 +104,10 @@ namespace ExtraterrestrialExhaust.Core
                 || enemyDefeatSlowdownDuration <= 0f)
                 return;
 
-            if (enemyDefeatSlowdownRoutine != null)
-                StopCoroutine(enemyDefeatSlowdownRoutine);
+            StopEnemyDefeatSlowdown();
 
+            timeScaleBeforeEnemyDefeat = Time.timeScale;
+            enemyDefeatSlowdownActive = true;
             enemyDefeatSlowdownRoutine = StartCoroutine(EnemyDefeatSlowdownRoutine());
         }
 
@@ -129,8 +140,26 @@ namespace ExtraterrestrialExhaust.Core
             Time.timeScale = Mathf.Min(Time.timeScale, enemyDefeatTimeScale);
             yield return new WaitForSecondsRealtime(enemyDefeatSlowdownDuration);
 
+            if (Time.timeScale > 0f)
+                Time.timeScale = timeScaleBeforeEnemyDefeat;
+
+            enemyDefeatSlowdownActive = false;
             enemyDefeatSlowdownRoutine = null;
             ApplyTimeScale(CurrentState);
+        }
+
+        void StopEnemyDefeatSlowdown()
+        {
+            if (enemyDefeatSlowdownRoutine != null)
+                StopCoroutine(enemyDefeatSlowdownRoutine);
+
+            enemyDefeatSlowdownRoutine = null;
+            if (!enemyDefeatSlowdownActive)
+                return;
+
+            if (Time.timeScale > 0f)
+                Time.timeScale = timeScaleBeforeEnemyDefeat;
+            enemyDefeatSlowdownActive = false;
         }
 
         void ApplyTimeScale(GameState state)

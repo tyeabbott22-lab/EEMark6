@@ -458,6 +458,29 @@ namespace ExtraterrestrialExhaust.Editor
                 mismatches.Add("PlayerWeapon is missing");
             }
 
+            PlayerRespawnController recovery = playerObject.GetComponent<PlayerRespawnController>();
+            if (!recovery)
+            {
+                mismatches.Add("PlayerRespawnController is missing");
+            }
+            else
+            {
+                SerializedObject serializedRecovery = new SerializedObject(recovery);
+                SerializedProperty reloadScene = serializedRecovery.FindProperty("reloadSceneOnDeath");
+                SerializedProperty reloadDelay = serializedRecovery.FindProperty("reloadDelay");
+                SerializedProperty respawnAutomatically =
+                    serializedRecovery.FindProperty("respawnAutomatically");
+                if (reloadScene == null || !reloadScene.boolValue)
+                    mismatches.Add("reloadSceneOnDeath=false (expected true)");
+                if (reloadDelay == null || !Mathf.Approximately(reloadDelay.floatValue, 0f))
+                {
+                    mismatches.Add(
+                        $"reloadDelay={(reloadDelay != null ? reloadDelay.floatValue : -1f)} (expected 0)");
+                }
+                if (respawnAutomatically != null && respawnAutomatically.boolValue)
+                    mismatches.Add("respawnAutomatically=true (expected false for EE5 room reset)");
+            }
+
             string message = mismatches.Count == 0
                 ? "Active FlightTest player matches the EE5 gold-standard profile."
                 : "Active FlightTest player profile is stale: " + string.Join(", ", mismatches)
@@ -879,6 +902,26 @@ namespace ExtraterrestrialExhaust.Editor
             }
             if (!UnityEngine.Object.FindFirstObjectByType<GameStateMachine>())
                 issues.Add("Game State");
+            else
+            {
+                GameStateMachine gameState = UnityEngine.Object.FindFirstObjectByType<GameStateMachine>();
+                SerializedObject serializedGameState = new SerializedObject(gameState);
+                SerializedProperty initialState = serializedGameState.FindProperty("initialState");
+                if (initialState == null || initialState.enumValueIndex != (int)GameState.Playing)
+                    issues.Add("Game State initial state is not Playing");
+                CheckSerializedFloat(
+                    serializedGameState,
+                    "enemyDefeatTimeScale",
+                    Ee5SliceProfile.EnemyDefeatTimeScale,
+                    "Game State defeat time scale",
+                    issues);
+                CheckSerializedFloat(
+                    serializedGameState,
+                    "enemyDefeatSlowdownDuration",
+                    Ee5SliceProfile.EnemyDefeatSlowdownDuration,
+                    "Game State defeat slowdown duration",
+                    issues);
+            }
             if (!UnityEngine.Object.FindFirstObjectByType<EncounterController>())
                 issues.Add("EncounterController");
             if (!UnityEngine.Object.FindFirstObjectByType<SliceObjectiveDirector>())
@@ -1145,8 +1188,10 @@ namespace ExtraterrestrialExhaust.Editor
             SerializedObject serialized = new SerializedObject(stateMachine);
             serialized.FindProperty("initialState").enumValueIndex = (int)GameState.Playing;
             serialized.FindProperty("enableEnemyDefeatSlowdown").boolValue = true;
-            serialized.FindProperty("enemyDefeatTimeScale").floatValue = 0.16f;
-            serialized.FindProperty("enemyDefeatSlowdownDuration").floatValue = 0.07f;
+            serialized.FindProperty("enemyDefeatTimeScale").floatValue =
+                Ee5SliceProfile.EnemyDefeatTimeScale;
+            serialized.FindProperty("enemyDefeatSlowdownDuration").floatValue =
+                Ee5SliceProfile.EnemyDefeatSlowdownDuration;
             serialized.ApplyModifiedPropertiesWithoutUndo();
             return stateMachine;
         }
