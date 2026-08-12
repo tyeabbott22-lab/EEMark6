@@ -80,6 +80,30 @@ namespace ExtraterrestrialExhaust.Core
                 playerHealth.Died += HandlePlayerDied;
             }
             Refresh();
+        }
+
+        void Start()
+        {
+            // Let objective and game-state owners finish their first-frame
+            // synchronization before showing the opening banner. This keeps
+            // the first two seconds of a rebuilt FlightTest deterministic
+            // instead of depending on Unity's component enable order.
+            StartCoroutine(ShowInitialObjectiveAfterSceneSync());
+        }
+
+        IEnumerator ShowInitialObjectiveAfterSceneSync()
+        {
+            yield return null;
+            if (!this || !isActiveAndEnabled)
+                yield break;
+
+            Refresh();
+            if (gameState && gameState.CurrentState == GameState.GameOver)
+            {
+                ShowObjectiveBanner(GetGameOverLabel());
+                yield break;
+            }
+
             if (objectiveDirector)
                 ShowObjectiveBanner(objectiveDirector.CurrentObjective);
         }

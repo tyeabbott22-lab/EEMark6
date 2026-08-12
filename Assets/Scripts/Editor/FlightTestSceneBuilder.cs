@@ -1622,8 +1622,28 @@ namespace ExtraterrestrialExhaust.Editor
                 if (!exitCollider || !exitCollider.isTrigger)
                     issues.Add("LevelExit must be a trigger");
             }
-            if (!UnityEngine.Object.FindFirstObjectByType<GameplayHud>())
+            GameplayHud hud = UnityEngine.Object.FindFirstObjectByType<GameplayHud>();
+            if (!hud)
+            {
                 issues.Add("GameplayHud");
+            }
+            else
+            {
+                // The opening objective banner is deliberately deferred until
+                // Start. Keep its two authoritative sources serialized so a
+                // hand-edited scene cannot silently fall back to guessed text.
+                SerializedObject serializedHud = new SerializedObject(hud);
+                CheckObjectReference(
+                    serializedHud,
+                    "objectiveDirector",
+                    "HUD objective director",
+                    issues);
+                CheckObjectReference(
+                    serializedHud,
+                    "gameState",
+                    "HUD game state",
+                    issues);
+            }
             GameObject stopper = GameObject.Find("Flight Stopper Zone");
             if (!stopper)
                 issues.Add("Flight Stopper Zone");

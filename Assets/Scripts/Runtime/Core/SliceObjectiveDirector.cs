@@ -41,6 +41,15 @@ namespace ExtraterrestrialExhaust.Core
             Refresh();
         }
 
+        void Start()
+        {
+            // Awake/OnEnable order is not a gameplay contract. Re-evaluate once
+            // every scene object has finished initialization so a rebuilt room
+            // cannot briefly report CLEAR ENCOUNTER before its key, gate, and
+            // exit references have settled.
+            Refresh();
+        }
+
         void OnDisable() => Unsubscribe();
 
         public void Refresh()
