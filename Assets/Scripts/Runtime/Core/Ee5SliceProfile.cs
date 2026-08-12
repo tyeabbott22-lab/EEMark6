@@ -23,6 +23,16 @@ namespace ExtraterrestrialExhaust.Core
         public const float FlightAngularDamping = 0.85f;
         public const float RotationBoostMultiplier = 0.225f;
         public const bool PlayerRemoveVelocityIntoColliders = true;
+        public const float PlayerBoostedExhaustLengthMultiplier = 1.25f;
+        public const float PlayerBoostedExhaustWidthMultiplier = 1.15f;
+        public const float PlayerBoostedExhaustYScale = 1.5f;
+        public const float PlayerBoostedParticleEmissionMultiplier = 1.4f;
+        public static readonly Color PlayerBoostedExhaustCoreColor =
+            new Color(0.85f, 1f, 1f, 1f);
+        public static readonly Color PlayerBoostedExhaustMidColor =
+            new Color(0.15f, 0.75f, 1f, 0.92f);
+        public static readonly Color PlayerBoostedExhaustTipColor =
+            new Color(0.02f, 0.12f, 1f, 0f);
 
         public const float PlayerFireCooldown = 1f;
         public const float PlayerRecoilForce = 12f;

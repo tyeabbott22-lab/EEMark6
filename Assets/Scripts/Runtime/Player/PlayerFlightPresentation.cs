@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using ExtraterrestrialExhaust.Core;
 
 namespace ExtraterrestrialExhaust.Player
 {
@@ -23,12 +24,15 @@ namespace ExtraterrestrialExhaust.Player
         [SerializeField, Min(0.1f)] float thrustFramesPerSecond = 14f;
         [SerializeField] AudioSource thrustAudio;
         [SerializeField] AudioClip thrustClip;
+        [SerializeField] bool enforceEe5Profile = true;
 
         [Header("Rotation Boost Exhaust")]
         [SerializeField, Min(1f)] float boostedExhaustLengthMultiplier = 1.25f;
         [SerializeField, Min(1f)] float boostedExhaustWidthMultiplier = 1.15f;
+        [SerializeField, Min(1f)] float boostedExhaustYScale = 1.5f;
         [SerializeField, Min(1f)] float boostedParticleEmissionMultiplier = 1.4f;
         [SerializeField] Color boostedExhaustStartColor = new Color(0.75f, 1f, 1f, 1f);
+        [SerializeField] Color boostedExhaustMidColor = new Color(0.15f, 0.75f, 1f, 0.92f);
         [SerializeField] Color boostedExhaustEndColor = new Color(0.12f, 0.4f, 1f, 0f);
 
         [Header("Particle Collision")]
@@ -56,16 +60,36 @@ namespace ExtraterrestrialExhaust.Player
         Vector3 visualBaseScale;
         Vector3 leftExhaustBaseLocalPosition;
         Vector3 rightExhaustBaseLocalPosition;
+        Vector3 leftParticleBaseScale = Vector3.one;
+        Vector3 rightParticleBaseScale = Vector3.one;
         bool exhaustBaseFacingRight = true;
         bool exhaustAnchorsCached;
         float squashTimer;
         Sprite[] currentFrames;
         int frameIndex;
         float frameTimer;
+        Gradient normalExhaustGradient;
+        Gradient boostedExhaustGradient;
         readonly List<Material> runtimeMaterials = new();
 
         void Awake()
         {
+            if (enforceEe5Profile)
+                ApplyEe5Profile();
+
+            normalExhaustGradient = CreateExhaustGradient(
+                Color.white,
+                new Color(0.18f, 0.78f, 1f),
+                new Color(0.56f, 0.08f, 1f),
+                0.85f,
+                0.45f);
+            boostedExhaustGradient = CreateExhaustGradient(
+                boostedExhaustStartColor,
+                boostedExhaustMidColor,
+                boostedExhaustEndColor,
+                1f,
+                boostedExhaustMidColor.a);
+
             input = GetComponent<PlayerFlightInput>();
             stateMachine = stateMachine ? stateMachine : GetComponent<PlayerFlightStateMachine>();
             flightMotor = flightMotor ? flightMotor : GetComponent<PlayerFlightMotor>();
@@ -79,6 +103,18 @@ namespace ExtraterrestrialExhaust.Player
             EnsureParticleExhaust(ref rightExhaustParticles, "Right Exhaust Particles", rightExhaust);
             CacheExhaustAnchors();
             SyncExhaustAnchors();
+        }
+
+        void ApplyEe5Profile()
+        {
+            boostedExhaustLengthMultiplier = Ee5SliceProfile.PlayerBoostedExhaustLengthMultiplier;
+            boostedExhaustWidthMultiplier = Ee5SliceProfile.PlayerBoostedExhaustWidthMultiplier;
+            boostedExhaustYScale = Ee5SliceProfile.PlayerBoostedExhaustYScale;
+            boostedParticleEmissionMultiplier =
+                Ee5SliceProfile.PlayerBoostedParticleEmissionMultiplier;
+            boostedExhaustStartColor = Ee5SliceProfile.PlayerBoostedExhaustCoreColor;
+            boostedExhaustMidColor = Ee5SliceProfile.PlayerBoostedExhaustMidColor;
+            boostedExhaustEndColor = Ee5SliceProfile.PlayerBoostedExhaustTipColor;
         }
 
         void OnEnable()
@@ -246,6 +282,12 @@ namespace ExtraterrestrialExhaust.Player
             rightExhaustBaseLocalPosition = rightExhaust
                 ? rightExhaust.localPosition
                 : Vector3.zero;
+            leftParticleBaseScale = leftExhaustParticles
+                ? leftExhaustParticles.transform.localScale
+                : Vector3.one;
+            rightParticleBaseScale = rightExhaustParticles
+                ? rightExhaustParticles.transform.localScale
+                : Vector3.one;
             exhaustBaseFacingRight = !flightMotor || flightMotor.FacingRight;
             exhaustAnchorsCached = true;
         }
@@ -374,21 +416,7 @@ namespace ExtraterrestrialExhaust.Player
 
             ParticleSystem.ColorOverLifetimeModule color = particles.colorOverLifetime;
             color.enabled = true;
-            Gradient gradient = new Gradient();
-            gradient.SetKeys(
-                new[]
-                {
-                    new GradientColorKey(Color.white, 0f),
-                    new GradientColorKey(new Color(0.18f, 0.78f, 1f), 0.35f),
-                    new GradientColorKey(new Color(0.56f, 0.08f, 1f), 1f)
-                },
-                new[]
-                {
-                    new GradientAlphaKey(0.85f, 0f),
-                    new GradientAlphaKey(0.45f, 0.45f),
-                    new GradientAlphaKey(0f, 1f)
-                });
-            color.color = gradient;
+            color.color = normalExhaustGradient;
 
             ParticleSystemRenderer renderer = particles.GetComponent<ParticleSystemRenderer>();
             renderer.renderMode = ParticleSystemRenderMode.Billboard;
@@ -474,6 +502,7 @@ namespace ExtraterrestrialExhaust.Player
             ParticleSystem.EmissionModule emission = particles.emission;
             float emissionMultiplier = boosted ? boostedParticleEmissionMultiplier : 1f;
             emission.rateOverTime = Mathf.Lerp(0f, 24f * emissionMultiplier, amount);
+            ApplyParticleBoostScale(particles, boosted);
             ParticleSystem.MainModule main = particles.main;
             float particleSizeMultiplier = boosted ? boostedExhaustWidthMultiplier : 1f;
             main.startSize = new ParticleSystem.MinMaxCurve(
@@ -486,6 +515,9 @@ namespace ExtraterrestrialExhaust.Player
                 : new ParticleSystem.MinMaxGradient(
                     new Color(0.25f, 0.92f, 1f, 0.82f),
                     new Color(0.62f, 0.12f, 1f, 0.2f));
+            ParticleSystem.ColorOverLifetimeModule color = particles.colorOverLifetime;
+            color.enabled = true;
+            color.color = boosted ? boostedExhaustGradient : normalExhaustGradient;
             if (amount > 0.01f)
             {
                 if (!particles.isPlaying)
@@ -495,6 +527,44 @@ namespace ExtraterrestrialExhaust.Player
             {
                 particles.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
             }
+        }
+
+        static Gradient CreateExhaustGradient(
+            Color core,
+            Color mid,
+            Color tip,
+            float coreAlpha,
+            float midAlpha)
+        {
+            Gradient gradient = new Gradient();
+            gradient.SetKeys(
+                new[]
+                {
+                    new GradientColorKey(core, 0f),
+                    new GradientColorKey(mid, 0.45f),
+                    new GradientColorKey(tip, 1f)
+                },
+                new[]
+                {
+                    new GradientAlphaKey(coreAlpha, 0f),
+                    new GradientAlphaKey(midAlpha, 0.45f),
+                    new GradientAlphaKey(0f, 1f)
+                });
+            return gradient;
+        }
+
+        void ApplyParticleBoostScale(ParticleSystem particles, bool boosted)
+        {
+            if (!particles)
+                return;
+
+            Vector3 baseScale = particles == leftExhaustParticles
+                ? leftParticleBaseScale
+                : rightParticleBaseScale;
+            particles.transform.localScale = new Vector3(
+                baseScale.x,
+                baseScale.y * (boosted ? boostedExhaustYScale : 1f),
+                baseScale.z);
         }
 
         void UpdateSpriteAnimation(bool thrusting)

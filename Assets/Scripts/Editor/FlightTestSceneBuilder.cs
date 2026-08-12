@@ -1998,13 +1998,21 @@ namespace ExtraterrestrialExhaust.Editor
             SerializedObject serializedPresentation = new SerializedObject(presentation);
             serializedPresentation.FindProperty("thrustAudio").objectReferenceValue = thrustAudio;
             serializedPresentation.FindProperty("thrustClip").objectReferenceValue = AssetDatabase.LoadAssetAtPath<AudioClip>(ThrustAudioPath);
-            serializedPresentation.FindProperty("boostedExhaustLengthMultiplier").floatValue = 1.25f;
-            serializedPresentation.FindProperty("boostedExhaustWidthMultiplier").floatValue = 1.15f;
-            serializedPresentation.FindProperty("boostedParticleEmissionMultiplier").floatValue = 1.4f;
+            serializedPresentation.FindProperty("enforceEe5Profile").boolValue = true;
+            serializedPresentation.FindProperty("boostedExhaustLengthMultiplier").floatValue =
+                Ee5SliceProfile.PlayerBoostedExhaustLengthMultiplier;
+            serializedPresentation.FindProperty("boostedExhaustWidthMultiplier").floatValue =
+                Ee5SliceProfile.PlayerBoostedExhaustWidthMultiplier;
+            serializedPresentation.FindProperty("boostedExhaustYScale").floatValue =
+                Ee5SliceProfile.PlayerBoostedExhaustYScale;
+            serializedPresentation.FindProperty("boostedParticleEmissionMultiplier").floatValue =
+                Ee5SliceProfile.PlayerBoostedParticleEmissionMultiplier;
             serializedPresentation.FindProperty("boostedExhaustStartColor").colorValue =
-                new Color(0.75f, 1f, 1f, 1f);
+                Ee5SliceProfile.PlayerBoostedExhaustCoreColor;
+            serializedPresentation.FindProperty("boostedExhaustMidColor").colorValue =
+                Ee5SliceProfile.PlayerBoostedExhaustMidColor;
             serializedPresentation.FindProperty("boostedExhaustEndColor").colorValue =
-                new Color(0.12f, 0.4f, 1f, 0f);
+                Ee5SliceProfile.PlayerBoostedExhaustTipColor;
             serializedPresentation.FindProperty("exhaustSideOffset").floatValue = 0.28f;
             serializedPresentation.FindProperty("exhaustLength").floatValue = 0.55f;
             serializedPresentation.FindProperty("turnExhaustAmount").floatValue = 1f;
