@@ -7,6 +7,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using UnityEngine.U2D;
 using ExtraterrestrialExhaust.Combat;
 using ExtraterrestrialExhaust.Core;
 using ExtraterrestrialExhaust.Player;
@@ -33,11 +34,9 @@ namespace ExtraterrestrialExhaust.Editor
         // run, so an existing checkout never loses its visual wiring.
         const string PlayerCraftSpriteAssetPath = "Assets/Art/Player/player_craft.png";
         const string LegacyPlayerCraftSpriteAssetPath = "Assets/Art/Player/sprSnipe.png";
-        // EE5 realScene uses this exact two-frame sheet for the craft's
-        // authored idle/thrust read. Keep the static semantic sprite above as
-        // the fallback and wire the sliced sheet only into presentation.
-        const string PlayerCraftFlightSheetAssetPath =
-            "Assets/Art/Player/player_craft_flight_sheet.png";
+        // The purple UFO sheet from EE5 is a boss craft, not the player. It is
+        // stored under the enemy reference library and deliberately never
+        // enters the player presentation contract.
         const string PlayerHealthSpriteAssetPath = "Assets/Art/Player/health_sheet.png";
         const string LegacyPlayerHealthSpriteAssetPath = "Assets/Art/Player/health.png";
         const string PlayerProjectileSpriteAssetPath = "Assets/Art/Player/player_projectile.png";
@@ -54,6 +53,8 @@ namespace ExtraterrestrialExhaust.Editor
         const string LegacyEnergyGateSpriteAssetPath = "Assets/Art/Reference/Objectives/buttonFInal1.png";
         const string BoundaryWallSpriteAssetPath = "Assets/Art/Reference/Environment/boundary_wall.png";
         const string LegacyBoundaryWallSpriteAssetPath = "Assets/Art/Reference/Environment/wallFinal.png";
+        const string MoonTerrainFillProfileAssetPath =
+            "Assets/Art/Reference/Environment/Moon/MoonTerrainFillProfile.asset";
         const string StarfieldSpritePath = "Assets/Art/Reference/Environment/starfield_backdrop.png";
         const string LegacyStarfieldSpritePath = "Assets/Art/Reference/Environment/sprStars.png";
         const string EnemyBurstSpritePath = "Assets/Art/Reference/Effects/enemy_defeat_burst.png";
@@ -404,16 +405,20 @@ namespace ExtraterrestrialExhaust.Editor
             SetSpriteArray(
                 serializedPresentation,
                 "flightFrames",
-                LoadSprites(PlayerCraftFlightSheetAssetPath));
+                LoadSprites(
+                    PlayerCraftSpriteAssetPath,
+                    LegacyPlayerCraftSpriteAssetPath));
             SetSpriteArray(
                 serializedPresentation,
                 "thrustFrames",
-                LoadSprites(PlayerCraftFlightSheetAssetPath));
-            // realScene2's AnimationClip samples the two authored frames at
-            // 12 FPS. The runtime state machine keeps that same cadence while
-            // avoiding an Animator dependency in the reusable EE6 prefab.
-            serializedPresentation.FindProperty("animationFramesPerSecond").floatValue = 12f;
-            serializedPresentation.FindProperty("thrustFramesPerSecond").floatValue = 12f;
+                LoadSprites(
+                    PlayerCraftSpriteAssetPath,
+                    LegacyPlayerCraftSpriteAssetPath));
+            // The player uses the verified orange craft sprite. A single-frame
+            // presentation is preferable to borrowing a boss animation strip;
+            // thrust remains readable through the authored exhaust response.
+            serializedPresentation.FindProperty("animationFramesPerSecond").floatValue = 8f;
+            serializedPresentation.FindProperty("thrustFramesPerSecond").floatValue = 8f;
             serializedPresentation.ApplyModifiedPropertiesWithoutUndo();
             PlayerDamageFeedback damageFeedback = player.AddComponent<PlayerDamageFeedback>();
             SerializedObject serializedDamageFeedback = new SerializedObject(damageFeedback);
@@ -1089,10 +1094,9 @@ namespace ExtraterrestrialExhaust.Editor
             visual.transform.localScale = Vector3.one * 1.5f;
 
             SpriteRenderer sprite = visual.AddComponent<SpriteRenderer>();
-            sprite.sprite = LoadFirstSprite(PlayerCraftFlightSheetAssetPath)
-                ?? LoadFirstSprite(
-                    PlayerCraftSpriteAssetPath,
-                    LegacyPlayerCraftSpriteAssetPath);
+            sprite.sprite = LoadFirstSprite(
+                PlayerCraftSpriteAssetPath,
+                LegacyPlayerCraftSpriteAssetPath);
             sprite.sortingOrder = 10;
 
             LineRenderer line = visual.AddComponent<LineRenderer>();
@@ -1218,6 +1222,12 @@ namespace ExtraterrestrialExhaust.Editor
             CreateWall("Floor", new Vector2(0f, -6f), new Vector2(16f, 0.5f));
             CreateWall("Ceiling", new Vector2(0f, 6f), new Vector2(16f, 0.5f));
 
+            // The box colliders above remain the gameplay boundary. This
+            // imported EE5 SpriteShape is presentation-only, so terrain art
+            // can become richer without changing movement, brittle impacts,
+            // or aim-line collision rules.
+            CreateMoonTerrainBasin();
+
             // EE5's realScene reads as a room rather than a blank box: the
             // shelves create readable flight lanes, break line of sight, and
             // give the wake telegraph and gunner pressure somewhere to matter.
@@ -1235,6 +1245,103 @@ namespace ExtraterrestrialExhaust.Editor
                 "Extraction Spine",
                 new Vector2(6.2f, 2.35f),
                 new Vector2(0.35f, 2.5f));
+        }
+
+        static void CreateMoonTerrainBasin()
+        {
+            SpriteShape profile = AssetDatabase.LoadAssetAtPath<SpriteShape>(
+                MoonTerrainFillProfileAssetPath);
+            if (!profile)
+            {
+                Debug.LogWarning(
+                    $"EE5 moon terrain profile not found at {MoonTerrainFillProfileAssetPath}; keeping wall-sprite fallback.");
+                return;
+            }
+
+            CreateMoonTerrainPiece(
+                "Playable Low Basin - SpriteShape",
+                profile,
+                Vector2.zero,
+                new[]
+                {
+                    new Vector2(-8f, -5.72f),
+                    new Vector2(-6.4f, -5.48f),
+                    new Vector2(-4.4f, -5.62f),
+                    new Vector2(-2.2f, -5.4f),
+                    new Vector2(0f, -5.56f),
+                    new Vector2(2.2f, -5.38f),
+                    new Vector2(4.4f, -5.58f),
+                    new Vector2(6.4f, -5.45f),
+                    new Vector2(8f, -5.7f),
+                    new Vector2(8f, -6.5f),
+                    new Vector2(-8f, -6.5f)
+                });
+
+            CreateMoonTerrainPiece(
+                "Upper Crater Shelf - SpriteShape",
+                profile,
+                new Vector2(0.8f, 4.15f),
+                new[]
+                {
+                    new Vector2(-2.1f, -0.18f),
+                    new Vector2(-1.25f, -0.24f),
+                    new Vector2(0f, -0.16f),
+                    new Vector2(1.3f, -0.23f),
+                    new Vector2(2.1f, -0.18f),
+                    new Vector2(2.1f, 0.18f),
+                    new Vector2(0.7f, 0.24f),
+                    new Vector2(-0.7f, 0.17f),
+                    new Vector2(-2.1f, 0.2f)
+                });
+
+            CreateMoonTerrainPiece(
+                "Lower Crater Shelf - SpriteShape",
+                profile,
+                new Vector2(-0.6f, -4.15f),
+                new[]
+                {
+                    new Vector2(-2.4f, -0.18f),
+                    new Vector2(-1.2f, -0.22f),
+                    new Vector2(0f, -0.16f),
+                    new Vector2(1.5f, -0.23f),
+                    new Vector2(2.4f, -0.16f),
+                    new Vector2(2.4f, 0.18f),
+                    new Vector2(0.9f, 0.22f),
+                    new Vector2(-0.7f, 0.16f),
+                    new Vector2(-2.4f, 0.2f)
+                });
+        }
+
+        static void CreateMoonTerrainPiece(
+            string objectName,
+            SpriteShape profile,
+            Vector2 position,
+            Vector2[] points)
+        {
+            GameObject terrain = new GameObject(objectName);
+            terrain.tag = "Wall";
+            terrain.transform.position = position;
+
+            SpriteShapeController controller = terrain.AddComponent<SpriteShapeController>();
+            controller.spriteShape = profile;
+            controller.fillPixelsPerUnit = 24f;
+            controller.splineDetail = 2;
+            controller.worldSpaceUVs = true;
+            controller.colliderDetail = 0;
+            controller.autoUpdateCollider = false;
+            controller.spriteShapeRenderer.sortingOrder = -20;
+            controller.spriteShapeRenderer.color = new Color(0.8f, 0.86f, 1f, 0.92f);
+
+            controller.spline.Clear();
+            controller.spline.isOpenEnded = false;
+            for (int i = 0; i < points.Length; i++)
+            {
+                controller.spline.InsertPointAt(i, points[i]);
+                controller.spline.SetHeight(i, 0.35f);
+                controller.spline.SetTangentMode(i, ShapeTangentMode.Continuous);
+            }
+
+            controller.RefreshSpriteShape();
         }
 
         static void CreateEnvironmentalPressure()
