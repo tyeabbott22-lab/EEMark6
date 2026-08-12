@@ -40,13 +40,16 @@ namespace ExtraterrestrialExhaust.Core
         [SerializeField, Min(0f)] float orbitRadiusY = 1.9f;
         [SerializeField, Min(0f)] float orbitSpeed = 2f;
         [SerializeField, Min(0f)] float orbitSharpness = 8f;
+        [SerializeField] float orbitRotationSpeed;
         [SerializeField, Min(0f)] float radiusEase = 3.5f;
         [SerializeField, Min(0f)] float centerFollowSharpness = 5.5f;
 
         [Header("Collection")]
         [SerializeField, Min(0f)] float collectDistance = 0.65f;
+        [SerializeField, Min(0f)] float collectionArmDelay;
+        [SerializeField, Min(0f)] float minRadiusBeforeCollect;
         [SerializeField] Vector3 playerOffset = new Vector3(0.6f, 0.7f, 0f);
-        [SerializeField, Min(0f)] float playerFollowSharpness = 14f;
+        [SerializeField, Min(0f)] float playerFollowSharpness = Ee5SliceProfile.EnergyKeyPlayerFollowSharpness;
 
         [Header("Gate")]
         [SerializeField, Min(0f)] float gateUnlockRange = 2f;
@@ -72,6 +75,7 @@ namespace ExtraterrestrialExhaust.Core
         float phase;
         float currentRadiusX;
         float currentRadiusY;
+        float releasedAtTime;
         float releasePulseRemaining;
 
         public EnergyKeyState State => state;
@@ -223,9 +227,21 @@ namespace ExtraterrestrialExhaust.Core
             currentRadiusX = Mathf.Lerp(currentRadiusX, orbitRadiusX, radiusEase * Time.fixedDeltaTime);
             currentRadiusY = Mathf.Lerp(currentRadiusY, orbitRadiusY, radiusEase * Time.fixedDeltaTime);
 
-            Vector2 target = orbitCenter + new Vector2(
+            Vector2 offset = new Vector2(
                 Mathf.Cos(phase) * currentRadiusX,
                 Mathf.Sin(phase) * currentRadiusY);
+
+            if (orbitRotationSpeed != 0f)
+            {
+                float rotation = Time.time * orbitRotationSpeed;
+                float cos = Mathf.Cos(rotation);
+                float sin = Mathf.Sin(rotation);
+                offset = new Vector2(
+                    offset.x * cos - offset.y * sin,
+                    offset.x * sin + offset.y * cos);
+            }
+
+            Vector2 target = orbitCenter + offset;
             float orbitT = 1f - Mathf.Exp(-orbitSharpness * Time.fixedDeltaTime);
             body.MovePosition(Vector2.Lerp(body.position, target, orbitT));
         }
@@ -284,6 +300,7 @@ namespace ExtraterrestrialExhaust.Core
         {
             SetState(EnergyKeyState.OrbitingPlayer);
             orbitCenter = player ? (Vector2)player.transform.position : body.position;
+            releasedAtTime = Time.time;
 
             Vector2 fromPlayer = body.position - orbitCenter;
             if (fromPlayer.sqrMagnitude > 0.001f)
@@ -323,6 +340,13 @@ namespace ExtraterrestrialExhaust.Core
             // resolved field normally points at the same object, but keeping
             // the event-local identity correct makes this reusable in tests
             // and additive scenes with more than one player candidate.
+            if (Time.time - releasedAtTime < collectionArmDelay)
+                return;
+
+            if (currentRadiusX < minRadiusBeforeCollect
+                || currentRadiusY < minRadiusBeforeCollect)
+                return;
+
             if (Vector2.Distance(body.position, otherPlayer.transform.position) > collectDistance)
                 return;
 

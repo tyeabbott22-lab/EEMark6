@@ -1489,8 +1489,10 @@ namespace ExtraterrestrialExhaust.Editor
             keyTarget.transform.SetParent(gate.transform, false);
             keyTarget.transform.localPosition = new Vector3(0f, 1.7f, 0f);
             SerializedObject serializedGate = new SerializedObject(energyGate);
-            serializedGate.FindProperty("liftDistance").floatValue = 12f;
-            serializedGate.FindProperty("liftSpeed").floatValue = 6f;
+            serializedGate.FindProperty("liftDistance").floatValue =
+                Ee5SliceProfile.EnergyGateLiftDistance;
+            serializedGate.FindProperty("liftSpeed").floatValue =
+                Ee5SliceProfile.EnergyGateLiftSpeed;
             serializedGate.FindProperty("keyTarget").objectReferenceValue = keyTarget.transform;
             serializedGate.ApplyModifiedPropertiesWithoutUndo();
             EnergyGatePresentation gatePresentation = gate.AddComponent<EnergyGatePresentation>();
@@ -1513,7 +1515,11 @@ namespace ExtraterrestrialExhaust.Editor
             CreateGateVisual(gate.transform);
 
             GameObject key = new GameObject("Energy Key");
-            key.transform.position = new Vector3(2.5f, 3.5f, 0f);
+            // EE5 carries the key on the ranged gunner from frame one. The
+            // old compact-slice spawn was detached from the carrier, which
+            // made the objective appear to teleport at scene start.
+            key.transform.position = gunnerEnemy.transform.position
+                + new Vector3(0f, Ee5SliceProfile.EnergyKeyCarrierSpawnOffsetY, 0f);
             CircleCollider2D keyCollider = key.AddComponent<CircleCollider2D>();
             keyCollider.isTrigger = true;
             EnergyKey energyKey = key.AddComponent<EnergyKey>();
@@ -1530,7 +1536,8 @@ namespace ExtraterrestrialExhaust.Editor
             serializedKey.FindProperty("enemyOrbitSharpness").floatValue = 8f;
             serializedKey.FindProperty("gateUnlockRange").floatValue = 2.25f;
             serializedKey.FindProperty("collectDistance").floatValue = 0.85f;
-            serializedKey.FindProperty("playerFollowSharpness").floatValue = 14f;
+            serializedKey.FindProperty("playerFollowSharpness").floatValue =
+                Ee5SliceProfile.EnergyKeyPlayerFollowSharpness;
             serializedKey.FindProperty("releasePulseDuration").floatValue = Ee5SliceProfile.KeyReleasePulseDuration;
             serializedKey.FindProperty("releasePulseScale").floatValue = Ee5SliceProfile.KeyReleasePulseScale;
             serializedKey.ApplyModifiedPropertiesWithoutUndo();
@@ -1550,7 +1557,7 @@ namespace ExtraterrestrialExhaust.Editor
                 EnergyKeySpriteAssetPath,
                 LegacyEnergyKeySpriteAssetPath);
             keySprite.sortingOrder = 10;
-            key.transform.localScale = Vector3.one * 0.7f;
+            key.transform.localScale = Vector3.one * Ee5SliceProfile.EnergyKeyVisualScale;
             CreateSquareOutline(key.transform, Vector2.one * 0.5f, new Color(1f, 0.8f, 0.1f));
 
             GameObject exit = new GameObject("Level Exit");

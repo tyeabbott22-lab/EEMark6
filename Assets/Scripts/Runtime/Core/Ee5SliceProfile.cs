@@ -31,6 +31,14 @@ namespace ExtraterrestrialExhaust.Core
         public const float EnemyGunnerFireCooldown = 1f;
         public const float EnemyGunnerProjectileSpeed = 6f;
 
+        // Objective handoff values are copied from RealSceneEncounterTool and
+        // kept here so the builder and runtime defaults cannot drift apart.
+        public const float EnergyGateLiftDistance = 10f;
+        public const float EnergyGateLiftSpeed = 7f;
+        public const float EnergyKeyCarrierSpawnOffsetY = 1.35f;
+        public const float EnergyKeyVisualScale = 1.65f;
+        public const float EnergyKeyPlayerFollowSharpness = 12f;
+
         public const float CameraFollowSpeed = 12f;
         public const float CameraVelocityLead = 0.24f;
         public const float CameraMaxLeadDistance = 3.75f;

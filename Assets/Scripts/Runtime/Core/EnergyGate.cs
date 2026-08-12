@@ -11,8 +11,8 @@ namespace ExtraterrestrialExhaust.Core
         // EE5's DoorController clears the route by lifting the authored door,
         // not by scaling it out. Keep the motion readable for the key-to-exit
         // handoff and let the collider disable immediately at activation.
-        [SerializeField, Min(0f)] float liftDistance = 12f;
-        [SerializeField, Min(0.01f)] float liftSpeed = 6f;
+        [SerializeField, Min(0f)] float liftDistance = Ee5SliceProfile.EnergyGateLiftDistance;
+        [SerializeField, Min(0.01f)] float liftSpeed = Ee5SliceProfile.EnergyGateLiftSpeed;
 
         [Header("Key Handoff")]
         [SerializeField] Transform keyTarget;
