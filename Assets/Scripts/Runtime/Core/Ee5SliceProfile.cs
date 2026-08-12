@@ -34,8 +34,11 @@ namespace ExtraterrestrialExhaust.Core
         // so a deliberate flip still behaves like the EE5 flight contract.
         public const bool UprightAssistEnabled = true;
         public const float UprightAssistWindow = 16f;
-        public const float UprightAssistSpeed = 24f;
-        public const float UprightAssistAngularBrake = 7f;
+        // The assist is deliberately stronger than a full S/C stabilize, but
+        // only runs after rotation input is released. This keeps the craft
+        // upright during ordinary flight without stealing an intentional flip.
+        public const float UprightAssistSpeed = 36f;
+        public const float UprightAssistAngularBrake = 30f;
         public const bool PlayerRemoveVelocityIntoColliders = true;
         public const float PlayerBoostedExhaustLengthMultiplier = 1.25f;
         public const float PlayerBoostedExhaustWidthMultiplier = 1.15f;
@@ -72,6 +75,11 @@ namespace ExtraterrestrialExhaust.Core
         // dead band prevents a target hovering on the vertical threshold from
         // toggling the sprite orientation every render frame.
         public const float EnemyFacingFlipHysteresisDegrees = 8f;
+        // The imported melee prefab's root is mirrored like EE5's enemyFast.
+        // Its generated EE6 root starts at neutral rotation, so the dormant
+        // strip must still face the player instead of waiting for combat.
+        public const bool EnemyMeleeFacesDormantTarget = true;
+        public const float EnemyDormantFacingHysteresis = 0.2f;
         // Stop just outside the combined player/melee collider radii. This
         // keeps contact damage active without making a dynamic enemy repeatedly
         // push into the player's body and jitter at the attack threshold.

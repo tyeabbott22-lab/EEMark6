@@ -79,6 +79,8 @@ namespace ExtraterrestrialExhaust.Core
         float currentRadiusY;
         float releasedAtTime;
         float releasePulseRemaining;
+        EnemyController subscribedEnemyTarget;
+        EncounterController subscribedRequiredEncounter;
 
         public EnergyKeyState State => state;
         public bool IsAvailable => state == EnergyKeyState.OrbitingPlayer;
@@ -95,10 +97,7 @@ namespace ExtraterrestrialExhaust.Core
             if (enforceEe5Profile)
                 ApplyEe5Profile();
 
-            if (!requiredEncounter)
-                requiredEncounter = FindFirstObjectByType<EncounterController>();
-            if (!enemyTarget)
-                enemyTarget = FindFirstObjectByType<EnemyController>();
+            ResolveCarrierReferences();
 
             body = GetComponent<Rigidbody2D>();
             keyCollider = GetComponent<Collider2D>();
@@ -148,10 +147,7 @@ namespace ExtraterrestrialExhaust.Core
 
         void OnEnable()
         {
-            if (enemyTarget)
-                enemyTarget.Defeated += HandleEnemyDefeated;
-            if (requiredEncounter)
-                requiredEncounter.Completed += HandleEncounterCompleted;
+            RefreshCarrierSubscriptions();
 
             // A scene can be enabled after its carrier has already been
             // defeated. The event path is authoritative, but this keeps
@@ -161,23 +157,27 @@ namespace ExtraterrestrialExhaust.Core
 
         void OnDisable()
         {
-            if (enemyTarget)
-                enemyTarget.Defeated -= HandleEnemyDefeated;
-            if (requiredEncounter)
-                requiredEncounter.Completed -= HandleEncounterCompleted;
+            UnsubscribeFromCarrier();
         }
 
         void Update()
         {
             ResolvePlayer();
+            ResolveCarrierReferences();
+            RefreshCarrierSubscriptions();
 
             if (state != EnergyKeyState.Consumed)
             {
                 // Keep presentation off the interpolated transport root. This
                 // prevents the sprite rotation/pulse from making the key's
                 // trigger appear to jitter during delicate handoffs.
-                visual.Rotate(0f, 0f, rotateSpeed * Time.deltaTime);
-                float pulse = 1f + Mathf.Sin(Time.time * pulseSpeed) * pulseAmount;
+                bool hasSeparateVisual = visual && visual != transform;
+                if (hasSeparateVisual)
+                    visual.Rotate(0f, 0f, rotateSpeed * Time.deltaTime);
+
+                float pulse = hasSeparateVisual
+                    ? 1f + Mathf.Sin(Time.time * pulseSpeed) * pulseAmount
+                    : 1f;
                 if (releasePulseRemaining > 0f)
                 {
                     releasePulseRemaining = Mathf.Max(
@@ -193,7 +193,8 @@ namespace ExtraterrestrialExhaust.Core
                     pulse *= releaseScale;
                 }
 
-                visual.localScale = baseScale * pulse;
+                if (hasSeparateVisual)
+                    visual.localScale = baseScale * pulse;
             }
 
             switch (state)
@@ -403,7 +404,12 @@ namespace ExtraterrestrialExhaust.Core
                 return enemyTarget.State == EnemyState.Defeated
                     || (requiredEncounter && requiredEncounter.IsComplete);
 
-            return requiredEncounter == null || requiredEncounter.IsComplete;
+            // A missing carrier reference is not permission to release at
+            // scene start. Old hand-authored scenes can resolve references a
+            // frame late; holding the attached state keeps the objective from
+            // silently teleporting until the carrier is known or the authored
+            // encounter explicitly completes.
+            return requiredEncounter && requiredEncounter.IsComplete;
         }
 
         void HandleEnemyDefeated(EnemyController defeatedEnemy)
@@ -426,6 +432,69 @@ namespace ExtraterrestrialExhaust.Core
         {
             if (!player)
                 player = FindFirstObjectByType<PlayerCharacter>();
+        }
+
+        void ResolveCarrierReferences()
+        {
+            if (!requiredEncounter)
+                requiredEncounter = FindFirstObjectByType<EncounterController>();
+
+            if (enemyTarget)
+                return;
+
+            EnemyController[] candidates = FindObjectsByType<EnemyController>(FindObjectsSortMode.None);
+            if (candidates == null || candidates.Length == 0)
+                return;
+
+            Vector2 keyPosition = body ? body.position : (Vector2)transform.position;
+            float closestDistance = float.PositiveInfinity;
+            for (int i = 0; i < candidates.Length; i++)
+            {
+                EnemyController candidate = candidates[i];
+                if (!candidate)
+                    continue;
+
+                float distance = (candidate.PhysicsPosition - keyPosition).sqrMagnitude;
+                if (distance >= closestDistance)
+                    continue;
+
+                closestDistance = distance;
+                enemyTarget = candidate;
+            }
+        }
+
+        void RefreshCarrierSubscriptions()
+        {
+            if (subscribedEnemyTarget != enemyTarget)
+            {
+                if (subscribedEnemyTarget)
+                    subscribedEnemyTarget.Defeated -= HandleEnemyDefeated;
+
+                subscribedEnemyTarget = enemyTarget;
+                if (subscribedEnemyTarget)
+                    subscribedEnemyTarget.Defeated += HandleEnemyDefeated;
+            }
+
+            if (subscribedRequiredEncounter != requiredEncounter)
+            {
+                if (subscribedRequiredEncounter)
+                    subscribedRequiredEncounter.Completed -= HandleEncounterCompleted;
+
+                subscribedRequiredEncounter = requiredEncounter;
+                if (subscribedRequiredEncounter)
+                    subscribedRequiredEncounter.Completed += HandleEncounterCompleted;
+            }
+        }
+
+        void UnsubscribeFromCarrier()
+        {
+            if (subscribedEnemyTarget)
+                subscribedEnemyTarget.Defeated -= HandleEnemyDefeated;
+            if (subscribedRequiredEncounter)
+                subscribedRequiredEncounter.Completed -= HandleEncounterCompleted;
+
+            subscribedEnemyTarget = null;
+            subscribedRequiredEncounter = null;
         }
 
         void UpdateAvailabilityVisual()

@@ -1,4 +1,5 @@
 using UnityEngine;
+using ExtraterrestrialExhaust.Core;
 using ExtraterrestrialExhaust.Player;
 
 namespace ExtraterrestrialExhaust.Enemy
@@ -31,6 +32,8 @@ namespace ExtraterrestrialExhaust.Enemy
         [SerializeField] bool forwardIsLocalNegativeX = true;
         [Tooltip("Restore the authored sprite flip as soon as the wake presentation hands control to combat.")]
         [SerializeField] bool restoreFacingAfterWake = true;
+        [Tooltip("Horizontal deadband used while the dormant strip tracks the player, preventing left/right chatter at the midpoint.")]
+        [SerializeField, Min(0f)] float dormantFacingHysteresis = Ee5SliceProfile.EnemyDormantFacingHysteresis;
 
         EnemyController controller;
         Renderer[] renderers;
@@ -46,6 +49,8 @@ namespace ExtraterrestrialExhaust.Enemy
         int dormantFrameDirection = 1;
         bool wakeAlertStarted;
         bool authoredFlipX;
+        bool hasDormantFacing;
+        bool dormantPlayerRight;
 
         void Reset()
         {
@@ -140,6 +145,7 @@ namespace ExtraterrestrialExhaust.Enemy
             {
                 hasWoken = false;
                 waking = false;
+                hasDormantFacing = false;
                 currentFrames = FirstAvailable(dormantSprites, activeSprites);
             }
             else if (state == EnemyState.Waking)
@@ -306,6 +312,23 @@ namespace ExtraterrestrialExhaust.Enemy
             // dormant/wake sprite cannot chatter when the player hovers on the
             // horizontal midpoint.
             bool playerIsRight = target.PhysicsPosition.x >= controller.PhysicsPosition.x;
+            float horizontalDelta = target.PhysicsPosition.x - controller.PhysicsPosition.x;
+            float hysteresis = Mathf.Max(0f, dormantFacingHysteresis);
+            if (!hasDormantFacing)
+            {
+                dormantPlayerRight = horizontalDelta >= 0f;
+                hasDormantFacing = true;
+            }
+            else if (dormantPlayerRight && horizontalDelta < -hysteresis)
+            {
+                dormantPlayerRight = false;
+            }
+            else if (!dormantPlayerRight && horizontalDelta > hysteresis)
+            {
+                dormantPlayerRight = true;
+            }
+
+            playerIsRight = dormantPlayerRight;
             bool flipFromDefault = forwardIsLocalNegativeX ? playerIsRight : !playerIsRight;
             spriteRenderer.flipX = authoredFlipX ^ flipFromDefault;
         }

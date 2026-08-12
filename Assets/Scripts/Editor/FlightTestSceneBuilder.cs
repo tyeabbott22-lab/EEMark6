@@ -973,8 +973,15 @@ namespace ExtraterrestrialExhaust.Editor
                 }
 
                 SerializedObject serializedPresentation = new SerializedObject(presentation);
-                changed |= SetBool(serializedPresentation, "faceDormantTowardTarget", ranged);
+                changed |= SetBool(
+                    serializedPresentation,
+                    "faceDormantTowardTarget",
+                    ranged || Ee5SliceProfile.EnemyMeleeFacesDormantTarget);
                 changed |= SetBool(serializedPresentation, "forwardIsLocalNegativeX", ranged);
+                changed |= SetFloat(
+                    serializedPresentation,
+                    "dormantFacingHysteresis",
+                    Ee5SliceProfile.EnemyDormantFacingHysteresis);
                 changed |= SetBool(serializedPresentation, "restoreFacingAfterWake", true);
                 changed |= SetBool(serializedPresentation, "pingPongDormantAnimation", true);
                 changed |= SetBool(serializedPresentation, "randomizeDormantStartFrame", true);
@@ -1305,7 +1312,8 @@ namespace ExtraterrestrialExhaust.Editor
                 bool facesTarget = serializedPresentation.FindProperty("faceDormantTowardTarget").boolValue;
                 bool forwardNegativeX = serializedPresentation.FindProperty("forwardIsLocalNegativeX").boolValue;
                 bool restoresFacing = serializedPresentation.FindProperty("restoreFacingAfterWake").boolValue;
-                if (facesTarget != ranged)
+                bool expectedDormantFacing = ranged || Ee5SliceProfile.EnemyMeleeFacesDormantTarget;
+                if (facesTarget != expectedDormantFacing)
                     issues.Add($"{prefabPath} faceDormantTowardTarget={facesTarget}");
                 if (forwardNegativeX != ranged || !restoresFacing)
                     issues.Add($"{prefabPath} dormant facing basis is incomplete");
@@ -2959,8 +2967,11 @@ namespace ExtraterrestrialExhaust.Editor
             serializedPresentation.FindProperty("defeatDisplayDuration").floatValue = 0.3f;
             serializedPresentation.FindProperty("pingPongDormantAnimation").boolValue = true;
             serializedPresentation.FindProperty("randomizeDormantStartFrame").boolValue = true;
-            serializedPresentation.FindProperty("faceDormantTowardTarget").boolValue = ranged;
+            serializedPresentation.FindProperty("faceDormantTowardTarget").boolValue =
+                ranged || Ee5SliceProfile.EnemyMeleeFacesDormantTarget;
             serializedPresentation.FindProperty("forwardIsLocalNegativeX").boolValue = ranged;
+            serializedPresentation.FindProperty("dormantFacingHysteresis").floatValue =
+                Ee5SliceProfile.EnemyDormantFacingHysteresis;
             serializedPresentation.FindProperty("restoreFacingAfterWake").boolValue = true;
             serializedPresentation.ApplyModifiedPropertiesWithoutUndo();
             CreateEnemyHealthDisplay(enemy.transform, ranged);
