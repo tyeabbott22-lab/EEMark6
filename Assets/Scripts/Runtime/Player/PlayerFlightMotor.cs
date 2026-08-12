@@ -111,13 +111,22 @@ namespace ExtraterrestrialExhaust.Player
                 return;
             }
 
+            // EE5's JetpackMotor treats stabilization as an exclusive input:
+            // it rotates the craft toward the authored angle and skips thrust,
+            // turning, and collision-velocity cleanup for that physics step.
+            // Keeping this branch early prevents a held turn input from
+            // fighting the stabilizer and preserves the reference's clean
+            // “hit C/S, settle” feel.
+            if (input.Move.y < -0.2f)
+            {
+                Stabilize();
+                return;
+            }
+
             ApplyRotation(input.Move.x);
 
             if (input.Move.y > 0.2f)
                 body.AddRelativeForce(Vector2.up * thrustForce, ForceMode2D.Force);
-
-            if (input.Move.y < -0.2f)
-                Stabilize();
 
             if (removeVelocityIntoColliders)
                 RemoveVelocityIntoColliders();
