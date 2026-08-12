@@ -81,6 +81,10 @@ namespace ExtraterrestrialExhaust.Core
         public const float FlightStopperHeight = 2f;
 
         public const float CameraFollowSpeed = 12f;
+        // realScene2 and realScene3 use the tighter four-unit frame. Keep the
+        // room framing in the profile so a builder pass cannot drift back to
+        // the broader prototype camera by accident.
+        public const float CameraOrthographicSize = 4f;
         public const float CameraVelocityLead = 0.24f;
         public const float CameraMaxLeadDistance = 3.75f;
         public const float CameraFacingLead = 1.15f;
@@ -101,9 +105,12 @@ namespace ExtraterrestrialExhaust.Core
         // over the maneuver instead of popping like a one-shot camera effect.
         public const float CameraFlipZoomOut = 4f;
         public const float CameraFlipZoomDuration = 10f;
-        public const float CameraFarParallaxStrength = 0.06f;
-        public const float CameraMidParallaxStrength = 0.14f;
-        public const float CameraNearParallaxStrength = 0.24f;
+        // These are the serialized realScene2/3 layer strengths: the far
+        // nebula follows almost completely and the generated star field lags
+        // just enough to sell depth.
+        public const float CameraFarParallaxStrength = 0.995f;
+        public const float CameraMidParallaxStrength = 0.95f;
+        public const float CameraNearParallaxStrength = 0.95f;
         public const float KeyReleasePulseDuration = 0.28f;
         public const float KeyReleasePulseScale = 1.28f;
         public const string WallTag = "Wall";

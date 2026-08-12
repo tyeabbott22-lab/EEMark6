@@ -993,6 +993,24 @@ namespace ExtraterrestrialExhaust.Editor
                 issues.Add($"{label}={property.floatValue:0.###} (expected {expected:0.###})");
         }
 
+        static void CheckSerializedFloat(
+            SerializedProperty parent,
+            string propertyName,
+            float expected,
+            string label,
+            List<string> issues)
+        {
+            SerializedProperty property = parent?.FindPropertyRelative(propertyName);
+            if (property == null)
+            {
+                issues.Add($"{label} property missing");
+                return;
+            }
+
+            if (!Mathf.Approximately(property.floatValue, expected))
+                issues.Add($"{label}={property.floatValue:0.###} (expected {expected:0.###})");
+        }
+
         static void CheckSerializedBool(
             SerializedObject serialized,
             string propertyName,
@@ -1058,6 +1076,98 @@ namespace ExtraterrestrialExhaust.Editor
                     Ee5SliceProfile.EnemyDefeatSlowdownDuration,
                     "Game State defeat slowdown duration",
                     issues);
+            }
+
+            Camera sceneCamera = UnityEngine.Object.FindFirstObjectByType<Camera>();
+            if (!sceneCamera)
+            {
+                issues.Add("Main Camera");
+            }
+            else
+            {
+                if (!sceneCamera.orthographic
+                    || !Mathf.Approximately(
+                        sceneCamera.orthographicSize,
+                        Ee5SliceProfile.CameraOrthographicSize))
+                {
+                    issues.Add(
+                        $"Main Camera orthographic size={sceneCamera.orthographicSize} "
+                        + $"(expected {Ee5SliceProfile.CameraOrthographicSize})");
+                }
+
+                PlayerCameraFollow cameraFollow = sceneCamera.GetComponent<PlayerCameraFollow>();
+                if (!cameraFollow)
+                {
+                    issues.Add("Main Camera PlayerCameraFollow");
+                }
+                else
+                {
+                    SerializedObject serializedFollow = new SerializedObject(cameraFollow);
+                    CheckSerializedFloat(
+                        serializedFollow,
+                        "speedZoomStart",
+                        Ee5SliceProfile.CameraSpeedZoomStart,
+                        "Camera speed zoom start",
+                        issues);
+                    CheckSerializedFloat(
+                        serializedFollow,
+                        "flipZoomOut",
+                        Ee5SliceProfile.CameraFlipZoomOut,
+                        "Camera flip zoom out",
+                        issues);
+                    CheckSerializedFloat(
+                        serializedFollow,
+                        "flipZoomDuration",
+                        Ee5SliceProfile.CameraFlipZoomDuration,
+                        "Camera flip zoom duration",
+                        issues);
+
+                    SerializedProperty parallaxLayers = serializedFollow.FindProperty("parallaxLayers");
+                    if (parallaxLayers == null || parallaxLayers.arraySize != 2)
+                    {
+                        issues.Add(
+                            $"Camera parallax layer count={(parallaxLayers != null ? parallaxLayers.arraySize : 0)} "
+                            + "(expected 2)");
+                    }
+                    else
+                    {
+                        CheckSerializedFloat(
+                            parallaxLayers.GetArrayElementAtIndex(0),
+                            "strength",
+                            Ee5SliceProfile.CameraFarParallaxStrength,
+                            "Camera far parallax strength",
+                            issues);
+                        CheckSerializedFloat(
+                            parallaxLayers.GetArrayElementAtIndex(1),
+                            "strength",
+                            Ee5SliceProfile.CameraMidParallaxStrength,
+                            "Camera starfield parallax strength",
+                            issues);
+                    }
+                }
+            }
+
+            GameObject nebula = GameObject.Find("Nebula Backdrop - far parallax order -120");
+            Sprite expectedNebula = LoadFirstSprite(NebulaSpritePath, LegacyStarfieldSpritePath);
+            SpriteRenderer nebulaRenderer = nebula ? nebula.GetComponent<SpriteRenderer>() : null;
+            if (!nebulaRenderer || nebulaRenderer.sprite != expectedNebula)
+                issues.Add("Nebula backdrop sprite");
+
+            StarfieldGridGenerator starField =
+                UnityEngine.Object.FindFirstObjectByType<StarfieldGridGenerator>();
+            if (!starField)
+            {
+                issues.Add("Star Field Generator");
+            }
+            else
+            {
+                SerializedObject serializedStarField = new SerializedObject(starField);
+                Sprite expectedStarTile = LoadFirstSprite(
+                    StarfieldSpritePath,
+                    LegacyStarfieldSpritePath);
+                SerializedProperty starTile = serializedStarField.FindProperty("starTileSprite");
+                if (starTile == null || starTile.objectReferenceValue != expectedStarTile)
+                    issues.Add("Star Field Generator tile sprite");
             }
 
             PlayerProjectile projectilePrefab =
@@ -2304,7 +2414,7 @@ namespace ExtraterrestrialExhaust.Editor
 
             Camera camera = cameraObject.AddComponent<Camera>();
             camera.orthographic = true;
-            camera.orthographicSize = 5f;
+            camera.orthographicSize = Ee5SliceProfile.CameraOrthographicSize;
             camera.backgroundColor = new Color(0.015f, 0.02f, 0.06f);
             camera.clearFlags = CameraClearFlags.SolidColor;
             PlayerCameraFollow follow = cameraObject.AddComponent<PlayerCameraFollow>();
