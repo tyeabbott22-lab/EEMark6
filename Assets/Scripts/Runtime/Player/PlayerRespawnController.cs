@@ -97,6 +97,7 @@ namespace ExtraterrestrialExhaust.Player
                 target ? target.rotation : initialRotation);
 
             StopBody();
+            character.FlightMotor?.ResetFacingForRespawn();
             presentation?.ResetPresentation();
             weapon?.ResetForRespawn();
             character.Health.ResetHealth();

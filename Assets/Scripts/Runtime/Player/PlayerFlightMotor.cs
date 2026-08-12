@@ -120,5 +120,20 @@ namespace ExtraterrestrialExhaust.Player
             PlayerCameraFollow.Instance?.ZoomForPlayerFlip();
             Flipped?.Invoke(facingRight);
         }
+
+        /// <summary>
+        /// Restores the authored room-start facing for reusable in-place
+        /// respawns without awarding a flip or triggering camera feedback.
+        /// </summary>
+        public void ResetFacingForRespawn()
+        {
+            facingRight = true;
+            if (!visual)
+                return;
+
+            Vector3 scale = visual.localScale;
+            scale.x = Mathf.Abs(scale.x);
+            visual.localScale = scale;
+        }
     }
 }
