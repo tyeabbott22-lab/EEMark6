@@ -54,7 +54,7 @@ namespace ExtraterrestrialExhaust.Core
             }
 
             tether.enabled = true;
-            tether.SetPosition(0, transform.position);
+            tether.SetPosition(0, energyKey.VisualPosition);
             tether.SetPosition(1, target.position);
 
             float pulse = 0.5f + Mathf.Sin(Time.time * tetherPulseSpeed) * 0.5f;
@@ -125,7 +125,11 @@ namespace ExtraterrestrialExhaust.Core
             tether.startColor = tetherColor;
             tether.endColor = tetherColor;
             tether.sortingOrder = 17;
-            tether.material = new Material(Shader.Find("Sprites/Default"));
+            Shader shader = Shader.Find("Universal Render Pipeline/2D/Sprite-Unlit-Default");
+            if (!shader)
+                shader = Shader.Find("Sprites/Default");
+            if (shader)
+                tether.material = new Material(shader);
             tether.enabled = false;
         }
 

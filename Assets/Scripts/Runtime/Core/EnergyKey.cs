@@ -94,6 +94,12 @@ namespace ExtraterrestrialExhaust.Core
         public PlayerCharacter CurrentPlayer => player;
         public EnemyController EnemyTarget => enemyTarget;
         public EnergyGate TargetGate => targetGate;
+        /// <summary>
+        /// World-space anchor for presentation systems. The gameplay root stays
+        /// centered for trigger/range checks while the imported key artwork gets
+        /// its EE5 canvas correction on the child visual.
+        /// </summary>
+        public Vector3 VisualPosition => visual ? visual.position : transform.position;
         public event Action<EnergyKeyState, EnergyKeyState> StateChanged;
 
         void Reset() => GetComponent<Collider2D>().isTrigger = true;
@@ -111,6 +117,17 @@ namespace ExtraterrestrialExhaust.Core
                 visual = transform.Find("Key Visual");
             if (!visual)
                 visual = transform;
+
+            if (enforceEe5Profile && visual != transform)
+            {
+                // The imported key sheet has a non-centered source canvas. Keep
+                // the visual correction next to the runtime profile so prefab
+                // instances and older hand-built scenes share the same visible
+                // center without moving the gameplay trigger.
+                visual.localPosition = Ee5SliceProfile.EnergyKeyVisualOffset;
+                visual.localScale = Vector3.one * Ee5SliceProfile.EnergyKeyVisualScale;
+            }
+
             spriteRenderer = visual.GetComponent<SpriteRenderer>();
             if (!spriteRenderer)
                 spriteRenderer = GetComponent<SpriteRenderer>();

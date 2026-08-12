@@ -85,9 +85,28 @@ namespace ExtraterrestrialExhaust.Enemy
                 // Health owns whether the hit was lethal. Only shove a player
                 // who remains alive; the respawn controller owns dead-body reset.
                 if (player.Health.IsAlive && player.FlightMotor && player.FlightMotor.Body)
-                    player.FlightMotor.Body.linearVelocity += direction * knockback;
+                    ApplyEe5ContactImpulse(player.FlightMotor.Body, direction);
                 nextDamageTime = Time.time + cooldown;
             }
+        }
+
+        /// <summary>
+        /// Mirrors the original EE5 meleeEnemy contract: first remove velocity
+        /// aimed into the hunter, then add the authored outward impulse. Without
+        /// the first step a fast player can remain inside the melee reach for a
+        /// frame, forcing the kinematic hunter to chase, brake, and re-aim in a
+        /// visible popcorn loop.
+        /// </summary>
+        void ApplyEe5ContactImpulse(Rigidbody2D playerBody, Vector2 direction)
+        {
+            if (!playerBody)
+                return;
+
+            float speedIntoEnemy = Vector2.Dot(playerBody.linearVelocity, -direction);
+            if (speedIntoEnemy > 0f)
+                playerBody.linearVelocity += direction * speedIntoEnemy;
+
+            playerBody.linearVelocity += direction * knockback;
         }
     }
 }
