@@ -202,7 +202,7 @@ namespace ExtraterrestrialExhaust.Core
             if (!enemyTarget)
                 return;
 
-            phase += enemyOrbitSpeed * Time.deltaTime;
+            phase += enemyOrbitSpeed * Time.fixedDeltaTime;
             Vector3 center = enemyTarget.transform.position + enemyOffset;
             Vector3 offset = new Vector3(Mathf.Cos(phase), Mathf.Sin(phase), 0f) * enemyOrbitRadius;
             body.MovePosition(Vector2.Lerp(
@@ -216,9 +216,9 @@ namespace ExtraterrestrialExhaust.Core
             if (!player)
                 return;
 
-            float centerT = 1f - Mathf.Exp(-centerFollowSharpness * Time.deltaTime);
+            float centerT = 1f - Mathf.Exp(-centerFollowSharpness * Time.fixedDeltaTime);
             orbitCenter = Vector2.Lerp(orbitCenter, player.transform.position, centerT);
-            phase += orbitSpeed * Time.deltaTime;
+            phase += orbitSpeed * Time.fixedDeltaTime;
             currentRadiusX = Mathf.Lerp(currentRadiusX, orbitRadiusX, radiusEase * Time.fixedDeltaTime);
             currentRadiusY = Mathf.Lerp(currentRadiusY, orbitRadiusY, radiusEase * Time.fixedDeltaTime);
 
