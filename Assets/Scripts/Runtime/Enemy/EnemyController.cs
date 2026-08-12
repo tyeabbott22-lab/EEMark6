@@ -6,16 +6,28 @@ using ExtraterrestrialExhaust.Player;
 
 namespace ExtraterrestrialExhaust.Enemy
 {
+    public enum EnemyMovementMode
+    {
+        Chase,
+        Wander
+    }
+
     /// <summary>
-    /// Small vertical-slice enemy: wake near the player, chase within a leash,
-    /// steer around authored walls, stop inside attack range, and become inert
-    /// when defeated.
+    /// Small vertical-slice enemy: wake near the player, then either chase into
+    /// contact range or preserve an authored wander pattern, steer around room
+    /// walls, and become inert when defeated.
     /// </summary>
     [RequireComponent(typeof(Rigidbody2D))]
     [RequireComponent(typeof(Collider2D))]
     [RequireComponent(typeof(HealthComponent))]
     public sealed class EnemyController : MonoBehaviour
     {
+        [Header("Authored Movement")]
+        [SerializeField] EnemyMovementMode movementMode = EnemyMovementMode.Chase;
+        [SerializeField, Min(0f)] float wanderRadius = Ee5SliceProfile.EnemyGunnerWanderRadius;
+        [SerializeField, Min(0f)] float wanderDurationMin = Ee5SliceProfile.EnemyGunnerWanderDurationMin;
+        [SerializeField, Min(0f)] float wanderDurationMax = Ee5SliceProfile.EnemyGunnerWanderDurationMax;
+
         [SerializeField, Min(0f)] float detectionRange = 12f;
         [SerializeField, Min(0f)] float wakeDistance = 6f;
         // EE5's authored buildup is the minimum alert envelope. The actual
@@ -84,11 +96,13 @@ namespace ExtraterrestrialExhaust.Enemy
         Vector2 lastChasePosition;
         float chaseProgressTimer;
         Vector2 homePosition;
+        Vector2 wanderTarget;
         Vector2 orbitCenter;
         float orbitAngle;
         float wakeTimer;
         float wakeTotalDuration;
         float wakeSignalCharge;
+        float wanderTimer;
         bool nearPlayer;
         bool touchedPlayerDuringNearPass;
 
@@ -127,6 +141,7 @@ namespace ExtraterrestrialExhaust.Enemy
             State = EnemyState.Dormant;
             lastChasePosition = body.position;
             homePosition = body.position;
+            ResetWander();
         }
 
         void OnEnable()
@@ -182,9 +197,10 @@ namespace ExtraterrestrialExhaust.Enemy
             UpdateWakeSignal(distance);
 
             float behaviorRange = Mathf.Max(detectionRange, GetWakeSignalDistance());
-            if (distance > behaviorRange)
+            // EE5's EnemyAI has no post-wake leash. Once the intro commits,
+            // the enemy remains an authored room threat until death or reload.
+            if (State == EnemyState.Dormant && distance > behaviorRange)
             {
-                SetState(EnemyState.Dormant);
                 return;
             }
 
@@ -205,6 +221,15 @@ namespace ExtraterrestrialExhaust.Enemy
                 // beat halfway through.
                 if (wakeTimer < wakeTotalDuration)
                     return;
+            }
+
+            if (movementMode == EnemyMovementMode.Wander)
+            {
+                // The white gunner is a persistent wandering shooter in
+                // realScene2. Its weapon uses Attacking as the firing contract,
+                // while its body patrols independently of player distance.
+                SetState(EnemyState.Attacking);
+                return;
             }
 
             SetState(distance > attackRange ? EnemyState.Chasing : EnemyState.Attacking);
@@ -337,6 +362,13 @@ namespace ExtraterrestrialExhaust.Enemy
                 return;
             }
 
+            if (movementMode == EnemyMovementMode.Wander
+                && (State == EnemyState.Chasing || State == EnemyState.Attacking))
+            {
+                HandleWanderMovement();
+                return;
+            }
+
             if (State == EnemyState.Chasing)
             {
                 HandleChaseMovement();
@@ -403,6 +435,28 @@ namespace ExtraterrestrialExhaust.Enemy
                 chaseSteerRemaining = steeringCommitTime;
                 MoveClamped(chaseSteerDirection * chaseSpeed * Time.fixedDeltaTime, out _);
             }
+        }
+
+        void HandleWanderMovement()
+        {
+            body.linearVelocity = Vector2.zero;
+            Vector2 toTarget = (Vector2)target.transform.position - body.position;
+            if (toTarget.sqrMagnitude > 0.0001f)
+                FaceTarget(toTarget.normalized);
+
+            wanderTimer -= Time.fixedDeltaTime;
+            if (wanderTimer <= 0f
+                || Vector2.Distance(body.position, wanderTarget) <= 0.1f)
+            {
+                ResetWander();
+            }
+
+            Vector2 move = Vector2.MoveTowards(
+                body.position,
+                wanderTarget,
+                chaseSpeed * Time.fixedDeltaTime) - body.position;
+            if (move.sqrMagnitude > 0.0001f)
+                MoveClamped(move, out _);
         }
 
         void HandleOrbitMovement()
@@ -478,6 +532,15 @@ namespace ExtraterrestrialExhaust.Enemy
 
             nearPlayer = false;
             touchedPlayerDuringNearPass = false;
+        }
+
+        void ResetWander()
+        {
+            float minDuration = Mathf.Max(0f, wanderDurationMin);
+            float maxDuration = Mathf.Max(minDuration, wanderDurationMax);
+            wanderTarget = homePosition
+                + UnityEngine.Random.insideUnitCircle * Mathf.Max(0f, wanderRadius);
+            wanderTimer = UnityEngine.Random.Range(minDuration, maxDuration);
         }
 
         void SetState(EnemyState nextState)

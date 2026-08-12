@@ -42,6 +42,12 @@ namespace ExtraterrestrialExhaust.Core
         public const float EnemyWakeSignalDistanceMultiplier = 4f;
         public const float EnemyGunnerChaseSpeed = 2f;
         public const float EnemyMeleeChaseSpeed = 3f;
+        // realScene2's enemyGun uses MoveType.Wander: after its intro it
+        // patrols a small authored radius and keeps firing, rather than
+        // converting into a chase/orbit enemy when the player moves away.
+        public const float EnemyGunnerWanderRadius = 2f;
+        public const float EnemyGunnerWanderDurationMin = 1f;
+        public const float EnemyGunnerWanderDurationMax = 3f;
         public const float EnemyGunnerFireCooldown = 1f;
         public const float EnemyGunnerProjectileSpeed = 6f;
         public const float EnemyGunnerProjectileLifetime = 5f;

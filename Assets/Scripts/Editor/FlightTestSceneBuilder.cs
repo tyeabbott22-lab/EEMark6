@@ -703,6 +703,22 @@ namespace ExtraterrestrialExhaust.Editor
                     serializedController,
                     "chaseSpeed",
                     ranged ? Ee5SliceProfile.EnemyGunnerChaseSpeed : Ee5SliceProfile.EnemyMeleeChaseSpeed);
+                changed |= SetEnum(
+                    serializedController,
+                    "movementMode",
+                    ranged ? EnemyMovementMode.Wander : EnemyMovementMode.Chase);
+                changed |= SetFloat(
+                    serializedController,
+                    "wanderRadius",
+                    Ee5SliceProfile.EnemyGunnerWanderRadius);
+                changed |= SetFloat(
+                    serializedController,
+                    "wanderDurationMin",
+                    Ee5SliceProfile.EnemyGunnerWanderDurationMin);
+                changed |= SetFloat(
+                    serializedController,
+                    "wanderDurationMax",
+                    Ee5SliceProfile.EnemyGunnerWanderDurationMax);
                 changed |= SetFloat(
                     serializedController,
                     "wakeDuration",
@@ -904,6 +920,30 @@ namespace ExtraterrestrialExhaust.Editor
                     : Ee5SliceProfile.EnemyMeleeChaseSpeed;
                 if (!Mathf.Approximately(chaseSpeed, expectedChaseSpeed))
                     issues.Add($"{prefabPath} chaseSpeed={chaseSpeed}");
+                SerializedProperty movementMode = serializedController.FindProperty("movementMode");
+                int expectedMovementMode = ranged
+                    ? (int)EnemyMovementMode.Wander
+                    : (int)EnemyMovementMode.Chase;
+                if (movementMode == null || movementMode.enumValueIndex != expectedMovementMode)
+                    issues.Add($"{prefabPath} movementMode is not EE5-compatible");
+                CheckSerializedFloat(
+                    serializedController,
+                    "wanderRadius",
+                    Ee5SliceProfile.EnemyGunnerWanderRadius,
+                    $"{prefabPath} wanderRadius",
+                    issues);
+                CheckSerializedFloat(
+                    serializedController,
+                    "wanderDurationMin",
+                    Ee5SliceProfile.EnemyGunnerWanderDurationMin,
+                    $"{prefabPath} wanderDurationMin",
+                    issues);
+                CheckSerializedFloat(
+                    serializedController,
+                    "wanderDurationMax",
+                    Ee5SliceProfile.EnemyGunnerWanderDurationMax,
+                    $"{prefabPath} wanderDurationMax",
+                    issues);
             }
 
             if (ranged)
@@ -1106,6 +1146,20 @@ namespace ExtraterrestrialExhaust.Editor
                 return false;
 
             property.boolValue = value;
+            return true;
+        }
+
+        static bool SetEnum(SerializedObject serialized, string propertyName, System.Enum value)
+        {
+            SerializedProperty property = serialized.FindProperty(propertyName);
+            if (property == null)
+                return false;
+
+            int enumValue = System.Convert.ToInt32(value);
+            if (property.enumValueIndex == enumValue)
+                return false;
+
+            property.enumValueIndex = enumValue;
             return true;
         }
 
@@ -2012,6 +2066,14 @@ namespace ExtraterrestrialExhaust.Editor
             SerializedObject serializedController = new SerializedObject(controller);
             serializedController.FindProperty("detectionRange").floatValue = 12f;
             serializedController.FindProperty("wakeDistance").floatValue = 6f;
+            serializedController.FindProperty("movementMode").enumValueIndex = (int)(
+                ranged ? EnemyMovementMode.Wander : EnemyMovementMode.Chase);
+            serializedController.FindProperty("wanderRadius").floatValue =
+                Ee5SliceProfile.EnemyGunnerWanderRadius;
+            serializedController.FindProperty("wanderDurationMin").floatValue =
+                Ee5SliceProfile.EnemyGunnerWanderDurationMin;
+            serializedController.FindProperty("wanderDurationMax").floatValue =
+                Ee5SliceProfile.EnemyGunnerWanderDurationMax;
             serializedController.FindProperty("wakeDuration").floatValue =
                 Ee5SliceProfile.EnemyWakeBuildupDuration;
             serializedController.FindProperty("requireLineOfSightToWake").boolValue = true;
@@ -2051,7 +2113,10 @@ namespace ExtraterrestrialExhaust.Editor
             serializedController.FindProperty("stuckEscapeCommitTime").floatValue = 0.5f;
             serializedController.FindProperty("blockOtherEnemies").boolValue = true;
             serializedController.FindProperty("otherEnemyBuffer").floatValue = 0.025f;
-            serializedController.FindProperty("orbitWhileAttacking").boolValue = ranged;
+            // The gold EE5 gunner wanders around its spawn center rather than
+            // orbiting the player. Keep the old orbit field available for
+            // experiments, but never enable it in the vertical-slice profile.
+            serializedController.FindProperty("orbitWhileAttacking").boolValue = false;
             serializedController.FindProperty("orbitRadius").floatValue = 1.5f;
             serializedController.FindProperty("orbitMoveSpeed").floatValue = 2f;
             serializedController.FindProperty("orbitAngularSpeed").floatValue = ranged ? 135f : 100f;
