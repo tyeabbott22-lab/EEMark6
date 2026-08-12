@@ -26,16 +26,24 @@ namespace ExtraterrestrialExhaust.Player
         [Tooltip("Removes only velocity directed into a contacted surface, preserving EE5-style tangential follow-through.")]
         [SerializeField] bool removeVelocityIntoColliders = true;
 
+        [Header("Stopper Zone")]
+        [Tooltip("EE5's lower-center volume suppresses new flight input while the craft coasts through it.")]
+        [SerializeField] string stopperTag = "StopperZone";
+
         Rigidbody2D body;
         PlayerFlightInput input;
         PlayerFlightStateMachine stateMachine;
         bool facingRight = true;
         bool initialFacingRight = true;
+        bool inStopperZone;
+        RigidbodyConstraints2D constraintsBeforeStopper;
+        bool savedStopperConstraints;
         readonly ContactPoint2D[] contactBuffer = new ContactPoint2D[8];
 
         public Rigidbody2D Body => body;
         public Transform Visual => visual;
         public bool FacingRight => facingRight;
+        public bool IsInStopperZone => inStopperZone;
         public event Action<bool> Flipped;
 
         void Awake()
@@ -75,7 +83,10 @@ namespace ExtraterrestrialExhaust.Player
 
         void Update()
         {
-            if (allowFlip && stateMachine.CurrentState == PlayerFlightState.FreeFlight && input.WasFlipPressed)
+            if (allowFlip
+                && !inStopperZone
+                && stateMachine.CurrentState == PlayerFlightState.FreeFlight
+                && input.WasFlipPressed)
                 Flip();
         }
 
@@ -87,6 +98,15 @@ namespace ExtraterrestrialExhaust.Player
                 // Do not let gravity or residual drag create a second motion
                 // source while those state machines are in control.
                 body.linearVelocity = Vector2.zero;
+                body.angularVelocity = 0f;
+                return;
+            }
+
+            if (inStopperZone)
+            {
+                // The EE5 stopper is a flight-control volume, not a wall. It
+                // kills rotation and new input but deliberately preserves the
+                // craft's linear momentum while it coasts through the strip.
                 body.angularVelocity = 0f;
                 return;
             }
@@ -143,6 +163,9 @@ namespace ExtraterrestrialExhaust.Player
 
         public void Flip()
         {
+            if (inStopperZone)
+                return;
+
             facingRight = !facingRight;
             Vector3 scale = visual.localScale;
             scale.x = Mathf.Abs(scale.x) * (facingRight ? 1f : -1f);
@@ -157,6 +180,9 @@ namespace ExtraterrestrialExhaust.Player
         /// </summary>
         public void ResetFacingForRespawn()
         {
+            if (inStopperZone)
+                ExitStopperZone();
+
             facingRight = initialFacingRight;
             if (!visual)
                 return;
@@ -164,6 +190,68 @@ namespace ExtraterrestrialExhaust.Player
             Vector3 scale = visual.localScale;
             scale.x = Mathf.Abs(scale.x) * (facingRight ? 1f : -1f);
             visual.localScale = scale;
+        }
+
+        void OnTriggerEnter2D(Collider2D other)
+        {
+            if (IsStopper(other))
+                EnterStopperZone();
+        }
+
+        void OnTriggerExit2D(Collider2D other)
+        {
+            if (IsStopper(other))
+                ExitStopperZone();
+        }
+
+        void OnCollisionEnter2D(Collision2D collision)
+        {
+            if (collision != null && IsStopper(collision.collider))
+                EnterStopperZone();
+        }
+
+        void OnCollisionStay2D(Collision2D collision)
+        {
+            if (collision != null && IsStopper(collision.collider))
+            {
+                inStopperZone = true;
+                body.angularVelocity = 0f;
+            }
+        }
+
+        void OnCollisionExit2D(Collision2D collision)
+        {
+            if (collision != null && IsStopper(collision.collider))
+                ExitStopperZone();
+        }
+
+        bool IsStopper(Collider2D other)
+        {
+            return other && !string.IsNullOrEmpty(stopperTag) && other.CompareTag(stopperTag);
+        }
+
+        void EnterStopperZone()
+        {
+            if (!inStopperZone)
+            {
+                constraintsBeforeStopper = body.constraints;
+                savedStopperConstraints = true;
+                body.constraints |= RigidbodyConstraints2D.FreezeRotation;
+            }
+
+            inStopperZone = true;
+            body.angularVelocity = 0f;
+        }
+
+        void ExitStopperZone()
+        {
+            inStopperZone = false;
+
+            if (!savedStopperConstraints)
+                return;
+
+            body.constraints = constraintsBeforeStopper;
+            savedStopperConstraints = false;
         }
     }
 }

@@ -398,6 +398,22 @@ namespace ExtraterrestrialExhaust.Editor
             if (!body || !Mathf.Approximately(body.linearDamping, Ee5SliceProfile.PlayerLinearDamping))
                 mismatches.Add($"linearDamping={(body ? body.linearDamping : -1f)} (expected {Ee5SliceProfile.PlayerLinearDamping})");
 
+            PlayerFlightMotor motor = playerObject.GetComponent<PlayerFlightMotor>();
+            if (!motor)
+            {
+                mismatches.Add("PlayerFlightMotor is missing");
+            }
+            else
+            {
+                SerializedObject serializedMotor = new SerializedObject(motor);
+                SerializedProperty stopperTag = serializedMotor.FindProperty("stopperTag");
+                if (stopperTag == null || stopperTag.stringValue != "StopperZone")
+                {
+                    mismatches.Add(
+                        $"stopperTag={(stopperTag != null ? stopperTag.stringValue : "<missing>")} (expected StopperZone)");
+                }
+            }
+
             PlayerWeapon weapon = playerObject.GetComponent<PlayerWeapon>();
             if (weapon)
             {
@@ -464,6 +480,9 @@ namespace ExtraterrestrialExhaust.Editor
                 serializedMotor.FindProperty("stabilizationAngle").floatValue = 0f;
                 serializedMotor.FindProperty("removeVelocityIntoColliders").boolValue =
                     Ee5SliceProfile.PlayerRemoveVelocityIntoColliders;
+                SerializedProperty stopperTag = serializedMotor.FindProperty("stopperTag");
+                if (stopperTag != null)
+                    stopperTag.stringValue = "StopperZone";
                 serializedMotor.ApplyModifiedPropertiesWithoutUndo();
             }
 
@@ -797,8 +816,18 @@ namespace ExtraterrestrialExhaust.Editor
             if (!UnityEngine.Object.FindFirstObjectByType<GameplayHud>())
                 issues.Add("GameplayHud");
             GameObject stopper = GameObject.Find("Flight Stopper Zone");
-            if (!stopper || !stopper.GetComponent<BoxCollider2D>())
+            if (!stopper)
                 issues.Add("Flight Stopper Zone");
+            else
+            {
+                BoxCollider2D stopperCollider = stopper.GetComponent<BoxCollider2D>();
+                if (!stopperCollider)
+                    issues.Add("Flight Stopper Zone collider");
+                else if (!stopperCollider.isTrigger)
+                    issues.Add("Flight Stopper Zone must be a trigger");
+                if (stopper.tag != "StopperZone")
+                    issues.Add("Flight Stopper Zone tag");
+            }
 
             EnemyController[] enemies = UnityEngine.Object.FindObjectsByType<EnemyController>(FindObjectsSortMode.None);
             if (enemies == null || enemies.Length < 2)
@@ -1035,6 +1064,9 @@ namespace ExtraterrestrialExhaust.Editor
             serializedMotor.FindProperty("stabilizationAngle").floatValue = 0f;
             serializedMotor.FindProperty("removeVelocityIntoColliders").boolValue =
                 Ee5SliceProfile.PlayerRemoveVelocityIntoColliders;
+            SerializedProperty stopperTag = serializedMotor.FindProperty("stopperTag");
+            if (stopperTag != null)
+                stopperTag.stringValue = "StopperZone";
             serializedMotor.ApplyModifiedPropertiesWithoutUndo();
             HealthComponent playerHealth = player.GetComponent<HealthComponent>();
             SerializedObject serializedPlayerHealth = new SerializedObject(playerHealth);

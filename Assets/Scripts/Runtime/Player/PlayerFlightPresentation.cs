@@ -104,6 +104,21 @@ namespace ExtraterrestrialExhaust.Player
                 AnimateExhaust(rightExhaust, rightExhaustParticles, 0f, false);
                 UpdateThrustAudio(false);
                 UpdateSpriteAnimation(false);
+                RestoreNeutralScale();
+                return;
+            }
+
+            if (flightMotor && flightMotor.IsInStopperZone)
+            {
+                // The EE5 stopper suppresses the control response as well as
+                // the physics force. Do not leave a held thrust command
+                // visually burning through the neutral coasting volume.
+                squashTimer = 0f;
+                AnimateExhaust(leftExhaust, leftExhaustParticles, 0f, false);
+                AnimateExhaust(rightExhaust, rightExhaustParticles, 0f, false);
+                UpdateThrustAudio(false);
+                UpdateSpriteAnimation(false);
+                RestoreNeutralScale();
                 return;
             }
 
@@ -197,6 +212,19 @@ namespace ExtraterrestrialExhaust.Player
             squashTimer = squashDuration;
             SyncExhaustAnchors();
             RefreshExhaustPresentation();
+        }
+
+        void RestoreNeutralScale()
+        {
+            if (!visual)
+                return;
+
+            Vector3 targetScale = visualBaseScale;
+            if (flightMotor && !flightMotor.FacingRight)
+                targetScale.x = -Mathf.Abs(targetScale.x);
+
+            float scaleT = 1f - Mathf.Exp(-squashReturnSpeed * Time.deltaTime);
+            visual.localScale = Vector3.Lerp(visual.localScale, targetScale, scaleT);
         }
 
         void CacheExhaustAnchors()
