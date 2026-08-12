@@ -119,8 +119,22 @@ namespace ExtraterrestrialExhaust.Player
 
         public void ApplyFireRateBoost(float duration, float multiplier)
         {
-            fireRateMultiplier = Mathf.Max(1f, multiplier);
+            // Pickups can overlap. Preserve the strongest active multiplier
+            // while letting a later pickup extend the shared expiry window.
+            fireRateMultiplier = Mathf.Max(1f, fireRateMultiplier, multiplier);
             fireRateBoostRemaining = Mathf.Max(fireRateBoostRemaining, duration);
+        }
+
+        /// <summary>
+        /// Clears room-local weapon state for reusable in-place respawn paths.
+        /// Scene reloads naturally reset these fields with the scene itself.
+        /// </summary>
+        public void ResetForRespawn()
+        {
+            cooldownRemaining = 0f;
+            fireRateMultiplier = 1f;
+            fireRateBoostRemaining = 0f;
+            HideAimLine();
         }
 
         void ResolveReferences()

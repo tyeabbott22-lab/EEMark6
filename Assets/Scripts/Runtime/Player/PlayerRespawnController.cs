@@ -20,6 +20,7 @@ namespace ExtraterrestrialExhaust.Player
 
         PlayerCharacter character;
         PlayerFlightPresentation presentation;
+        PlayerWeapon weapon;
         Rigidbody2D body;
         Coroutine respawnRoutine;
         Vector3 initialPosition;
@@ -32,6 +33,7 @@ namespace ExtraterrestrialExhaust.Player
         {
             character = GetComponent<PlayerCharacter>();
             presentation = GetComponent<PlayerFlightPresentation>();
+            weapon = GetComponent<PlayerWeapon>();
             body = GetComponent<Rigidbody2D>();
             initialPosition = transform.position;
             initialRotation = transform.rotation;
@@ -96,6 +98,7 @@ namespace ExtraterrestrialExhaust.Player
 
             StopBody();
             presentation?.ResetPresentation();
+            weapon?.ResetForRespawn();
             character.Health.ResetHealth();
             character.FlightState.TrySetState(PlayerFlightState.FreeFlight);
             respawnRoutine = null;
