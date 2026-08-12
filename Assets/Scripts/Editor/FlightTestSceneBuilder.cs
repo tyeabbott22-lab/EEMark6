@@ -1726,15 +1726,27 @@ namespace ExtraterrestrialExhaust.Editor
                 return false;
 
             Transform visual = root.transform.Find("Craft Visual");
-            SpriteRenderer renderer = visual ? visual.GetComponent<SpriteRenderer>() : null;
-            PlayerFlightPresentation presentation = root.GetComponent<PlayerFlightPresentation>();
-            if (!visual || !renderer || !presentation)
+            if (!visual)
             {
-                Debug.LogWarning(
-                    $"Skipped player craft sprite repair for {root.name}; Craft Visual, SpriteRenderer, or PlayerFlightPresentation is missing.",
-                    root);
-                return false;
+                visual = new GameObject("Craft Visual").transform;
+                visual.SetParent(root.transform, false);
+                EditorUtility.SetDirty(visual.gameObject);
             }
+
+            // Older FlightTest scenes predate the composed player visual and
+            // contain only the decorative outline LineRenderer. Repair the
+            // object in place so a user can recover that scene through the
+            // menu without editing Unity YAML or rebuilding the whole room.
+            SpriteRenderer renderer = visual.GetComponent<SpriteRenderer>();
+            if (!renderer)
+            {
+                renderer = visual.gameObject.AddComponent<SpriteRenderer>();
+                renderer.sortingOrder = 10;
+            }
+
+            PlayerFlightPresentation presentation = root.GetComponent<PlayerFlightPresentation>();
+            if (!presentation)
+                presentation = root.AddComponent<PlayerFlightPresentation>();
 
             renderer.sprite = craftSprites[0];
             SerializedObject serializedPresentation = new SerializedObject(presentation);
