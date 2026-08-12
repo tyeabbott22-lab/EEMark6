@@ -477,6 +477,7 @@ namespace ExtraterrestrialExhaust.Editor
                 flightInput.ConfigureInputAsset(inputAsset);
                 SerializedObject serializedInput = new SerializedObject(flightInput);
                 serializedInput.FindProperty("gameState").objectReferenceValue = gameState;
+                serializedInput.FindProperty("includeEe5KeyboardFallback").boolValue = true;
                 serializedInput.ApplyModifiedPropertiesWithoutUndo();
             }
 
@@ -984,6 +985,7 @@ namespace ExtraterrestrialExhaust.Editor
                 input.ConfigureInputAsset(inputAsset);
             SerializedObject serializedInput = new SerializedObject(input);
             serializedInput.FindProperty("gameState").objectReferenceValue = gameState;
+            serializedInput.FindProperty("includeEe5KeyboardFallback").boolValue = true;
             serializedInput.ApplyModifiedPropertiesWithoutUndo();
             PlayerRespawnController recovery = player.AddComponent<PlayerRespawnController>();
             SerializedObject serializedRecovery = new SerializedObject(recovery);
