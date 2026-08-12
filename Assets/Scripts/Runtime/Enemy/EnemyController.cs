@@ -338,9 +338,6 @@ namespace ExtraterrestrialExhaust.Enemy
                 // the attack state latched while the player knockback travels
                 // outward; otherwise the distance threshold can make the
                 // hunter chase and brake again before the hit is readable.
-                attackRecoveryRemaining = Mathf.Max(
-                    0f,
-                    attackRecoveryRemaining - Time.deltaTime);
                 return;
             }
 
@@ -501,6 +498,17 @@ namespace ExtraterrestrialExhaust.Enemy
             {
                 body.linearVelocity = Vector2.zero;
                 return;
+            }
+
+            // Contact damage, the attack-facing lock, and navigation all run
+            // on the physics clock. Decaying recovery here prevents a render
+            // frame-rate change from altering the distance at which the melee
+            // hunter resumes pursuit.
+            if (State == EnemyState.Attacking && attackRecoveryRemaining > 0f)
+            {
+                attackRecoveryRemaining = Mathf.Max(
+                    0f,
+                    attackRecoveryRemaining - Time.fixedDeltaTime);
             }
 
             if (!target || !bodyCollider)

@@ -116,7 +116,11 @@ namespace ExtraterrestrialExhaust.Enemy
                 return;
             }
 
-            Vector2 toTarget = (Vector2)target.transform.position - (Vector2)transform.position;
+            // Aim from the same physics-space target position used by the
+            // controller. Using the interpolated Transform here made shots
+            // visually lead/lag the actual player collider at uneven frame
+            // rates, especially while the craft was turning under thrust.
+            Vector2 toTarget = target.PhysicsPosition - (Vector2)transform.position;
             if (requireTargetWithinAttackRange && toTarget.magnitude > attackRange)
             {
                 HideTelegraph();
@@ -137,7 +141,7 @@ namespace ExtraterrestrialExhaust.Enemy
         {
             Transform origin = firePoint ? firePoint : transform;
             Vector2 direction = target
-                ? ((Vector2)target.transform.position - (Vector2)origin.position).normalized
+                ? (target.PhysicsPosition - (Vector2)origin.position).normalized
                 : (Vector2)transform.right;
             if (direction.sqrMagnitude <= 0.001f)
                 direction = transform.right;
@@ -204,7 +208,7 @@ namespace ExtraterrestrialExhaust.Enemy
         {
             Transform originTransform = firePoint ? firePoint : transform;
             Vector2 origin = originTransform.position;
-            Vector2 targetPoint = target ? (Vector2)target.transform.position : origin;
+            Vector2 targetPoint = target ? target.PhysicsPosition : origin;
             Vector2 toTarget = targetPoint - origin;
             float distance = toTarget.magnitude;
             visibleEnd = targetPoint;
