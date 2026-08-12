@@ -18,7 +18,9 @@ namespace ExtraterrestrialExhaust.Core
         public const float PlayerLinearDamping = 0.35f;
         public const float PlayerAngularDamping = 3.25f;
         public const float PlayerFlightLinearDamping = 0.08f;
-        public const float PlayerFlightAngularDamping = 0.7f;
+        // Preserve the authored EE5 angular drag so the craft carries linear
+        // momentum without becoming uncontrollably loose around its up axis.
+        public const float PlayerFlightAngularDamping = 3.25f;
         public const float PlayerMaxHealth = 5f;
         public const float PlayerInvulnerabilityDuration = 0.5f;
 
@@ -58,6 +60,7 @@ namespace ExtraterrestrialExhaust.Core
         public const float EnemyWakeSignalDistanceMultiplier = 4f;
         public const float EnemyGunnerChaseSpeed = 2f;
         public const float EnemyMeleeChaseSpeed = 3f;
+        public const float EnemyFaceTurnSpeed = 5f;
         // Stop just outside the combined player/melee collider radii. This
         // keeps contact damage active without making a dynamic enemy repeatedly
         // push into the player's body and jitter at the attack threshold.

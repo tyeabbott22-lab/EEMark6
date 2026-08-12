@@ -432,6 +432,8 @@ namespace ExtraterrestrialExhaust.Editor
                 mismatches.Add($"gravityScale={(body ? body.gravityScale : -1f)} (expected {Ee5SliceProfile.PlayerGravityScale})");
             if (!body || !Mathf.Approximately(body.linearDamping, Ee5SliceProfile.PlayerFlightLinearDamping))
                 mismatches.Add($"linearDamping={(body ? body.linearDamping : -1f)} (expected {Ee5SliceProfile.PlayerFlightLinearDamping})");
+            if (!body || !Mathf.Approximately(body.angularDamping, Ee5SliceProfile.PlayerFlightAngularDamping))
+                mismatches.Add($"angularDamping={(body ? body.angularDamping : -1f)} (expected {Ee5SliceProfile.PlayerFlightAngularDamping})");
 
             PlayerFlightMotor motor = playerObject.GetComponent<PlayerFlightMotor>();
             if (!motor)
@@ -740,6 +742,10 @@ namespace ExtraterrestrialExhaust.Editor
                     ranged ? Ee5SliceProfile.EnemyGunnerChaseSpeed : Ee5SliceProfile.EnemyMeleeChaseSpeed);
                 changed |= SetFloat(
                     serializedController,
+                    "faceTurnSpeed",
+                    Ee5SliceProfile.EnemyFaceTurnSpeed);
+                changed |= SetFloat(
+                    serializedController,
                     "attackRange",
                     ranged ? 7f : Ee5SliceProfile.EnemyMeleeAttackRange);
                 changed |= SetFloat(serializedController, "targetBuffer", 0.04f);
@@ -806,6 +812,37 @@ namespace ExtraterrestrialExhaust.Editor
                 serializedController.ApplyModifiedPropertiesWithoutUndo();
             }
 
+            Rigidbody2D body = prefabContents.GetComponent<Rigidbody2D>();
+            if (body)
+            {
+                bool bodyChanged = false;
+                if (body.bodyType != RigidbodyType2D.Kinematic)
+                {
+                    body.bodyType = RigidbodyType2D.Kinematic;
+                    bodyChanged = true;
+                }
+                if (!Mathf.Approximately(body.linearDamping, 0f))
+                {
+                    body.linearDamping = 0f;
+                    bodyChanged = true;
+                }
+                if (!Mathf.Approximately(body.angularDamping, 0.05f))
+                {
+                    body.angularDamping = 0.05f;
+                    bodyChanged = true;
+                }
+                if (body.interpolation != RigidbodyInterpolation2D.Interpolate)
+                {
+                    body.interpolation = RigidbodyInterpolation2D.Interpolate;
+                    bodyChanged = true;
+                }
+                if (bodyChanged)
+                {
+                    EditorUtility.SetDirty(body);
+                    changed = true;
+                }
+            }
+
             EnemySpritePresentation presentation = prefabContents.GetComponent<EnemySpritePresentation>();
             if (presentation)
             {
@@ -824,7 +861,7 @@ namespace ExtraterrestrialExhaust.Editor
 
                 SerializedObject serializedPresentation = new SerializedObject(presentation);
                 changed |= SetBool(serializedPresentation, "faceDormantTowardTarget", ranged);
-                changed |= SetBool(serializedPresentation, "forwardIsLocalNegativeX", true);
+                changed |= SetBool(serializedPresentation, "forwardIsLocalNegativeX", ranged);
                 changed |= SetBool(serializedPresentation, "restoreFacingAfterWake", true);
                 changed |= SetBool(serializedPresentation, "pingPongDormantAnimation", true);
                 changed |= SetBool(serializedPresentation, "randomizeDormantStartFrame", true);
@@ -927,6 +964,20 @@ namespace ExtraterrestrialExhaust.Editor
             }
 
             EnemyController controller = prefab.GetComponent<EnemyController>();
+            Rigidbody2D body = prefab.GetComponent<Rigidbody2D>();
+            if (!body)
+            {
+                issues.Add($"{prefabPath} has no Rigidbody2D");
+            }
+            else
+            {
+                if (body.bodyType != RigidbodyType2D.Kinematic)
+                    issues.Add($"{prefabPath} Rigidbody2D is dynamic (expected kinematic)");
+                if (!Mathf.Approximately(body.linearDamping, 0f))
+                    issues.Add($"{prefabPath} linearDamping={body.linearDamping} (expected 0)");
+                if (body.interpolation != RigidbodyInterpolation2D.Interpolate)
+                    issues.Add($"{prefabPath} Rigidbody2D interpolation is not Interpolate");
+            }
             HealthComponent health = prefab.GetComponent<HealthComponent>();
             if (!health)
             {
@@ -1127,7 +1178,7 @@ namespace ExtraterrestrialExhaust.Editor
                 bool restoresFacing = serializedPresentation.FindProperty("restoreFacingAfterWake").boolValue;
                 if (facesTarget != ranged)
                     issues.Add($"{prefabPath} faceDormantTowardTarget={facesTarget}");
-                if (!forwardNegativeX || !restoresFacing)
+                if (forwardNegativeX != ranged || !restoresFacing)
                     issues.Add($"{prefabPath} dormant facing basis is incomplete");
                 SerializedProperty pingPongDormant =
                     serializedPresentation.FindProperty("pingPongDormantAnimation");
@@ -2298,8 +2349,14 @@ namespace ExtraterrestrialExhaust.Editor
             enemy.transform.position = position;
 
             Rigidbody2D body = enemy.AddComponent<Rigidbody2D>();
+            // EE5 drives enemies with MovePosition on kinematic, interpolated
+            // bodies. Dynamic bodies fight that scripted motion at contact and
+            // produce the exact melee jitter the slice report caught.
+            body.bodyType = RigidbodyType2D.Kinematic;
             body.gravityScale = 0f;
-            body.linearDamping = 2f;
+            body.linearDamping = 0f;
+            body.angularDamping = 0.05f;
+            body.interpolation = RigidbodyInterpolation2D.Interpolate;
             body.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
 
             CircleCollider2D collider = enemy.AddComponent<CircleCollider2D>();
@@ -2381,7 +2438,8 @@ namespace ExtraterrestrialExhaust.Editor
             serializedController.FindProperty("orbitDirection").floatValue = 1f;
             serializedController.FindProperty("nearMissDistance").floatValue = 1.65f;
             serializedController.FindProperty("nearMissExitDistance").floatValue = 2.15f;
-            serializedController.FindProperty("faceTurnSpeed").floatValue = ranged ? 7.4f : 7.6f;
+            serializedController.FindProperty("faceTurnSpeed").floatValue =
+                Ee5SliceProfile.EnemyFaceTurnSpeed;
             serializedController.FindProperty("forwardIsLocalNegativeX").boolValue = ranged;
             serializedController.FindProperty("keepSpriteUpright").boolValue = true;
             serializedController.FindProperty("gameState").objectReferenceValue = gameState;
@@ -2483,7 +2541,7 @@ namespace ExtraterrestrialExhaust.Editor
             serializedPresentation.FindProperty("pingPongDormantAnimation").boolValue = true;
             serializedPresentation.FindProperty("randomizeDormantStartFrame").boolValue = true;
             serializedPresentation.FindProperty("faceDormantTowardTarget").boolValue = ranged;
-            serializedPresentation.FindProperty("forwardIsLocalNegativeX").boolValue = true;
+            serializedPresentation.FindProperty("forwardIsLocalNegativeX").boolValue = ranged;
             serializedPresentation.FindProperty("restoreFacingAfterWake").boolValue = true;
             serializedPresentation.ApplyModifiedPropertiesWithoutUndo();
             CreateEnemyHealthDisplay(enemy.transform, ranged);

@@ -140,12 +140,30 @@ namespace ExtraterrestrialExhaust.Enemy
             bodyCollider = GetComponent<Collider2D>();
             health = GetComponent<HealthComponent>();
             spriteRenderer = GetComponent<SpriteRenderer>();
+            ApplyEe5PhysicsProfile();
             if (!gameState)
                 gameState = FindFirstObjectByType<GameStateMachine>();
             State = EnemyState.Dormant;
             lastChasePosition = body.position;
             homePosition = body.position;
             ResetWander();
+        }
+
+        void ApplyEe5PhysicsProfile()
+        {
+            if (!body)
+                return;
+
+            // EnemyController advances with Rigidbody2D.MovePosition and
+            // MoveRotation. EE5's prefabs are kinematic/interpolated; allowing
+            // dynamic contact resolution here makes the melee body fight its
+            // scripted stop and visibly jitter against the player.
+            body.bodyType = RigidbodyType2D.Kinematic;
+            body.gravityScale = 0f;
+            body.linearDamping = 0f;
+            body.angularDamping = 0.05f;
+            body.interpolation = RigidbodyInterpolation2D.Interpolate;
+            body.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
         }
 
         void OnEnable()
@@ -405,6 +423,17 @@ namespace ExtraterrestrialExhaust.Enemy
             {
                 HandleOrbitMovement();
                 return;
+            }
+
+            // EE5 keeps facing the player while a melee hunter is in its
+            // contact-attack state. Without this branch the body stops moving
+            // at the attack radius but its sprite remains aimed at the last
+            // chase direction, which reads as a backwards enemy.
+            if (State == EnemyState.Attacking)
+            {
+                Vector2 toTarget = (Vector2)target.transform.position - body.position;
+                if (toTarget.sqrMagnitude > 0.0001f)
+                    FaceTarget(toTarget.normalized);
             }
 
             body.linearVelocity = Vector2.zero;
