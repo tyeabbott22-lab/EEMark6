@@ -34,6 +34,25 @@ namespace ExtraterrestrialExhaust.Core
         ExtractionPortalPresentation portalPresentation;
         bool capturing;
         bool extractionComplete;
+        PlayerCharacter capturedPlayer;
+        Rigidbody2D capturedBody;
+        RigidbodyType2D capturedBodyType;
+        RigidbodyConstraints2D capturedBodyConstraints;
+        RigidbodyInterpolation2D capturedBodyInterpolation;
+        CollisionDetectionMode2D capturedBodyCollisionMode;
+        float capturedBodyGravityScale;
+        float capturedBodyLinearDamping;
+        float capturedBodyAngularDamping;
+        bool capturedBodySimulated;
+        Vector2 captureStartPosition;
+        float captureStartBodyRotation;
+        Vector3 captureStartVisualScale;
+        Transform capturedVisual;
+        bool capturedBodyState;
+        Collider2D[] capturedColliders;
+        bool[] capturedColliderStates;
+        SpriteRenderer[] capturedRenderers;
+        Color[] capturedRendererColors;
         public bool IsCapturing => capturing;
         public bool IsComplete => extractionComplete;
         // EE5's door state is the extraction gate. Once the delivered key has
@@ -68,6 +87,9 @@ namespace ExtraterrestrialExhaust.Core
                 encounter.Completed -= UpdateVisual;
             if (requiredGate)
                 requiredGate.Disabled -= UpdateVisual;
+
+            if (capturing && !extractionComplete)
+                CancelCapture();
         }
 
         void OnTriggerEnter2D(Collider2D other)
@@ -95,6 +117,7 @@ namespace ExtraterrestrialExhaust.Core
         IEnumerator CapturePlayer(PlayerCharacter player)
         {
             capturing = true;
+            capturedPlayer = player;
             portalPresentation?.BeginCapture();
             player.FlightState.TrySetState(PlayerFlightState.Scripted);
             PlayerCameraFollow.Instance?.Shake(0.12f, captureDuration);
@@ -103,35 +126,51 @@ namespace ExtraterrestrialExhaust.Core
             Transform visual = player.FlightMotor && player.FlightMotor.Visual
                 ? player.FlightMotor.Visual
                 : player.transform;
-            Collider2D[] colliders = player.GetComponentsInChildren<Collider2D>(true);
-            for (int i = 0; i < colliders.Length; i++)
+            capturedVisual = visual;
+            capturedColliders = player.GetComponentsInChildren<Collider2D>(true);
+            capturedColliderStates = new bool[capturedColliders.Length];
+            for (int i = 0; i < capturedColliders.Length; i++)
             {
-                colliders[i].enabled = false;
+                capturedColliderStates[i] = capturedColliders[i].enabled;
+                capturedColliders[i].enabled = false;
             }
 
-            SpriteRenderer[] renderers = player.GetComponentsInChildren<SpriteRenderer>(true);
-            Color[] rendererColors = new Color[renderers.Length];
-            for (int i = 0; i < renderers.Length; i++)
-                rendererColors[i] = renderers[i].color;
+            capturedRenderers = player.GetComponentsInChildren<SpriteRenderer>(true);
+            capturedRendererColors = new Color[capturedRenderers.Length];
+            for (int i = 0; i < capturedRenderers.Length; i++)
+                capturedRendererColors[i] = capturedRenderers[i].color;
 
             if (body)
             {
+                capturedBody = body;
+                capturedBodyType = body.bodyType;
+                capturedBodyConstraints = body.constraints;
+                capturedBodyInterpolation = body.interpolation;
+                capturedBodyCollisionMode = body.collisionDetectionMode;
+                capturedBodyGravityScale = body.gravityScale;
+                capturedBodyLinearDamping = body.linearDamping;
+                capturedBodyAngularDamping = body.angularDamping;
+                capturedBodySimulated = body.simulated;
+                capturedBodyState = true;
                 body.linearVelocity = Vector2.zero;
                 body.angularVelocity = 0f;
                 body.constraints = RigidbodyConstraints2D.None;
+                body.gravityScale = 0f;
+                body.linearDamping = 0f;
+                body.angularDamping = 0f;
                 body.interpolation = RigidbodyInterpolation2D.None;
                 body.bodyType = RigidbodyType2D.Kinematic;
                 body.simulated = true;
             }
 
-            Vector2 startPosition = body ? body.position : player.transform.position;
-            Vector3 startScale = visual.localScale;
+            captureStartPosition = body ? body.position : player.transform.position;
+            captureStartVisualScale = visual.localScale;
             float elapsed = 0f;
             float startAngle = Mathf.Atan2(
-                startPosition.y - transform.position.y,
-                startPosition.x - transform.position.x);
-            float startBodyRotation = body ? body.rotation : player.transform.eulerAngles.z;
-            float initialRadius = Mathf.Max(Vector2.Distance(startPosition, transform.position), 0.001f);
+                captureStartPosition.y - transform.position.y,
+                captureStartPosition.x - transform.position.x);
+            captureStartBodyRotation = body ? body.rotation : player.transform.eulerAngles.z;
+            float initialRadius = Mathf.Max(Vector2.Distance(captureStartPosition, transform.position), 0.001f);
             float direction = clockwise ? -1f : 1f;
 
             while (elapsed < captureDuration && player)
@@ -151,28 +190,31 @@ namespace ExtraterrestrialExhaust.Core
                 if (body)
                 {
                     body.position = capturePosition;
-                    body.rotation = startBodyRotation - additionalPlayerSpin * angleT;
+                    body.rotation = captureStartBodyRotation - additionalPlayerSpin * angleT;
                 }
                 else
                 {
                     player.transform.position = capturePosition;
-                    player.transform.rotation = Quaternion.Euler(0f, 0f, startBodyRotation - additionalPlayerSpin * angleT);
+                    player.transform.rotation = Quaternion.Euler(
+                        0f,
+                        0f,
+                        captureStartBodyRotation - additionalPlayerSpin * angleT);
                 }
 
                 float scale = Mathf.Lerp(1f, finalPlayerScale, Mathf.SmoothStep(0f, 1f, radialT));
                 float squash = squashAmount * Mathf.SmoothStep(0f, 1f, t);
                 visual.localScale = Vector3.Scale(
-                    startScale * scale,
+                    captureStartVisualScale * scale,
                     new Vector3(1f + squash, Mathf.Max(0.35f, 1f - squash), 1f));
 
                 float fade = t <= fadeStart ? 0f : Mathf.InverseLerp(fadeStart, 1f, t);
-                for (int i = 0; i < renderers.Length; i++)
+                for (int i = 0; i < capturedRenderers.Length; i++)
                 {
-                    if (!renderers[i])
+                    if (!capturedRenderers[i])
                         continue;
-                    Color color = rendererColors[i];
+                    Color color = capturedRendererColors[i];
                     color.a *= 1f - fade;
-                    renderers[i].color = color;
+                    capturedRenderers[i].color = color;
                 }
 
                 portalPresentation?.SetCaptureProgress(t);
@@ -182,15 +224,14 @@ namespace ExtraterrestrialExhaust.Core
 
             if (!player)
             {
-                portalPresentation?.CancelCapture();
-                capturing = false;
+                CancelCapture();
                 yield break;
             }
 
             if (body)
             {
                 body.position = transform.position;
-                body.rotation = startBodyRotation - additionalPlayerSpin;
+                body.rotation = captureStartBodyRotation - additionalPlayerSpin;
                 body.linearVelocity = Vector2.zero;
                 body.angularVelocity = 0f;
                 body.bodyType = RigidbodyType2D.Kinematic;
@@ -203,6 +244,63 @@ namespace ExtraterrestrialExhaust.Core
             FindFirstObjectByType<ScoreSystem>()?.Award(ScoreReason.LevelCompleted);
             extractionComplete = true;
             gameState?.EndGame(GameOverReason.ExtractionComplete);
+            capturing = false;
+            capturedBodyState = false;
+            capturedPlayer = null;
+        }
+
+        void CancelCapture()
+        {
+            if (capturedBody && capturedBodyState)
+            {
+                capturedBody.position = captureStartPosition;
+                capturedBody.rotation = captureStartBodyRotation;
+                capturedBody.bodyType = capturedBodyType;
+                capturedBody.constraints = capturedBodyConstraints;
+                capturedBody.interpolation = capturedBodyInterpolation;
+                capturedBody.collisionDetectionMode = capturedBodyCollisionMode;
+                capturedBody.gravityScale = capturedBodyGravityScale;
+                capturedBody.linearDamping = capturedBodyLinearDamping;
+                capturedBody.angularDamping = capturedBodyAngularDamping;
+                capturedBody.simulated = capturedBodySimulated;
+                capturedBody.linearVelocity = Vector2.zero;
+                capturedBody.angularVelocity = 0f;
+            }
+            else if (capturedPlayer)
+            {
+                capturedPlayer.transform.SetPositionAndRotation(
+                    captureStartPosition,
+                    Quaternion.Euler(0f, 0f, captureStartBodyRotation));
+            }
+
+            if (capturedVisual)
+                capturedVisual.localScale = captureStartVisualScale;
+
+            if (capturedColliders != null && capturedColliderStates != null)
+            {
+                for (int i = 0; i < capturedColliders.Length; i++)
+                {
+                    if (capturedColliders[i])
+                        capturedColliders[i].enabled = capturedColliderStates[i];
+                }
+            }
+
+            if (capturedRenderers != null && capturedRendererColors != null)
+            {
+                for (int i = 0; i < capturedRenderers.Length; i++)
+                {
+                    if (capturedRenderers[i])
+                        capturedRenderers[i].color = capturedRendererColors[i];
+                }
+            }
+
+            if (capturedPlayer && capturedPlayer.FlightState.CurrentState == PlayerFlightState.Scripted)
+                capturedPlayer.FlightState.TrySetState(PlayerFlightState.FreeFlight);
+
+            portalPresentation?.CancelCapture();
+            capturedBodyState = false;
+            capturedBody = null;
+            capturedPlayer = null;
             capturing = false;
         }
 
