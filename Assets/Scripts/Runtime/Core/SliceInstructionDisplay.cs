@@ -34,7 +34,13 @@ namespace ExtraterrestrialExhaust.Core
 
         public void Show(string sourceId, string message)
         {
+            if (!this)
+                return;
+
             EnsureDisplay();
+            if (!messageLabel || !panel)
+                return;
+
             activeSourceId = sourceId;
             messageLabel.text = message;
             panel.gameObject.SetActive(true);
@@ -43,6 +49,9 @@ namespace ExtraterrestrialExhaust.Core
 
         public void Hide(string sourceId)
         {
+            if (!this)
+                return;
+
             if (!string.IsNullOrEmpty(activeSourceId) && activeSourceId != sourceId)
                 return;
 
@@ -52,6 +61,9 @@ namespace ExtraterrestrialExhaust.Core
 
         void StartTransition(bool visible)
         {
+            if (!this)
+                return;
+
             if (transitionRoutine != null)
                 StopCoroutine(transitionRoutine);
             transitionRoutine = StartCoroutine(TransitionRoutine(visible));

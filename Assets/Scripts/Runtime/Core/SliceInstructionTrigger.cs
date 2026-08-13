@@ -45,7 +45,14 @@ namespace ExtraterrestrialExhaust.Core
         void OnTriggerExit2D(Collider2D other)
         {
             if (hideOnExit && IsPlayer(other))
-                display?.Hide(sourceId);
+            {
+                // Unity's destroyed-object wrapper is not null to C#'s
+                // null-conditional operator. Use Unity's overloaded bool so a
+                // scene refresh cannot call into a display that is already
+                // being torn down.
+                if (display)
+                    display.Hide(sourceId);
+            }
         }
 
         /// <summary>Editor builders use this to author prompts without exposing serialized details.</summary>
