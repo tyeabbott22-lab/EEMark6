@@ -564,12 +564,15 @@ namespace ExtraterrestrialExhaust.Editor
             EditorUtility.SetDirty(playerObject);
             EditorSceneManager.MarkSceneDirty(activeScene);
             AssetDatabase.SaveAssets();
+            bool saved = EditorSceneManager.SaveScene(activeScene, ScenePath);
 
             Debug.Log(
                 "Repaired the active FlightTest player to the EE5 profile: "
                 + $"55 thrust, {Ee5SliceProfile.PlayerFlightLinearDamping:0.##} linear damping, one-second player shots, "
                 + "12 recoil, orange craft sprite, and room-reset death flow. "
-                + "Save the scene to persist the migration.");
+                + (saved
+                    ? "The repaired scene was saved."
+                    : "The scene could not be saved; save FlightTest manually."));
         }
 
         [MenuItem("Extraterrestrial Exhaust/Repair Player Craft Physics Profile")]
@@ -717,8 +720,15 @@ namespace ExtraterrestrialExhaust.Editor
             {
                 keyTarget = new GameObject("Key Target").transform;
                 keyTarget.SetParent(gate.transform, false);
-                keyTarget.localPosition = Ee5SliceProfile.VerticalSliceGateKeyTarget;
                 EditorUtility.SetDirty(keyTarget.gameObject);
+            }
+            if (Vector2.Distance(
+                    keyTarget.localPosition,
+                    Ee5SliceProfile.VerticalSliceGateKeyTarget) > 0.001f)
+            {
+                Undo.RecordObject(keyTarget, "Repair FlightTest gate key target");
+                keyTarget.localPosition = Ee5SliceProfile.VerticalSliceGateKeyTarget;
+                EditorUtility.SetDirty(keyTarget);
             }
 
             RepairEncounterRoster(encounter, melee, carrier);
@@ -751,17 +761,25 @@ namespace ExtraterrestrialExhaust.Editor
             EditorSceneManager.MarkSceneDirty(activeScene);
             Selection.activeGameObject = objective.gameObject;
             List<string> remainingIssues = GetGeneratedSceneContractIssues();
+            // This menu is explicitly the recovery path for a scene that was
+            // built before serialized references were repaired. Persist the
+            // repair here so a successful console message cannot leave the
+            // on-disk FlightTest one save behind the playable editor scene.
+            bool saved = EditorSceneManager.SaveScene(activeScene, ScenePath);
             if (remainingIssues.Count == 0)
             {
                 Debug.Log(
                     "Repaired and validated the active FlightTest objective contract. "
-                    + "Save the scene to persist the serialized encounter, key, gate, exit, and game-state links.");
+                    + (saved
+                        ? "Serialized encounter, key, gate, exit, and game-state links were saved."
+                        : "The scene was repaired but could not be saved; save FlightTest manually."));
             }
             else
             {
                 Debug.LogWarning(
                     "Objective references were repaired, but the scene still has contract issues: "
-                    + string.Join("; ", remainingIssues));
+                    + string.Join("; ", remainingIssues)
+                    + (saved ? ". The repaired scene was saved." : ". The scene could not be saved."));
             }
         }
 
