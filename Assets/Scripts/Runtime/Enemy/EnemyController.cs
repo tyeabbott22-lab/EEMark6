@@ -139,7 +139,13 @@ namespace ExtraterrestrialExhaust.Enemy
         /// </summary>
         public bool IsSpriteFlippedUpright => spriteFlippedUpright;
         public bool CanAttack => State == EnemyState.Attacking;
-        public float AttackReach => attackRange;
+        /// <summary>
+        /// The range at which this role is allowed to own the attack state.
+        /// Melee uses the smaller deterministic contact envelope rather than
+        /// its wider authored brake band; otherwise the kinematic hunter would
+        /// stop before EnemyContactDamage could ever reach the player.
+        /// </summary>
+        public float AttackReach => IsMelee ? ContactDamageReach : attackRange;
         public float ContactDamageReach => Mathf.Min(
             Mathf.Max(0f, attackRange),
             Mathf.Max(0f, contactDamageRange));
@@ -355,7 +361,14 @@ namespace ExtraterrestrialExhaust.Enemy
                 return;
             }
 
-            float attackStartRange = Mathf.Max(0f, attackRange);
+            // Ranged enemies use their authored attack range as a state
+            // contract. A melee hunter has two distances: the wider authored
+            // state/brake band and the actual strike envelope. It must keep
+            // chasing until the latter, because the trigger body intentionally
+            // does not physically overlap the player's dynamic craft.
+            float attackStartRange = IsMelee
+                ? ContactDamageReach
+                : Mathf.Max(0f, attackRange);
             float attackStopRange = Mathf.Max(
                 attackStartRange,
                 Mathf.Max(0f, attackExitRange));
