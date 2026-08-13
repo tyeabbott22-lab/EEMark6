@@ -772,6 +772,7 @@ namespace ExtraterrestrialExhaust.Editor
             RepairSceneReference(objective, "gate", gate);
             RepairSceneReference(objective, "exit", exit);
             RepairSceneReference(objective, "gameState", gameState);
+            RepairInstructionTriggerContract(objective);
 
             // The HUD mirrors the same chain for status text and banners. Keep
             // those links serialized too; runtime lookup remains a recovery
@@ -3376,6 +3377,50 @@ namespace ExtraterrestrialExhaust.Editor
             roster.GetArrayElementAtIndex(1).objectReferenceValue = carrier;
             serialized.ApplyModifiedPropertiesWithoutUndo();
             EditorUtility.SetDirty(encounter);
+        }
+
+        static void RepairInstructionTriggerContract(SliceObjectiveDirector objective)
+        {
+            SliceInstructionTrigger[] triggers =
+                UnityEngine.Object.FindObjectsByType<SliceInstructionTrigger>(
+                    FindObjectsSortMode.None);
+            for (int i = 0; i < triggers.Length; i++)
+            {
+                SliceInstructionTrigger trigger = triggers[i];
+                if (!trigger)
+                    continue;
+
+                SliceObjectiveState requiredState = SliceObjectiveState.ClearEncounter;
+                if (trigger.gameObject.name == "Energy Gate Instruction")
+                    requiredState = SliceObjectiveState.OpenExtractionGate;
+                else if (trigger.gameObject.name == "Extraction Instruction")
+                    requiredState = SliceObjectiveState.ReachExtraction;
+
+                RepairSceneReference(trigger, "objectiveDirector", objective);
+                RepairSceneEnum(
+                    trigger,
+                    "requiredObjectiveState",
+                    requiredState);
+            }
+        }
+
+        static void RepairSceneEnum(
+            Component component,
+            string propertyName,
+            System.Enum value)
+        {
+            if (!component)
+                return;
+
+            SerializedObject serialized = new SerializedObject(component);
+            SerializedProperty property = serialized.FindProperty(propertyName);
+            if (property == null)
+                return;
+
+            Undo.RecordObject(component, "Repair FlightTest objective prompt");
+            property.enumValueIndex = System.Convert.ToInt32(value);
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(component);
         }
 
         static void SetSerializedFloat(Component component, string propertyName, float value)
