@@ -178,7 +178,13 @@ namespace ExtraterrestrialExhaust.Editor
                 gameState,
                 meleeEnemy,
                 gunnerEnemy);
-            CreateHud(objectiveDirector, gameState);
+            // The generated scene contains one authored objective chain. Use
+            // those exact scene objects when serializing HUD references rather
+            // than making the HUD recover them from a scene-wide lookup.
+            EncounterController encounter = UnityEngine.Object.FindFirstObjectByType<EncounterController>();
+            EnergyKey energyKey = UnityEngine.Object.FindFirstObjectByType<EnergyKey>();
+            LevelExit levelExit = UnityEngine.Object.FindFirstObjectByType<LevelExit>();
+            CreateHud(objectiveDirector, gameState, encounter, energyKey, levelExit);
             CreateInstructionTriggers();
 
             CreateArenaBoundaries();
@@ -3595,7 +3601,10 @@ namespace ExtraterrestrialExhaust.Editor
 
         static void CreateHud(
             SliceObjectiveDirector objectiveDirector,
-            GameStateMachine gameState)
+            GameStateMachine gameState,
+            EncounterController encounter,
+            EnergyKey energyKey,
+            LevelExit levelExit)
         {
             GameObject canvasObject = new GameObject("Gameplay HUD");
             Canvas canvas = canvasObject.AddComponent<Canvas>();
@@ -3702,6 +3711,13 @@ namespace ExtraterrestrialExhaust.Editor
             serialized.FindProperty("objectiveBannerGroup").objectReferenceValue = bannerGroup;
             serialized.FindProperty("objectiveBannerDuration").floatValue = 1.35f;
             serialized.FindProperty("objectiveDirector").objectReferenceValue = objectiveDirector;
+            // Persist the same objective contract that the director evaluates.
+            // GameplayHud still has runtime recovery for hand-authored scenes,
+            // but the generated FlightTest should not depend on scene-wide
+            // lookups to become reproducible after a fresh checkout.
+            serialized.FindProperty("encounter").objectReferenceValue = encounter;
+            serialized.FindProperty("energyKey").objectReferenceValue = energyKey;
+            serialized.FindProperty("exit").objectReferenceValue = levelExit;
             serialized.FindProperty("gameState").objectReferenceValue = gameState;
             serialized.ApplyModifiedPropertiesWithoutUndo();
             canvasObject.AddComponent<SliceInstructionDisplay>();
