@@ -81,24 +81,55 @@ namespace ExtraterrestrialExhaust.Player
             {
                 float legacyTurn = 0f;
                 float legacyThrust = 0f;
-                if (Keyboard.current.aKey.isPressed)
+
+                // The current action asset already owns WASD and the arrow
+                // keys. Adding those values again here makes a half-deflected
+                // stick plus one keyboard key produce an invented vector
+                // (and can cancel a real input in the opposite direction).
+                // Keep the fallback useful for older hand-authored scenes by
+                // restoring cardinal keys only when this action has no such
+                // binding. Q/E/C remain the deliberate EE5 compatibility
+                // aliases because the shared action asset does not bind them.
+                bool hasTurnKeyboardBinding = HasAnyKeyboardBinding(
+                    resolvedMoveAction,
+                    "<Keyboard>/a",
+                    "<Keyboard>/d",
+                    "<Keyboard>/leftArrow",
+                    "<Keyboard>/rightArrow");
+                bool hasThrustKeyboardBinding = HasAnyKeyboardBinding(
+                    resolvedMoveAction,
+                    "<Keyboard>/w",
+                    "<Keyboard>/s",
+                    "<Keyboard>/upArrow",
+                    "<Keyboard>/downArrow",
+                    "<Keyboard>/space");
+
+                if (!hasTurnKeyboardBinding && Keyboard.current.aKey.isPressed)
                     legacyTurn -= 1f;
-                if (Keyboard.current.dKey.isPressed)
+                if (!hasTurnKeyboardBinding && Keyboard.current.dKey.isPressed)
                     legacyTurn += 1f;
                 if (Keyboard.current.qKey.isPressed)
                     legacyTurn -= 1f;
                 if (Keyboard.current.eKey.isPressed)
                     legacyTurn += 1f;
 
-                if (Keyboard.current.wKey.isPressed || Keyboard.current.spaceKey.isPressed)
+                if (!hasThrustKeyboardBinding
+                    && (Keyboard.current.wKey.isPressed
+                        || Keyboard.current.upArrowKey.isPressed
+                        || Keyboard.current.spaceKey.isPressed))
                     legacyThrust += 1f;
-                if (Keyboard.current.sKey.isPressed || Keyboard.current.cKey.isPressed)
+                if (!hasThrustKeyboardBinding
+                    && (Keyboard.current.sKey.isPressed
+                        || Keyboard.current.downArrowKey.isPressed))
+                    legacyThrust -= 1f;
+                if (Keyboard.current.cKey.isPressed)
                     legacyThrust -= 1f;
 
-                // Add instead of replacing the action value so the old EE5
-                // keyboard contract remains usable alongside a gamepad or a
-                // partially authored action asset. Clamping preserves the
-                // expected full-strength button response.
+                // Add instead of replacing the action value so Q/E/C remain
+                // usable alongside a gamepad or a partially authored action
+                // asset. Clamping preserves the expected full-strength button
+                // response without double-counting keys already owned by the
+                // action map.
                 Move = new Vector2(
                     Mathf.Clamp(Move.x + legacyTurn, -1f, 1f),
                     Mathf.Clamp(Move.y + legacyThrust, -1f, 1f));
@@ -126,6 +157,29 @@ namespace ExtraterrestrialExhaust.Player
             }
 
             WasFlipPressed = flipRequestLatched;
+        }
+
+        static bool HasAnyKeyboardBinding(InputAction action, params string[] paths)
+        {
+            if (action == null || paths == null || paths.Length == 0)
+                return false;
+
+            foreach (InputBinding binding in action.bindings)
+            {
+                if (binding.isComposite || string.IsNullOrEmpty(binding.path))
+                    continue;
+
+                for (int i = 0; i < paths.Length; i++)
+                {
+                    if (string.Equals(
+                        binding.path,
+                        paths[i],
+                        System.StringComparison.OrdinalIgnoreCase))
+                        return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>
