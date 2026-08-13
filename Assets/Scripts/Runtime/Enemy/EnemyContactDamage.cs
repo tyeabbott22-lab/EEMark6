@@ -18,6 +18,7 @@ namespace ExtraterrestrialExhaust.Enemy
         [SerializeField, Min(0.01f)] float cooldown = 0.75f;
         [SerializeField, Min(0f)] float knockback = 8f;
         float cooldownRemaining;
+        bool contactLatched;
 
         EnemyController controller;
 
@@ -31,6 +32,28 @@ namespace ExtraterrestrialExhaust.Enemy
             cooldownRemaining = Mathf.Max(
                 0f,
                 cooldownRemaining - Time.fixedDeltaTime);
+
+            // EE5's cooldown controls the cadence between separate strikes.
+            // This second, physical latch makes one overlap one readable hit:
+            // a player pinned against a wall must not receive a fresh impulse
+            // on every Enter/Stay callback and turn the bruiser into a jittery
+            // popcorn machine. Release only after the actual collider pair
+            // separates so a cooldown expiry cannot create a second hit while
+            // both actors are still touching.
+            if (contactLatched)
+            {
+                PlayerCharacter player = controller ? controller.Target : null;
+                if (!player)
+                    player = FindFirstObjectByType<PlayerCharacter>();
+
+                if (!player
+                    || !player.CanReceiveGameplayInput
+                    || !controller
+                    || !controller.IsWithinMeleeContact(player))
+                {
+                    contactLatched = false;
+                }
+            }
 
             // Trigger callbacks are the normal EE5 path, but they can be
             // skipped when a dirty prefab has an old layer matrix or when the
@@ -132,7 +155,10 @@ namespace ExtraterrestrialExhaust.Enemy
 
         void TryDamagePlayer(PlayerCharacter player, Vector2 hitPoint, Vector2 direction)
         {
-            if (!player || !player.CanReceiveGameplayInput || cooldownRemaining > 0f)
+            if (!player
+                || !player.CanReceiveGameplayInput
+                || cooldownRemaining > 0f
+                || contactLatched)
                 return;
 
             DamageInfo damageInfo = new DamageInfo(
@@ -164,6 +190,7 @@ namespace ExtraterrestrialExhaust.Enemy
                 // clock as navigation and attack recovery so a render hitch
                 // cannot shorten or stretch the authored melee cadence.
                 cooldownRemaining = cooldown;
+                contactLatched = true;
             }
         }
 
