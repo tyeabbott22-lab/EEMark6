@@ -1429,6 +1429,18 @@ namespace ExtraterrestrialExhaust.Editor
             return changed;
         }
 
+        static void ConfigureEe5ContactDamage(EnemyContactDamage contactDamage)
+        {
+            if (!contactDamage)
+                return;
+
+            SerializedObject serialized = new SerializedObject(contactDamage);
+            SetFloat(serialized, "damage", Ee5SliceProfile.EnemyContactDamage);
+            SetFloat(serialized, "cooldown", Ee5SliceProfile.EnemyContactCooldown);
+            SetFloat(serialized, "knockback", Ee5SliceProfile.EnemyContactKnockback);
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+        }
+
         static bool ApplyEe5EnemyHitbox(GameObject root, bool ranged)
         {
             if (!root)
@@ -1547,6 +1559,9 @@ namespace ExtraterrestrialExhaust.Editor
                         + $"(expected {Ee5SliceProfile.EnemyInvulnerabilityDuration})");
                 }
             }
+
+            if (!ranged && !prefab.GetComponent<EnemyContactDamage>())
+                issues.Add($"{prefabPath} has no EnemyContactDamage");
 
             if (!controller)
             {
@@ -3462,6 +3477,20 @@ namespace ExtraterrestrialExhaust.Editor
             SetSerializedObjectReference(controller, "gameState", gameState);
 
             EnemyWeapon weapon = enemy.GetComponent<EnemyWeapon>();
+            if (!weapon)
+            {
+                // Older preserved melee prefabs can predate the dedicated
+                // contact component. Add it to the scene instance rather than
+                // mutating the authored asset, so the preserve path still has
+                // an actual EE5 contact-damage authority.
+                EnemyContactDamage contactDamage =
+                    enemy.GetComponent<EnemyContactDamage>();
+                if (!contactDamage)
+                    contactDamage = enemy.AddComponent<EnemyContactDamage>();
+
+                ConfigureEe5ContactDamage(contactDamage);
+                PrefabUtility.RecordPrefabInstancePropertyModifications(contactDamage);
+            }
             if (ApplyEe5EnemyHitbox(enemy, weapon != null))
             {
                 foreach (Collider2D collider in enemy.GetComponents<Collider2D>())
