@@ -695,6 +695,8 @@ namespace ExtraterrestrialExhaust.Editor
                 return;
             }
 
+            int removedLegacyPlaceholders = RemoveLegacyObjectivePlaceholders();
+
             EncounterController encounter = UnityEngine.Object.FindFirstObjectByType<EncounterController>();
             EnergyKey energyKey = UnityEngine.Object.FindFirstObjectByType<EnergyKey>();
             EnergyGate gate = UnityEngine.Object.FindFirstObjectByType<EnergyGate>();
@@ -792,7 +794,10 @@ namespace ExtraterrestrialExhaust.Editor
                     "Repaired and validated the active FlightTest objective contract. "
                     + (saved
                         ? "Serialized encounter, key, gate, exit, and game-state links were saved."
-                        : "The scene was repaired but could not be saved; save FlightTest manually."));
+                        : "The scene was repaired but could not be saved; save FlightTest manually.")
+                    + (removedLegacyPlaceholders > 0
+                        ? $" Removed {removedLegacyPlaceholders} legacy objective placeholder(s)."
+                        : string.Empty));
             }
             else
             {
@@ -1968,6 +1973,82 @@ namespace ExtraterrestrialExhaust.Editor
             return true;
         }
 
+        static int RemoveLegacyObjectivePlaceholders()
+        {
+            int removed = 0;
+            EnergyKey energyKey = UnityEngine.Object.FindFirstObjectByType<EnergyKey>();
+            Transform keyVisual = energyKey
+                ? energyKey.transform.Find("Key Visual")
+                : null;
+            if (keyVisual
+                && keyVisual.GetComponent<SpriteRenderer>()
+                && RemoveGeneratedSquareOutline(keyVisual, 0.25f))
+            {
+                removed++;
+            }
+
+            LevelExit levelExit = UnityEngine.Object.FindFirstObjectByType<LevelExit>();
+            if (levelExit
+                && levelExit.GetComponent<ExtractionPortalPresentation>()
+                && RemoveGeneratedSquareOutline(levelExit.transform, 0.45f))
+            {
+                removed++;
+            }
+
+            if (removed > 0)
+                EditorSceneManager.MarkSceneDirty(SceneManager.GetActiveScene());
+
+            return removed;
+        }
+
+        static bool HasLegacyObjectivePlaceholders()
+        {
+            EnergyKey energyKey = UnityEngine.Object.FindFirstObjectByType<EnergyKey>();
+            Transform keyVisual = energyKey
+                ? energyKey.transform.Find("Key Visual")
+                : null;
+            if (keyVisual
+                && keyVisual.GetComponent<SpriteRenderer>()
+                && IsGeneratedSquareOutline(keyVisual.GetComponent<LineRenderer>(), 0.25f))
+            {
+                return true;
+            }
+
+            LevelExit levelExit = UnityEngine.Object.FindFirstObjectByType<LevelExit>();
+            return levelExit
+                && levelExit.GetComponent<ExtractionPortalPresentation>()
+                && IsGeneratedSquareOutline(levelExit.GetComponent<LineRenderer>(), 0.45f);
+        }
+
+        static bool RemoveGeneratedSquareOutline(Transform parent, float halfExtent)
+        {
+            LineRenderer outline = parent.GetComponent<LineRenderer>();
+            if (!IsGeneratedSquareOutline(outline, halfExtent))
+                return false;
+
+            Undo.DestroyObjectImmediate(outline);
+            return true;
+        }
+
+        static bool IsGeneratedSquareOutline(LineRenderer outline, float halfExtent)
+        {
+            if (!outline || outline.positionCount != 4)
+                return false;
+
+            const float tolerance = 0.02f;
+            for (int i = 0; i < outline.positionCount; i++)
+            {
+                Vector3 position = outline.GetPosition(i);
+                if (Mathf.Abs(Mathf.Abs(position.x) - halfExtent) > tolerance
+                    || Mathf.Abs(Mathf.Abs(position.y) - halfExtent) > tolerance)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         static List<string> GetGeneratedSceneContractIssues()
         {
             List<string> issues = new List<string>();
@@ -2462,6 +2543,10 @@ namespace ExtraterrestrialExhaust.Editor
                 if (!exitCollider || !exitCollider.isTrigger)
                     issues.Add("LevelExit must be a trigger");
             }
+
+            if (HasLegacyObjectivePlaceholders())
+                issues.Add("legacy objective placeholder outline(s)");
+
             GameplayHud hud = UnityEngine.Object.FindFirstObjectByType<GameplayHud>();
             if (!hud)
             {
