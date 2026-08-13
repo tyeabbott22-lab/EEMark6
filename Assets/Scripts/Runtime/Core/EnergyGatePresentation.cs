@@ -27,6 +27,7 @@ namespace ExtraterrestrialExhaust.Core
         [SerializeField, Min(0f)] float approachPulseSpeed = 24f;
 
         EnergyGate energyGate;
+        ProgrammableLaserGate programmableLaserGate;
         float pulseRemaining;
         float approachRemaining;
         float baseWidthMultiplier = 1f;
@@ -36,6 +37,7 @@ namespace ExtraterrestrialExhaust.Core
         void Awake()
         {
             energyGate = GetComponent<EnergyGate>();
+            programmableLaserGate = GetComponent<ProgrammableLaserGate>();
             RepairAuthoredGateArtwork();
             if (!gateLine)
                 gateLine = GetComponent<LineRenderer>();
@@ -51,6 +53,14 @@ namespace ExtraterrestrialExhaust.Core
             }
             if (gateArtwork)
                 baseArtworkColor = gateArtwork.color;
+
+            // The current builder preserves the original square outline for
+            // older scenes, but ProgrammableLaserGate is now the authored
+            // barrier. Showing both makes the gate read like two conflicting
+            // colliders and is especially confusing during the lift. Keep the
+            // legacy line available as a fallback when no laser gate exists.
+            if (programmableLaserGate && gateLine)
+                gateLine.enabled = false;
         }
 
         void RepairAuthoredGateArtwork()
@@ -72,6 +82,9 @@ namespace ExtraterrestrialExhaust.Core
         {
             if (energyGate)
                 energyGate.Disabled += HandleDisabled;
+
+            if (programmableLaserGate && gateLine)
+                gateLine.enabled = false;
         }
 
         void OnDisable()
@@ -166,6 +179,11 @@ namespace ExtraterrestrialExhaust.Core
             approachRemaining = 0f;
             pulseRemaining = unlockPulseDuration;
             ObjectiveSignalBurst.Spawn(transform.position, unlockColor, burstScale);
+            // The programmable beams own the barrier pulse; the artwork still
+            // needs its persistent unlocked tint even when the preserved
+            // square outline has been suppressed.
+            if (programmableLaserGate)
+                RestoreGateArtwork();
             if (cameraShakeStrength > 0f && cameraShakeDuration > 0f)
                 PlayerCameraFollow.Instance?.Shake(cameraShakeStrength, cameraShakeDuration);
         }
