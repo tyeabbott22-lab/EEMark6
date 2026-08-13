@@ -21,12 +21,23 @@ namespace ExtraterrestrialExhaust.Core
         [SerializeField] Color coreColor = new Color(0.55f, 0.95f, 1f, 1f);
         [SerializeField] Color glowColor = new Color(0.03f, 0.35f, 1f, 0.42f);
         [SerializeField] int sortingOrder = 12;
+        [Header("Objective Cues")]
+        [SerializeField] Color approachCoreColor = new Color(1f, 0.82f, 0.18f, 1f);
+        [SerializeField] Color approachGlowColor = new Color(1f, 0.45f, 0.04f, 0.5f);
+        [SerializeField] Color unlockCoreColor = new Color(0.2f, 1f, 0.85f, 1f);
+        [SerializeField] Color unlockGlowColor = new Color(0.05f, 1f, 0.68f, 0.58f);
+        [SerializeField, Min(0f)] float approachCueDuration = 0.85f;
+        [SerializeField, Min(0f)] float unlockCueDuration = 1.8f;
+        [SerializeField, Min(1f)] float approachWidthMultiplier = 1.35f;
+        [SerializeField, Min(1f)] float unlockWidthMultiplier = 1.7f;
 
         EnergyGate gate;
         Material runtimeMaterial;
         readonly List<LineRenderer> coreLines = new();
         readonly List<LineRenderer> glowLines = new();
         float pulseOffset;
+        float approachCueRemaining;
+        float unlockCueRemaining;
         bool setupComplete;
 
         public bool IsDisabled => gate && gate.IsDisabled;
@@ -45,11 +56,13 @@ namespace ExtraterrestrialExhaust.Core
                 gate = GetComponent<EnergyGate>();
 
             EnsureSetup();
-            ApplyLines(0f);
+            ApplyLines(0f, coreColor, glowColor);
         }
 
         void OnDisable()
         {
+            approachCueRemaining = 0f;
+            unlockCueRemaining = 0f;
             for (int i = 0; i < coreLines.Count; i++)
             {
                 if (coreLines[i])
@@ -67,7 +80,7 @@ namespace ExtraterrestrialExhaust.Core
             glowWidth = Mathf.Max(coreWidth, glowWidth);
             EnsureSetup();
             if (!Application.isPlaying)
-                ApplyLines(0f);
+                ApplyLines(0f, coreColor, glowColor);
         }
 
         void Update()
@@ -76,11 +89,82 @@ namespace ExtraterrestrialExhaust.Core
                 return;
 
             float pulse = 1f + Mathf.Sin(Time.time * pulseSpeed + pulseOffset) * pulseAmount;
-            ApplyLines(pulse);
+            Color activeCoreColor = coreColor;
+            Color activeGlowColor = glowColor;
+            float cueWidthMultiplier = 1f;
+
+            if (unlockCueRemaining > 0f)
+            {
+                unlockCueRemaining = Mathf.Max(
+                    0f,
+                    unlockCueRemaining - Time.deltaTime);
+                float cueProgress = unlockCueDuration > 0f
+                    ? 1f - unlockCueRemaining / unlockCueDuration
+                    : 1f;
+                float cuePulse = 0.5f
+                    + Mathf.Sin(Time.time * 18f + pulseOffset) * 0.5f;
+                float cueFade = 1f - Mathf.SmoothStep(0f, 1f, cueProgress);
+                activeCoreColor = Color.Lerp(
+                    unlockCoreColor,
+                    Color.white,
+                    cuePulse * 0.28f);
+                activeGlowColor = unlockGlowColor;
+                cueWidthMultiplier = Mathf.Lerp(
+                    1f,
+                    unlockWidthMultiplier,
+                    cuePulse * cueFade);
+            }
+            else if (approachCueRemaining > 0f)
+            {
+                approachCueRemaining = Mathf.Max(
+                    0f,
+                    approachCueRemaining - Time.deltaTime);
+                float cueProgress = approachCueDuration > 0f
+                    ? 1f - approachCueRemaining / approachCueDuration
+                    : 1f;
+                float cuePulse = 0.5f
+                    + Mathf.Sin(Time.time * 24f + pulseOffset) * 0.5f;
+                float cueFade = 1f - Mathf.SmoothStep(0f, 1f, cueProgress);
+                activeCoreColor = Color.Lerp(
+                    approachCoreColor,
+                    Color.white,
+                    cuePulse * 0.2f);
+                activeGlowColor = approachGlowColor;
+                cueWidthMultiplier = Mathf.Lerp(
+                    1f,
+                    approachWidthMultiplier,
+                    cuePulse * cueFade);
+            }
+
+            ApplyLines(pulse * cueWidthMultiplier, activeCoreColor, activeGlowColor);
         }
 
         /// <summary>Key/generator systems can use the same entry point as EE5's network.</summary>
         public bool DisableWalls() => gate && gate.TryDisableGate();
+
+        /// <summary>
+        /// Shows the incoming-key cue on the actual barrier beams. The old
+        /// square outline may be suppressed in preserved scenes, so objective
+        /// presentation must not depend on that legacy renderer.
+        /// </summary>
+        public void BeginKeyApproach()
+        {
+            if (gate && gate.IsDisabled)
+                return;
+
+            approachCueRemaining = Mathf.Max(
+                approachCueRemaining,
+                approachCueDuration);
+        }
+
+        /// <summary>Plays the unlock burst on the visible laser barrier.</summary>
+        public void BeginUnlockPulse()
+        {
+            approachCueRemaining = 0f;
+            unlockCueRemaining = Mathf.Max(
+                unlockCueRemaining,
+                unlockCueDuration);
+        }
 
         void EnsureSetup()
         {
@@ -148,7 +232,7 @@ namespace ExtraterrestrialExhaust.Core
             return line;
         }
 
-        void ApplyLines(float pulse)
+        void ApplyLines(float pulse, Color activeCoreColor, Color activeGlowColor)
         {
             if (!setupComplete || !gate)
                 return;
@@ -192,10 +276,10 @@ namespace ExtraterrestrialExhaust.Core
                 core.endWidth = coreWidth * pulseScale;
                 glow.startWidth = glowWidth * pulseScale;
                 glow.endWidth = glowWidth * pulseScale;
-                core.startColor = coreColor;
-                core.endColor = coreColor;
-                glow.startColor = glowColor;
-                glow.endColor = glowColor;
+                core.startColor = activeCoreColor;
+                core.endColor = activeCoreColor;
+                glow.startColor = activeGlowColor;
+                glow.endColor = activeGlowColor;
             }
         }
 

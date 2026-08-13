@@ -155,10 +155,11 @@ namespace ExtraterrestrialExhaust.Core
         // whole sprite popcorn between angles; refresh only after a real
         // positional re-aim is needed.
         public const float EnemyMeleeAttackFacingRefreshDegrees = 22f;
-        // EE6's melee controller uses a kinematic navigation body and a
-        // deterministic range hit. A trigger body preserves wall/target casts
-        // without letting scripted motion shove the dynamic player.
-        public const bool EnemyMeleeUsesTriggerBody = true;
+        // The EE5 close-bruiser reference uses a solid kinematic BoxCollider2D
+        // and receives its attack through collision contact. Restore that
+        // contract; the EE6 collider-pair check remains only as a recovery path
+        // for scenes whose callbacks are temporarily stale during refresh.
+        public const bool EnemyMeleeUsesTriggerBody = false;
         // These are the actual EE5 enemyFast/enemyGun BoxCollider2D values,
         // including their artwork-relative offsets. They are deliberately
         // separate from attack range: a hurtbox defines projectile contact,

@@ -172,6 +172,7 @@ namespace ExtraterrestrialExhaust.Core
                 return;
 
             approachRemaining = approachPulseDuration;
+            programmableLaserGate?.BeginKeyApproach();
         }
 
         void HandleDisabled()
@@ -183,7 +184,10 @@ namespace ExtraterrestrialExhaust.Core
             // needs its persistent unlocked tint even when the preserved
             // square outline has been suppressed.
             if (programmableLaserGate)
+            {
+                programmableLaserGate.BeginUnlockPulse();
                 RestoreGateArtwork();
+            }
             if (cameraShakeStrength > 0f && cameraShakeDuration > 0f)
                 PlayerCameraFollow.Instance?.Shake(cameraShakeStrength, cameraShakeDuration);
         }

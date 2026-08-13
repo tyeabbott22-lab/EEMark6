@@ -1037,13 +1037,12 @@ namespace ExtraterrestrialExhaust.Enemy
 
                 if (IsBlockingTargetCollider(hit.collider))
                 {
-                    // The repaired melee role uses a trigger navigation body;
-                    // it is allowed to cross the target cast and lets the
-                    // collider-pair contact test choose the attack frame.
-                    // Ranged or experimental solid-body roles retain the
-                    // separation buffer so their navigation cannot overlap the
-                    // dynamic player.
-                    if (!IsMelee)
+                    // EE5's close bruiser is a solid kinematic body. Keep a
+                    // small separation buffer for that restored contract so
+                    // MovePosition cannot tunnel through the dynamic player.
+                    // Trigger-based legacy experiments may still cross and
+                    // rely on the collider-pair contact fallback instead.
+                    if (!IsMelee || !UsesTriggerContactBody)
                     {
                         allowedDistance = Mathf.Min(
                             allowedDistance,
