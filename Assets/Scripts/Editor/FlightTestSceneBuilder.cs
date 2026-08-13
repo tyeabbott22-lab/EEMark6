@@ -191,7 +191,7 @@ namespace ExtraterrestrialExhaust.Editor
             EnergyKey energyKey = UnityEngine.Object.FindFirstObjectByType<EnergyKey>();
             LevelExit levelExit = UnityEngine.Object.FindFirstObjectByType<LevelExit>();
             CreateHud(objectiveDirector, gameState, encounter, energyKey, levelExit);
-            CreateInstructionTriggers();
+            CreateInstructionTriggers(objectiveDirector);
 
             CreateArenaBoundaries();
             CreateFlightStopperZone();
@@ -4293,30 +4293,40 @@ namespace ExtraterrestrialExhaust.Editor
             canvasObject.AddComponent<SliceInstructionDisplay>();
         }
 
-        static void CreateInstructionTriggers()
+        static void CreateInstructionTriggers(SliceObjectiveDirector objectiveDirector)
         {
             CreateInstructionTrigger(
                 "Flight Controls Instruction",
                 Ee5SliceProfile.VerticalSliceFlightInstructionPosition,
                 Ee5SliceProfile.VerticalSliceFlightInstructionSize,
                 "W / UP / SPACE  THRUST\nA / D  ROTATE    S / DOWN  STABILIZE\nX  FLIP    Z / ENTER / MOUSE  FIRE",
-                true);
+                true,
+                objectiveDirector,
+                SliceObjectiveState.ClearEncounter);
             CreateInstructionTrigger(
                 "Energy Key Instruction",
                 Ee5SliceProfile.VerticalSliceKeyInstructionPosition,
                 Ee5SliceProfile.VerticalSliceKeyInstructionSize,
-                "DEFEAT THE CARRIER.\nTHE ENERGY KEY WILL BREAK FREE WHEN IT IS DEFEATED.");
+                "DEFEAT THE CARRIER.\nTHE ENERGY KEY WILL BREAK FREE WHEN IT IS DEFEATED.",
+                false,
+                objectiveDirector,
+                SliceObjectiveState.ClearEncounter);
             CreateInstructionTrigger(
                 "Energy Gate Instruction",
                 Ee5SliceProfile.VerticalSliceGateInstructionPosition,
                 Ee5SliceProfile.VerticalSliceGateInstructionSize,
-                "COLLECT THE ENERGY KEY,\nTHEN FLY INTO THE ENERGY GATE.");
+                "COLLECT THE ENERGY KEY,\nTHEN FLY INTO THE ENERGY GATE.",
+                false,
+                objectiveDirector,
+                SliceObjectiveState.OpenExtractionGate);
             CreateInstructionTrigger(
                 "Extraction Instruction",
                 Ee5SliceProfile.VerticalSliceExitInstructionPosition,
                 Ee5SliceProfile.VerticalSliceExitInstructionSize,
                 "EXTRACTION ONLINE.\nFLY INTO THE PORTAL TO COMPLETE THE SLICE.",
-                true);
+                true,
+                objectiveDirector,
+                SliceObjectiveState.ReachExtraction);
         }
 
         static void CreateInstructionTrigger(
@@ -4324,7 +4334,9 @@ namespace ExtraterrestrialExhaust.Editor
             Vector2 position,
             Vector2 size,
             string message,
-            bool onlyTriggerOnce = false)
+            bool onlyTriggerOnce = false,
+            SliceObjectiveDirector objectiveDirector = null,
+            SliceObjectiveState requiredObjectiveState = SliceObjectiveState.ClearEncounter)
         {
             GameObject instructionObject = new GameObject(objectName);
             instructionObject.transform.position = position;
@@ -4338,6 +4350,9 @@ namespace ExtraterrestrialExhaust.Editor
             serialized.FindProperty("message").stringValue = message;
             serialized.FindProperty("hideOnExit").boolValue = true;
             serialized.FindProperty("onlyTriggerOnce").boolValue = onlyTriggerOnce;
+            serialized.FindProperty("objectiveDirector").objectReferenceValue = objectiveDirector;
+            serialized.FindProperty("requiredObjectiveState").enumValueIndex =
+                (int)requiredObjectiveState;
             serialized.ApplyModifiedPropertiesWithoutUndo();
         }
 

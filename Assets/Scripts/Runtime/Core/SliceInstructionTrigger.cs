@@ -14,6 +14,9 @@ namespace ExtraterrestrialExhaust.Core
         [SerializeField, TextArea(2, 6)] string message;
         [SerializeField] bool hideOnExit = true;
         [SerializeField] bool onlyTriggerOnce;
+        [SerializeField] SliceObjectiveDirector objectiveDirector;
+        [SerializeField] SliceObjectiveState requiredObjectiveState =
+            SliceObjectiveState.ClearEncounter;
 
         BoxCollider2D trigger;
         SliceInstructionDisplay display;
@@ -25,13 +28,12 @@ namespace ExtraterrestrialExhaust.Core
             trigger = GetComponent<BoxCollider2D>();
             trigger.isTrigger = true;
             sourceId = GetInstanceID().ToString();
-            display = FindFirstObjectByType<SliceInstructionDisplay>();
+            ResolveReferences();
         }
 
         void OnEnable()
         {
-            if (!display)
-                display = FindFirstObjectByType<SliceInstructionDisplay>();
+            ResolveReferences();
         }
 
         void OnTriggerEnter2D(Collider2D other) => TryShow(other);
@@ -71,13 +73,29 @@ namespace ExtraterrestrialExhaust.Core
             if (!IsPlayer(other) || (onlyTriggerOnce && hasTriggered))
                 return;
 
+            // A trigger volume describes a location; the objective director
+            // decides whether that location's instruction is currently true.
+            // Keep the trigger armed when the player arrives early so a later
+            // objective transition can show the prompt through OnTriggerStay2D.
+            if (objectiveDirector
+                && !objectiveDirector.HasReached(requiredObjectiveState))
+                return;
+
             if (!display)
-                display = FindFirstObjectByType<SliceInstructionDisplay>();
+                ResolveReferences();
             if (!display)
                 return;
 
             hasTriggered = true;
             display.Show(sourceId, message);
+        }
+
+        void ResolveReferences()
+        {
+            if (!display)
+                display = FindFirstObjectByType<SliceInstructionDisplay>();
+            if (!objectiveDirector)
+                objectiveDirector = FindFirstObjectByType<SliceObjectiveDirector>();
         }
 
         static bool IsPlayer(Collider2D other)

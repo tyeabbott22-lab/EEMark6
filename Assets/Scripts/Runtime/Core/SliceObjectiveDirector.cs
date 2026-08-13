@@ -30,6 +30,16 @@ namespace ExtraterrestrialExhaust.Core
         public string CurrentObjective => GetObjectiveLabel(CurrentState);
         public event Action<SliceObjectiveState, SliceObjectiveState> ObjectiveChanged;
 
+        /// <summary>
+        /// Lets presentation triggers ask whether their instruction belongs to
+        /// the current slice beat without duplicating the state's ordering
+        /// rules in every trigger volume.
+        /// </summary>
+        public bool HasReached(SliceObjectiveState objective)
+        {
+            return GetStateOrder(CurrentState) >= GetStateOrder(objective);
+        }
+
         EncounterController subscribedEncounter;
         EnergyKey subscribedEnergyKey;
         EnergyGate subscribedGate;
