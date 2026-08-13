@@ -118,14 +118,18 @@ namespace ExtraterrestrialExhaust.Player
             uprightAssistReleaseDelay = Ee5SliceProfile.UprightAssistReleaseDelay;
             removeVelocityIntoColliders = Ee5SliceProfile.PlayerRemoveVelocityIntoColliders;
 
+            // The generated scene and the reusable prefab are one authored
+            // flight contract. Do not let a stale prefab override silently
+            // reintroduce a different damping/body mode after the builder has
+            // validated the scene. This is the same profile used by the EE5
+            // realScene instance, with the current EE6 linear carry-through.
             body.mass = Ee5SliceProfile.PlayerMass;
+            body.bodyType = RigidbodyType2D.Dynamic;
+            body.simulated = true;
+            body.constraints = RigidbodyConstraints2D.None;
+            body.linearDamping = Ee5SliceProfile.PlayerFlightLinearDamping;
+            body.angularDamping = Ee5SliceProfile.PlayerFlightAngularDamping;
             body.gravityScale = Ee5SliceProfile.PlayerGravityScale;
-            // Keep damping on the Rigidbody2D as authored scene/prefab tuning.
-            // These values are part of the delicate flight feel, and overwriting
-            // them here made inspector experiments appear to save while having
-            // no effect at runtime. The editor builder still writes the EE5
-            // baseline into newly generated scenes; existing prefab overrides
-            // remain meaningful when the craft is instantiated.
             body.interpolation = RigidbodyInterpolation2D.Interpolate;
             body.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
         }

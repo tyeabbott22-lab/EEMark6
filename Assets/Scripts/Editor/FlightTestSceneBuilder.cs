@@ -783,6 +783,12 @@ namespace ExtraterrestrialExhaust.Editor
             Rigidbody2D body = playerObject.GetComponent<Rigidbody2D>();
             if (!body || !Mathf.Approximately(body.mass, Ee5SliceProfile.PlayerMass))
                 mismatches.Add($"mass={(body ? body.mass : -1f)} (expected {Ee5SliceProfile.PlayerMass})");
+            if (!body || body.bodyType != RigidbodyType2D.Dynamic)
+                mismatches.Add($"bodyType={(body ? body.bodyType.ToString() : "<missing>")} (expected Dynamic)");
+            if (!body || !body.simulated)
+                mismatches.Add("Rigidbody2D.simulated=false (expected true)");
+            if (body && body.constraints != RigidbodyConstraints2D.None)
+                mismatches.Add($"constraints={body.constraints} (expected None)");
             if (!body || !Mathf.Approximately(body.gravityScale, Ee5SliceProfile.PlayerGravityScale))
                 mismatches.Add($"gravityScale={(body ? body.gravityScale : -1f)} (expected {Ee5SliceProfile.PlayerGravityScale})");
             if (!body || !Mathf.Approximately(body.linearDamping, Ee5SliceProfile.PlayerFlightLinearDamping))
@@ -2777,6 +2783,10 @@ namespace ExtraterrestrialExhaust.Editor
             {
                 if (body.bodyType != RigidbodyType2D.Dynamic)
                     issues.Add($"{label}: bodyType={body.bodyType} (expected Dynamic)");
+                if (!body.simulated)
+                    issues.Add($"{label}: Rigidbody2D.simulated=false (expected true)");
+                if (body.constraints != RigidbodyConstraints2D.None)
+                    issues.Add($"{label}: constraints={body.constraints} (expected None)");
                 if (!Mathf.Approximately(body.mass, Ee5SliceProfile.PlayerMass))
                     issues.Add($"{label}: mass={body.mass} (expected {Ee5SliceProfile.PlayerMass})");
                 if (!Mathf.Approximately(body.gravityScale, Ee5SliceProfile.PlayerGravityScale))
