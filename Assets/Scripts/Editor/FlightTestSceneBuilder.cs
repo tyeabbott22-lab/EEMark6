@@ -66,6 +66,12 @@ namespace ExtraterrestrialExhaust.Editor
         const string LegacyEnemyBurstSpritePath = "Assets/Art/Reference/Effects/sprExplode.png";
         const string EnemyBurstAudioPath = "Assets/Audio/Reference/sfxExplode.wav";
         static bool lastBuildSucceeded;
+        // All generated outlines share one material. Rebuilding the scene can
+        // create dozens of decorative rings; caching the material keeps an
+        // editor session from accumulating an invisible material per ring,
+        // while the scene still serializes one stable reference for its lines.
+        static Material generatedLineMaterial;
+        static bool loggedMissingLineMaterial;
 
         [MenuItem("Extraterrestrial Exhaust/Build Flight Test Scene")]
         public static void Build()
@@ -4850,7 +4856,13 @@ namespace ExtraterrestrialExhaust.Editor
 
         static void CreateSquareOutline(Transform parent, Vector2 size, Color color)
         {
+            if (!parent)
+                return;
+
             LineRenderer line = parent.gameObject.AddComponent<LineRenderer>();
+            if (!line)
+                return;
+
             line.useWorldSpace = false;
             line.loop = true;
             line.positionCount = 4;
@@ -4877,13 +4889,27 @@ namespace ExtraterrestrialExhaust.Editor
             if (!parent)
                 return;
 
+            // Builder input is authored data, so keep a malformed radius or
+            // segment count from turning a presentation-only helper into a
+            // scene-build exception. The collider remains the gameplay source
+            // of truth; this only bounds the decorative renderer.
+            radius = Mathf.Max(0f, radius);
+            width = Mathf.Max(0.001f, width);
+            segments = Mathf.Clamp(segments, 8, 128);
+
             // A hazard can intentionally have more than one ring. Unity does
             // not allow multiple LineRenderer components on one GameObject,
             // so each decorative ring gets its own child instead of silently
             // returning a null component on the second call.
             GameObject outlineObject = new GameObject("Circle Outline");
+            if (!outlineObject)
+                return;
+
             outlineObject.transform.SetParent(parent, false);
             LineRenderer line = outlineObject.AddComponent<LineRenderer>();
+            if (!line)
+                return;
+
             line.useWorldSpace = false;
             line.loop = true;
             line.positionCount = segments;
@@ -4907,6 +4933,9 @@ namespace ExtraterrestrialExhaust.Editor
 
         static Material CreateLineMaterial()
         {
+            if (generatedLineMaterial)
+                return generatedLineMaterial;
+
             // Unity 6 projects using URP may not resolve the legacy
             // Sprites/Default shader in editor code. Prefer the URP sprite
             // shader, then keep the old path as a compatibility fallback.
@@ -4920,7 +4949,9 @@ namespace ExtraterrestrialExhaust.Editor
             {
                 try
                 {
-                    return new Material(shader);
+                    generatedLineMaterial = new Material(shader);
+                    generatedLineMaterial.name = "FlightTest Generated Line Material";
+                    return generatedLineMaterial;
                 }
                 catch (System.Exception exception)
                 {
@@ -4932,7 +4963,8 @@ namespace ExtraterrestrialExhaust.Editor
             // The built-in line material is a safe final fallback for scene
             // composition. A missing decorative material must not prevent the
             // gameplay slice from being saved.
-            return AssetDatabase.GetBuiltinExtraResource<Material>("Default-Line.mat");
+            generatedLineMaterial = AssetDatabase.GetBuiltinExtraResource<Material>("Default-Line.mat");
+            return generatedLineMaterial;
         }
 
         static void AssignLineMaterial(LineRenderer line)
@@ -4947,6 +4979,13 @@ namespace ExtraterrestrialExhaust.Editor
             // abort the entire scene build.
             if (material)
                 line.sharedMaterial = material;
+            else if (!loggedMissingLineMaterial)
+            {
+                loggedMissingLineMaterial = true;
+                Debug.LogWarning(
+                    "FlightTest decorative outlines were generated without a material; "
+                    + "the gameplay scene remains valid, but the outline shader could not be resolved.");
+            }
         }
 
         static Sprite LoadFirstSprite(string assetPath)
