@@ -257,9 +257,13 @@ namespace ExtraterrestrialExhaust.Player
             // envelope quickly because the tiny authored collider has very low
             // rotational inertia. Use the same bounded angular-speed handoff
             // here instead of making the player wait on a slow torque ramp.
-            // Release still returns to the neutral assist below, so this does
-            // not create an uncontrolled spin once the turn key is let go.
-            ApplyPresentableTurnResponse(command.x, turning);
+            // Release uses a short angular brake below. It does not auto-upright
+            // the craft, so the player can still stop at a deliberate angle or
+            // hold a turn for a full flip without fighting a hidden correction.
+            if (turning)
+                ApplyPresentableTurnResponse(command.x);
+            else if (turnReleaseTimer >= Ee5SliceProfile.PlayerPresentableReleaseBrakeDelay)
+                ApplyPresentableReleaseBrake();
 
             // A brittle break has already disabled the contact collider, but
             // Unity can still report the old contact until the next physics
@@ -320,17 +324,23 @@ namespace ExtraterrestrialExhaust.Player
                 body.AddRelativeForce(Vector2.up * (Mathf.Abs(inputAmount) * thrustForce * rotationBoostMultiplier), ForceMode2D.Force);
         }
 
-        void ApplyPresentableTurnResponse(float inputAmount, bool turning)
+        void ApplyPresentableTurnResponse(float inputAmount)
         {
-            if (!turning)
-                return;
-
             float targetAngularVelocity = -Mathf.Clamp(inputAmount, -1f, 1f)
                 * Ee5SliceProfile.PlayerPresentableMaxAngularVelocity;
             body.angularVelocity = Mathf.MoveTowards(
                 body.angularVelocity,
                 targetAngularVelocity,
                 Ee5SliceProfile.PlayerPresentableTurnAcceleration
+                * Time.fixedDeltaTime);
+        }
+
+        void ApplyPresentableReleaseBrake()
+        {
+            body.angularVelocity = Mathf.MoveTowards(
+                body.angularVelocity,
+                0f,
+                Ee5SliceProfile.PlayerPresentableReleaseBrake
                 * Time.fixedDeltaTime);
         }
 

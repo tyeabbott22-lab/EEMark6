@@ -57,6 +57,13 @@ namespace ExtraterrestrialExhaust.Core
         // envelope in about a sixth of a second, while the restored angular
         // damping prevents a released tap from becoming a free spin.
         public const float PlayerPresentableTurnAcceleration = 2160f;
+        // The reference craft damps naturally, but the rebuilt stack can carry
+        // a stale angular-velocity impulse through a short keyboard tap. Bleed
+        // that impulse on release without rotating the craft toward upright;
+        // this keeps deliberate flips possible while making a released turn
+        // feel immediately controllable in the presentable slice.
+        public const float PlayerPresentableReleaseBrake = 1440f;
+        public const float PlayerPresentableReleaseBrakeDelay = 0.04f;
         // EE5's sniper prefab has JetpackMotor and JetpackInput both enabled.
         // JetpackInput applies the same direct force/torque after the motor
         // step. Keep that observable compatibility quirk named and switchable.
