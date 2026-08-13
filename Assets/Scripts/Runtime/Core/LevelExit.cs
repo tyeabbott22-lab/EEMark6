@@ -145,8 +145,8 @@ namespace ExtraterrestrialExhaust.Core
             TryStartCapture(other);
         }
 
-        // The gate can unlock while the craft is already overlapping the portal.
-        // Stay-based evaluation keeps that ordering from creating a soft lock.
+            // The gate can unlock while the craft is already overlapping the portal.
+            // Stay-based evaluation keeps that ordering from creating a soft lock.
         void OnTriggerStay2D(Collider2D other)
         {
             TryStartCapture(other);
@@ -221,9 +221,19 @@ namespace ExtraterrestrialExhaust.Core
             float initialRadius = Mathf.Max(Vector2.Distance(captureStartPosition, transform.position), 0.001f);
             float direction = clockwise ? -1f : 1f;
 
+            // Capture owns the player's Rigidbody pose. Advance that pose on the
+            // physics clock, just like the key flight and gate lift, so a render
+            // hitch cannot stretch the spiral or make the craft visibly fight
+            // interpolation on its way into the portal.
             while (elapsed < captureDuration && player)
             {
-                elapsed += Time.deltaTime;
+                yield return new WaitForFixedUpdate();
+                if (!capturing)
+                    yield break;
+                if (!player)
+                    break;
+
+                elapsed += Time.fixedDeltaTime;
                 float t = Mathf.Clamp01(elapsed / captureDuration);
                 float radialT = inwardPull != null && inwardPull.length > 0
                     ? Mathf.Clamp01(inwardPull.Evaluate(t))
@@ -239,6 +249,7 @@ namespace ExtraterrestrialExhaust.Core
                 {
                     body.position = capturePosition;
                     body.rotation = captureStartBodyRotation - additionalPlayerSpin * angleT;
+                    Physics2D.SyncTransforms();
                 }
                 else
                 {
@@ -267,7 +278,6 @@ namespace ExtraterrestrialExhaust.Core
 
                 portalPresentation?.SetCaptureProgress(t);
 
-                yield return null;
             }
 
             if (!player)
@@ -284,6 +294,7 @@ namespace ExtraterrestrialExhaust.Core
                 body.angularVelocity = 0f;
                 body.bodyType = RigidbodyType2D.Kinematic;
                 body.simulated = true;
+                Physics2D.SyncTransforms();
             }
 
             portalPresentation?.SetCaptureProgress(1f);
@@ -313,6 +324,7 @@ namespace ExtraterrestrialExhaust.Core
                 capturedBody.simulated = capturedBodySimulated;
                 capturedBody.linearVelocity = Vector2.zero;
                 capturedBody.angularVelocity = 0f;
+                Physics2D.SyncTransforms();
             }
             else if (capturedPlayer)
             {
