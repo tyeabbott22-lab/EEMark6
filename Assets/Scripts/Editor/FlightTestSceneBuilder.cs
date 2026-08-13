@@ -392,6 +392,36 @@ namespace ExtraterrestrialExhaust.Editor
                 + "Rebuild FlightTest afterward to propagate the same profile into the generated scene.");
         }
 
+        [MenuItem("Extraterrestrial Exhaust/Repair Enemy Intro Sprite Wiring (Preserve Gameplay Tuning)")]
+        public static void RepairEnemyIntroSpriteWiring()
+        {
+            bool meleeRepaired = RepairEnemyIntroSpriteWiring(EnemyMeleePrefabPath, false);
+            bool gunnerRepaired = RepairEnemyIntroSpriteWiring(EnemyGunnerPrefabPath, true);
+            bool sceneRepaired = false;
+
+            Scene activeScene = SceneManager.GetActiveScene();
+            if (activeScene.IsValid() && activeScene.path == ScenePath)
+            {
+                sceneRepaired |= RepairEnemyIntroSpritePresentation(
+                    GameObject.Find("Purple Melee Hunter"),
+                    false);
+                sceneRepaired |= RepairEnemyIntroSpritePresentation(
+                    GameObject.Find("White Gunner"),
+                    true);
+                if (sceneRepaired)
+                    EditorSceneManager.MarkSceneDirty(activeScene);
+            }
+
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+            Debug.Log(
+                "Repaired only the EE5 enemy intro sprite arrays and facing contract. "
+                + $"Purple melee prefab: {meleeRepaired}; white gunner prefab: {gunnerRepaired}; "
+                + $"active FlightTest: {sceneRepaired}. "
+                + "Gameplay physics, movement, weapon cadence, and other inspector tuning were preserved. "
+                + "Rebuild FlightTest with Preserve Prefabs afterward.");
+        }
+
         [MenuItem("Extraterrestrial Exhaust/Validate Enemy Prefab Profiles")]
         public static void ValidateEnemyPrefabProfiles()
         {
@@ -411,6 +441,82 @@ namespace ExtraterrestrialExhaust.Editor
                 "Enemy prefab profiles need the EE5 intro migration: "
                 + string.Join("; ", issues)
                 + ". Run Extraterrestrial Exhaust > Repair Enemy Prefab Profiles.");
+        }
+
+        static bool RepairEnemyIntroSpriteWiring(string prefabPath, bool ranged)
+        {
+            GameObject prefabContents = PrefabUtility.LoadPrefabContents(prefabPath);
+            if (!prefabContents)
+            {
+                Debug.LogError($"Could not open enemy prefab at {prefabPath}.");
+                return false;
+            }
+
+            bool changed = RepairEnemyIntroSpritePresentation(prefabContents, ranged);
+            if (changed)
+                PrefabUtility.SaveAsPrefabAsset(prefabContents, prefabPath);
+            PrefabUtility.UnloadPrefabContents(prefabContents);
+            return changed;
+        }
+
+        static bool RepairEnemyIntroSpritePresentation(GameObject enemyObject, bool ranged)
+        {
+            if (!enemyObject)
+                return false;
+
+            EnemySpritePresentation presentation =
+                enemyObject.GetComponent<EnemySpritePresentation>();
+            if (!presentation)
+            {
+                Debug.LogWarning(
+                    $"Could not repair intro sprite wiring on {enemyObject.name}: "
+                    + "EnemySpritePresentation is missing.");
+                return false;
+            }
+
+            bool changed = false;
+            SpriteRenderer spriteRenderer = enemyObject.GetComponent<SpriteRenderer>();
+            Sprite activeSprite = LoadFirstSprite(ranged ? EnemySpritePath : MeleeSpritePath);
+            if (spriteRenderer && spriteRenderer.sprite != activeSprite)
+            {
+                spriteRenderer.sprite = activeSprite;
+                EditorUtility.SetDirty(spriteRenderer);
+                changed = true;
+            }
+
+            SerializedObject serializedPresentation = new SerializedObject(presentation);
+            changed |= SetBool(
+                serializedPresentation,
+                "faceDormantTowardTarget",
+                ranged || Ee5SliceProfile.EnemyMeleeFacesDormantTarget);
+            changed |= SetBool(serializedPresentation, "forwardIsLocalNegativeX", ranged);
+            changed |= SetBool(serializedPresentation, "restoreFacingAfterWake", true);
+            changed |= SetBool(serializedPresentation, "pingPongDormantAnimation", true);
+            changed |= SetBool(serializedPresentation, "randomizeDormantStartFrame", true);
+            changed |= SetFloat(
+                serializedPresentation,
+                "dormantFacingHysteresis",
+                Ee5SliceProfile.EnemyDormantFacingHysteresis);
+            changed |= SetSpriteArrayIfDifferent(
+                serializedPresentation,
+                "dormantSprites",
+                LoadSprites(ranged ? EnemyIdleSpritePath : MeleeIdleSpritePath));
+            changed |= SetSpriteArrayIfDifferent(
+                serializedPresentation,
+                "alertSprites",
+                LoadSprites(ranged ? EnemyDefeatSpritePath : MeleeDefeatSpritePath));
+            changed |= SetSpriteArrayIfDifferent(
+                serializedPresentation,
+                "activeSprites",
+                LoadSprites(ranged ? EnemySpritePath : MeleeSpritePath));
+            changed |= SetSpriteArrayIfDifferent(
+                serializedPresentation,
+                "defeatedSprites",
+                LoadSprites(ranged ? EnemyDefeatSpritePath : MeleeDefeatSpritePath));
+            serializedPresentation.ApplyModifiedPropertiesWithoutUndo();
+            if (changed)
+                EditorUtility.SetDirty(presentation);
+            return changed;
         }
 
         [MenuItem("Extraterrestrial Exhaust/Repair Active FlightTest Player Profile")]
