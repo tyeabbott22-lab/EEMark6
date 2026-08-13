@@ -125,6 +125,7 @@ namespace ExtraterrestrialExhaust.Enemy
         EnemyContactDamage contactDamage;
         bool roleResolved;
         bool meleeRole;
+        bool defeatStarted;
 
         public EnemyState State { get; private set; }
         public PlayerCharacter Target => target;
@@ -170,7 +171,23 @@ namespace ExtraterrestrialExhaust.Enemy
         /// the ranged weapon can mirror its authored muzzle offset in lockstep.
         /// </summary>
         public bool IsSpriteFlippedUpright => spriteFlippedUpright;
-        public bool CanAttack => State == EnemyState.Attacking;
+        public bool CanAttack => IsDamageable && State == EnemyState.Attacking;
+        /// <summary>
+        /// Single combat ownership gate for projectiles, contact damage, and
+        /// weapon presentation. A defeated enemy can still exist for the
+        /// current callback stack while its detached burst is spawning, but it
+        /// no longer owns gameplay damage or a live body.
+        /// </summary>
+        public bool IsDamageable => !defeatStarted
+            && State != EnemyState.Defeated
+            && body
+            && body.simulated
+            && bodyCollider
+            && bodyCollider.enabled
+            && health
+            && health.IsAlive;
+        /// <summary>EE5-aligned hitbox used by the repaired runtime profile.</summary>
+        public Collider2D GameplayHitbox => bodyCollider;
         /// <summary>
         /// Legacy hand-authored melee prefabs may still use a trigger navigation
         /// body. The gold EE5 close-bruiser path uses a solid box; exposing this
@@ -188,7 +205,8 @@ namespace ExtraterrestrialExhaust.Enemy
             Mathf.Max(0f, attackRange),
             Mathf.Max(0f, contactDamageRange));
         public bool IsAttackRecoveryActive => IsMelee && attackRecoveryRemaining > 0f;
-        public bool IsCombatActive => State == EnemyState.Chasing || State == EnemyState.Attacking;
+        public bool IsCombatActive => IsDamageable
+            && (State == EnemyState.Chasing || State == EnemyState.Attacking);
 
         /// <summary>
         /// Tests the authored player/enemy collider pair. EE5's melee damage
@@ -204,6 +222,9 @@ namespace ExtraterrestrialExhaust.Enemy
             Collider2D candidateCollider = candidate.GetComponent<Collider2D>();
             if (bodyCollider && candidateCollider)
             {
+                if (!bodyCollider.enabled || !candidateCollider.enabled)
+                    return false;
+
                 ColliderDistance2D separation = Physics2D.Distance(
                     bodyCollider,
                     candidateCollider);
@@ -864,6 +885,10 @@ namespace ExtraterrestrialExhaust.Enemy
 
         void HandleDefeated()
         {
+            if (defeatStarted)
+                return;
+
+            defeatStarted = true;
             ResolveNearMiss();
             ClearWakeSignal();
             SetState(EnemyState.Defeated);

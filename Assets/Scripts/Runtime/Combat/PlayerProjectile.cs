@@ -410,7 +410,19 @@ namespace ExtraterrestrialExhaust.Combat
         bool CanDamage(Collider2D other)
         {
             if (team == ProjectileTeam.Player)
-                return other.GetComponentInParent<EnemyController>() != null;
+            {
+                EnemyController enemy = other
+                    ? other.GetComponentInParent<EnemyController>()
+                    : null;
+                if (!enemy || !enemy.IsDamageable)
+                    return false;
+
+                // EE5's enemyGun/enemyFast prefabs use one offset BoxCollider2D
+                // as the gameplay silhouette. Do not let a stale child or
+                // compatibility collider become an accidental second hurtbox.
+                Collider2D authoredHitbox = enemy.GameplayHitbox;
+                return !authoredHitbox || other == authoredHitbox;
+            }
 
             // EE5 EnemyBullet only has a player impact path. Do not let an
             // enemy shot accidentally damage a future destructible prop,
