@@ -22,7 +22,10 @@ namespace ExtraterrestrialExhaust.Core
         // the later prefab-rip pass can switch back to the raw import in one
         // place after a side-by-side feel check.
         public const float PlayerFlightLinearDamping = 0f;
-        public const float PlayerFlightAngularDamping = 0.35f;
+        // Keep linear motion frictionless, but give the craft enough rotational
+        // damping to settle after a tap instead of carrying a lazy spin across
+        // the whole room. This is the presentable bridge, not the raw prefab rip.
+        public const float PlayerFlightAngularDamping = 1.1f;
         public const float PlayerMaxHealth = 5f;
         public const float PlayerInvulnerabilityDuration = 0.5f;
         // Copied from EE5's sniper prefab. Keep the physics hurtbox authored
@@ -41,26 +44,25 @@ namespace ExtraterrestrialExhaust.Core
         // eventual prefab rip, while the current slice needs a little more
         // immediate authority and a bounded spin so the craft feels deliberate
         // instead of either soupy or accidentally uncontrollable.
-        public const float PlayerPresentableRotationTorque = 0.55f;
-        public const float PlayerPresentableMaxAngularVelocity = 360f;
+        public const float PlayerPresentableRotationTorque = 0.72f;
+        public const float PlayerPresentableMaxAngularVelocity = 270f;
         // EE5's sniper prefab has JetpackMotor and JetpackInput both enabled.
         // JetpackInput applies the same direct force/torque after the motor
         // step. Keep that observable compatibility quirk named and switchable.
         public const bool PlayerLegacyDirectPhysicsAssist = true;
-        // EE5 has no hidden neutral-rotation correction. Upright recovery is
-        // an explicit S/C stabilize command; keeping the assist opt-in avoids
-        // a second control authority fighting the authored torque on release.
-        // The optional values remain available for a future accessibility or
-        // prototype profile, but the career slice stays faithful to JetpackMotor.
-        public const bool UprightAssistEnabled = false;
-        public const float UprightAssistWindow = 16f;
+        // The raw EE5 path has no hidden neutral-rotation correction, but the
+        // current career-presentable bridge needs a small settle so a new player
+        // can read the craft without losing the authored ability to flip. S/C
+        // remains the full-strength explicit stabilize command.
+        public const bool UprightAssistEnabled = true;
+        public const float UprightAssistWindow = 20f;
         // Optional comfort-profile values; not used by the EE5 gold slice.
-        public const float UprightAssistSpeed = 36f;
-        public const float UprightAssistAngularBrake = 30f;
+        public const float UprightAssistSpeed = 96f;
+        public const float UprightAssistAngularBrake = 120f;
         // Optional comfort-profile release delay.
-        public const float UprightAssistReleaseDelay = 0.08f;
+        public const float UprightAssistReleaseDelay = 0.06f;
         // Optional comfort-profile spin ceiling.
-        public const float UprightAssistMaxAngularSpeed = 75f;
+        public const float UprightAssistMaxAngularSpeed = 110f;
         // The keyboard bindings remain full-strength, while a drifting analog
         // stick must not become an invisible rotation command. These are input
         // hygiene values, not a replacement for the authored flight torque.

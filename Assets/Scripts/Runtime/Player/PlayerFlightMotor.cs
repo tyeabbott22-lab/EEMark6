@@ -40,8 +40,8 @@ namespace ExtraterrestrialExhaust.Player
         [SerializeField] bool allowFlip = true;
         [SerializeField] bool enforceEe5Profile = true;
 
-        [Header("Optional Neutral Upright Assist")]
-        [Tooltip("Prototype/accessibility assist. Disabled by the EE5 gold profile; S/C remains the authored stabilize command.")]
+        [Header("Presentable Neutral Upright Assist")]
+        [Tooltip("Short-range settle after a turn is released. It preserves deliberate flips and complements the authored S/C stabilize command.")]
         [SerializeField] bool uprightAssistEnabled = Ee5SliceProfile.UprightAssistEnabled;
         [SerializeField, Min(0f)] float uprightAssistWindow = Ee5SliceProfile.UprightAssistWindow;
         [SerializeField, Min(0f)] float uprightAssistSpeed = Ee5SliceProfile.UprightAssistSpeed;
@@ -359,9 +359,10 @@ namespace ExtraterrestrialExhaust.Player
             bool spinWithinAssistRange = uprightAssistMaxAngularSpeed <= 0f
                 || Mathf.Abs(body.angularVelocity) <= uprightAssistMaxAngularSpeed;
 
-            // This is intentionally an optional prototype aid, not part of the
-            // EE5 gold contract. When enabled, it still never becomes a hidden
-            // flip or a replacement for the explicit stabilize command.
+            // This is the temporary presentability bridge while the imported
+            // prefab values are still being reconciled. It only acts near the
+            // authored upright angle and below a modest spin speed, so a held
+            // turn still produces the realScene-style deliberate flip.
             body.angularVelocity = Mathf.MoveTowards(
                 body.angularVelocity,
                 0f,

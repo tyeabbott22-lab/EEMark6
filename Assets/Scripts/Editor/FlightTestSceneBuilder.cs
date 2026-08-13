@@ -631,8 +631,10 @@ namespace ExtraterrestrialExhaust.Editor
             Debug.Log(
                 "Applied the EE5 player Rigidbody2D and flight-motor profile. "
                 + $"Prefab changed: {prefabRepaired}; active FlightTest changed: {sceneRepaired}. "
-                + "The tuned EE6 flight profile uses 0.02 linear damping with 3.25 angular damping; "
-                + "the EE5 reference body used 0.35 linear damping. "
+                + $"The presentable EE6 bridge uses {Ee5SliceProfile.PlayerFlightLinearDamping:0.##} linear damping, "
+                + $"{Ee5SliceProfile.PlayerFlightAngularDamping:0.##} angular damping, "
+                + $"and {Ee5SliceProfile.PlayerPresentableRotationTorque:0.##} turn torque; "
+                + "the raw EE5 body values remain documented in Ee5SliceProfile for the later prefab-rip pass. "
                 + (sceneRepaired
                     ? (sceneSaved
                         ? "The repaired active scene was saved."
@@ -1982,7 +1984,7 @@ namespace ExtraterrestrialExhaust.Editor
         /// <summary>
         /// Keeps the serialized builder contract aligned with PlayerFlightMotor's
         /// runtime EE5 profile. In particular, the optional neutral upright assist
-        /// must not remain hidden in a generated scene when the gold profile disables it.
+        /// must remain visible in a generated scene when the presentable bridge enables it.
         /// </summary>
         static bool ApplyEe5PlayerMotorProfile(PlayerFlightMotor motor)
         {
@@ -1993,7 +1995,10 @@ namespace ExtraterrestrialExhaust.Editor
             bool changed = false;
             changed |= SetBool(serializedMotor, "enforceEe5Profile", true);
             changed |= SetFloat(serializedMotor, "thrustForce", Ee5SliceProfile.ThrustForce);
-            changed |= SetFloat(serializedMotor, "rotationTorque", Ee5SliceProfile.RotationTorque);
+            changed |= SetFloat(
+                serializedMotor,
+                "rotationTorque",
+                Ee5SliceProfile.PlayerPresentableRotationTorque);
             changed |= SetBool(serializedMotor, "rotationAddsThrust", true);
             changed |= SetFloat(
                 serializedMotor,
@@ -3266,7 +3271,12 @@ namespace ExtraterrestrialExhaust.Editor
             SerializedObject serializedMotor = new SerializedObject(motor);
             CheckSerializedBool(serializedMotor, "enforceEe5Profile", true, $"{label}: enforceEe5Profile", issues);
             CheckSerializedFloat(serializedMotor, "thrustForce", Ee5SliceProfile.ThrustForce, $"{label}: thrustForce", issues);
-            CheckSerializedFloat(serializedMotor, "rotationTorque", Ee5SliceProfile.RotationTorque, $"{label}: rotationTorque", issues);
+            CheckSerializedFloat(
+                serializedMotor,
+                "rotationTorque",
+                Ee5SliceProfile.PlayerPresentableRotationTorque,
+                $"{label}: rotationTorque",
+                issues);
             CheckSerializedFloat(serializedMotor, "stabilizationSpeed", Ee5SliceProfile.StabilizationSpeed, $"{label}: stabilizationSpeed", issues);
             CheckSerializedFloat(serializedMotor, "angularDamping", Ee5SliceProfile.FlightAngularDamping, $"{label}: flight angular damping", issues);
             CheckSerializedBool(
