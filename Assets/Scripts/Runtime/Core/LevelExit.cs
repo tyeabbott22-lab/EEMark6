@@ -366,12 +366,32 @@ namespace ExtraterrestrialExhaust.Core
             if (!exitRenderer || !portalPresentation)
                 return;
 
-            // Early FlightTest scenes used a five-point square LineRenderer as
+            // Early FlightTest scenes used a four-point square LineRenderer as
             // a placeholder exit marker. The authored portal presentation now
             // supplies the locked/unlocked read, so suppress only that known
             // generated shape and leave hand-authored line art untouched.
-            if (exitRenderer.positionCount == 5)
+            if (IsGeneratedSquareOutline())
                 exitRenderer.enabled = false;
+        }
+
+        bool IsGeneratedSquareOutline()
+        {
+            if (exitRenderer.positionCount != 4)
+                return false;
+
+            Vector3 first = exitRenderer.GetPosition(0);
+            Vector3 second = exitRenderer.GetPosition(1);
+            Vector3 third = exitRenderer.GetPosition(2);
+            Vector3 fourth = exitRenderer.GetPosition(3);
+            const float tolerance = 0.02f;
+            return Mathf.Abs(Mathf.Abs(first.x) - 0.45f) <= tolerance
+                && Mathf.Abs(Mathf.Abs(first.y) - 0.45f) <= tolerance
+                && Mathf.Abs(Mathf.Abs(second.x) - 0.45f) <= tolerance
+                && Mathf.Abs(Mathf.Abs(second.y) - 0.45f) <= tolerance
+                && Mathf.Abs(Mathf.Abs(third.x) - 0.45f) <= tolerance
+                && Mathf.Abs(Mathf.Abs(third.y) - 0.45f) <= tolerance
+                && Mathf.Abs(Mathf.Abs(fourth.x) - 0.45f) <= tolerance
+                && Mathf.Abs(Mathf.Abs(fourth.y) - 0.45f) <= tolerance;
         }
     }
 }
