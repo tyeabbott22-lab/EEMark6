@@ -70,22 +70,37 @@ namespace ExtraterrestrialExhaust.Enemy
             // Presentation used to carry its own copy of the authored forward
             // axis. If an older prefab says melee faces like the gunner, the
             // controller is the authoritative role-specific source at runtime.
-            if (controller)
-            {
-                forwardIsLocalNegativeX = controller.ForwardIsLocalNegativeX;
-                // Recover the role-specific EE5 intro contract from the
-                // controller so an older prefab cannot leave the sprite in the
-                // wrong facing mode after a builder repair.
-                faceDormantTowardTarget = controller.IsMelee
-                    ? Ee5SliceProfile.EnemyMeleeFacesDormantTarget
-                    : true;
-                invertDormantSpriteX = controller.IsMelee
-                    && Ee5SliceProfile.EnemyMeleeInvertsSpriteDuringIntro;
-                dormantFacingHysteresis = Ee5SliceProfile.EnemyDormantFacingHysteresis;
-            }
+            RefreshRoleFacingContract();
 
             renderers = GetComponentsInChildren<Renderer>(true);
             authoredFlipX = spriteRenderer && spriteRenderer.flipX;
+        }
+
+        void Start()
+        {
+            // Unity does not guarantee Awake ordering between components on
+            // one object. EnemyController may therefore finish its role
+            // repair after this presentation's Awake. Re-read the contract at
+            // Start so a stale serialized forward axis cannot leave the melee
+            // sprite facing backward on its first wake.
+            RefreshRoleFacingContract();
+            ApplyDormantFacing();
+            ApplyFrame();
+        }
+
+        void RefreshRoleFacingContract()
+        {
+            if (!controller)
+                return;
+
+            forwardIsLocalNegativeX = controller.ForwardIsLocalNegativeX;
+            bool isMelee = controller.IsMelee;
+            faceDormantTowardTarget = isMelee
+                ? Ee5SliceProfile.EnemyMeleeFacesDormantTarget
+                : true;
+            invertDormantSpriteX = isMelee
+                && Ee5SliceProfile.EnemyMeleeInvertsSpriteDuringIntro;
+            dormantFacingHysteresis = Ee5SliceProfile.EnemyDormantFacingHysteresis;
         }
 
         void OnEnable()

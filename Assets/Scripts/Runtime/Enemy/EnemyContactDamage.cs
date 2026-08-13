@@ -25,6 +25,40 @@ namespace ExtraterrestrialExhaust.Enemy
             cooldownRemaining = Mathf.Max(
                 0f,
                 cooldownRemaining - Time.fixedDeltaTime);
+
+            // Trigger callbacks are the normal EE5 path, but they can be
+            // skipped when a dirty prefab has an old layer matrix or when the
+            // player and the repaired trigger body cross between physics
+            // steps. Re-test the actual collider pair on the fixed clock so
+            // hitboxes remain authoritative without inventing a larger damage
+            // radius.
+            TryDamageResolvedContact();
+        }
+
+        void TryDamageResolvedContact()
+        {
+            if (!controller || !controller.IsMelee || !controller.CanAttack)
+                return;
+
+            PlayerCharacter player = controller.Target;
+            if (!player)
+                player = FindFirstObjectByType<PlayerCharacter>();
+
+            if (!player || !player.CanReceiveGameplayInput || cooldownRemaining > 0f)
+                return;
+
+            if (!controller.IsWithinMeleeContact(player))
+                return;
+
+            Vector2 direction = (player.PhysicsPosition - controller.PhysicsPosition).normalized;
+            if (direction.sqrMagnitude <= 0.001f)
+                direction = Vector2.right;
+
+            Collider2D playerCollider = player.GetComponent<Collider2D>();
+            Vector2 hitPoint = playerCollider
+                ? playerCollider.ClosestPoint(controller.PhysicsAnchorPosition)
+                : player.PhysicsPosition;
+            TryDamagePlayer(player, hitPoint, direction);
         }
 
         void OnTriggerEnter2D(Collider2D other) => TryDamageFromCollider(other);
