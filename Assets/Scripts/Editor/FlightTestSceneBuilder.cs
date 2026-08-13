@@ -2555,6 +2555,24 @@ namespace ExtraterrestrialExhaust.Editor
                         ? $"{label} EnemyWeapon is missing"
                         : $"{label} has EnemyWeapon but is the melee role");
             }
+            else if (ranged)
+            {
+                SerializedObject serializedWeapon = new SerializedObject(weapon);
+                CheckSerializedBool(
+                    serializedWeapon,
+                    "mirrorFirePointYWithUprightFlip",
+                    Ee5SliceProfile.EnemyGunnerMirrorFirePointYWithUprightFlip,
+                    $"{label} muzzle mirroring",
+                    issues);
+                Transform firePoint = weapon.FirePoint;
+                if (!firePoint
+                    || Vector3.Distance(
+                        firePoint.localPosition,
+                        Ee5SliceProfile.EnemyGunnerFirePointLocalPosition) > 0.001f)
+                {
+                    issues.Add($"{label} fire point pose");
+                }
+            }
 
             EnemyContactDamage contactDamage = enemyObject.GetComponent<EnemyContactDamage>();
             if (!contactDamage)
@@ -3114,6 +3132,25 @@ namespace ExtraterrestrialExhaust.Editor
             {
                 SetSerializedObjectReference(weapon, "gameState", gameState);
                 SetSerializedObjectReference(weapon, "projectilePrefab", projectilePrefab);
+
+                // Keep the generated scene instance visually faithful even
+                // before Play invokes EnemyWeapon's runtime self-heal. This
+                // is an instance override; the preserved prefab asset remains
+                // untouched.
+                SerializedObject serializedWeapon = new SerializedObject(weapon);
+                SetBool(
+                    serializedWeapon,
+                    "mirrorFirePointYWithUprightFlip",
+                    Ee5SliceProfile.EnemyGunnerMirrorFirePointYWithUprightFlip);
+                serializedWeapon.ApplyModifiedPropertiesWithoutUndo();
+                PrefabUtility.RecordPrefabInstancePropertyModifications(weapon);
+
+                Transform firePoint = weapon.FirePoint;
+                if (firePoint)
+                {
+                    firePoint.localPosition = Ee5SliceProfile.EnemyGunnerFirePointLocalPosition;
+                    PrefabUtility.RecordPrefabInstancePropertyModifications(firePoint);
+                }
             }
 
             // Preserve Prefabs means preserve their gameplay tuning, not
