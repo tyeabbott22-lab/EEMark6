@@ -1,4 +1,5 @@
 using UnityEngine;
+using ExtraterrestrialExhaust.Core;
 
 namespace ExtraterrestrialExhaust.Combat
 {
@@ -168,7 +169,9 @@ namespace ExtraterrestrialExhaust.Combat
             if (renderer)
             {
                 renderer.sortingOrder = 41;
-                renderer.sharedMaterial = new Material(Shader.Find("Sprites/Default"));
+                Material material = RuntimeVisualMaterial.Create("Hazard Embers");
+                if (material)
+                    renderer.sharedMaterial = material;
             }
 
             embers.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);

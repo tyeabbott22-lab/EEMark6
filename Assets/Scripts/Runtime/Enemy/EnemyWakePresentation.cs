@@ -1,4 +1,5 @@
 using UnityEngine;
+using ExtraterrestrialExhaust.Core;
 
 namespace ExtraterrestrialExhaust.Enemy
 {
@@ -122,8 +123,9 @@ namespace ExtraterrestrialExhaust.Enemy
             wakeLine.startWidth = minWidth;
             wakeLine.endWidth = minWidth * 0.08f;
             wakeLine.enabled = false;
-            lineMaterial = new Material(Shader.Find("Sprites/Default"));
-            wakeLine.sharedMaterial = lineMaterial;
+            lineMaterial = RuntimeVisualMaterial.Create("Enemy Wake Telegraph");
+            if (lineMaterial)
+                wakeLine.sharedMaterial = lineMaterial;
         }
 
         void SetEndpoints(Vector2 start, Vector2 end, float intensity)

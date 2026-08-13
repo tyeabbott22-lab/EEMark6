@@ -1,4 +1,5 @@
 using UnityEngine;
+using ExtraterrestrialExhaust.Core;
 
 namespace ExtraterrestrialExhaust.Combat
 {
@@ -88,8 +89,7 @@ namespace ExtraterrestrialExhaust.Combat
             particleRenderer = particles.GetComponent<ParticleSystemRenderer>();
             if (!runtimeMaterial)
             {
-                runtimeMaterial = new Material(Shader.Find("Sprites/Default"));
-                runtimeMaterial.name = "Runtime Projectile Exhaust";
+                runtimeMaterial = RuntimeVisualMaterial.Create("Runtime Projectile Exhaust");
             }
 
             if (particleRenderer)

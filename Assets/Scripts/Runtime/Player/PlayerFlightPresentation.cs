@@ -468,12 +468,9 @@ namespace ExtraterrestrialExhaust.Player
 
         Material CreateRuntimeMaterial(string materialName)
         {
-            Shader shader = Shader.Find("Sprites/Default");
-            if (!shader)
+            Material material = RuntimeVisualMaterial.Create(materialName);
+            if (!material)
                 return null;
-
-            Material material = new Material(shader);
-            material.name = materialName;
             runtimeMaterials.Add(material);
             return material;
         }

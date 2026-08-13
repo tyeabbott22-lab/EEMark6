@@ -295,9 +295,9 @@ namespace ExtraterrestrialExhaust.Enemy
             telegraph.sortingOrder = telegraphSortingOrder;
             telegraph.startWidth = telegraphMinWidth;
             telegraph.endWidth = telegraphMinWidth * 0.08f;
-            telegraphMaterial = new Material(Shader.Find("Sprites/Default"));
-            telegraphMaterial.name = "Enemy Aim Telegraph";
-            telegraph.sharedMaterial = telegraphMaterial;
+            telegraphMaterial = RuntimeVisualMaterial.Create("Enemy Aim Telegraph");
+            if (telegraphMaterial)
+                telegraph.sharedMaterial = telegraphMaterial;
             telegraph.enabled = false;
         }
 

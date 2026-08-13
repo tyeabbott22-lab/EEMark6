@@ -446,9 +446,7 @@ namespace ExtraterrestrialExhaust.Core
 
         Material CreateMaterial(string materialName)
         {
-            Material material = new Material(Shader.Find("Sprites/Default"));
-            material.name = materialName;
-            return material;
+            return RuntimeVisualMaterial.Create(materialName);
         }
 
         static Texture2D CreateSoftCircleTexture(int size, bool halo)

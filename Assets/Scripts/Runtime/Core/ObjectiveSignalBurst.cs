@@ -65,7 +65,9 @@ namespace ExtraterrestrialExhaust.Core
             line.startColor = color;
             line.endColor = color;
             line.sortingOrder = sortingOrder;
-            line.material = new Material(Shader.Find("Sprites/Default"));
+            Material material = RuntimeVisualMaterial.Create("Objective Signal Burst");
+            if (material)
+                line.material = material;
             return line;
         }
 

@@ -1,5 +1,6 @@
 using UnityEngine;
 using ExtraterrestrialExhaust.CameraSystem;
+using ExtraterrestrialExhaust.Core;
 
 namespace ExtraterrestrialExhaust.Enemy
 {
@@ -92,8 +93,7 @@ namespace ExtraterrestrialExhaust.Enemy
             if (coreFlash)
                 return;
 
-            flashMaterial = new Material(Shader.Find("Sprites/Default"));
-            flashMaterial.name = "Enemy Muzzle Flash";
+            flashMaterial = RuntimeVisualMaterial.Create("Enemy Muzzle Flash");
             coreFlash = CreateFlashLine("Enemy Muzzle Flash Core");
             upperFlash = CreateFlashLine("Enemy Muzzle Flash Upper");
             lowerFlash = CreateFlashLine("Enemy Muzzle Flash Lower");

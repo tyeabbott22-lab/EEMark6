@@ -1,4 +1,5 @@
 using UnityEngine;
+using ExtraterrestrialExhaust.Core;
 
 namespace ExtraterrestrialExhaust.Player
 {
@@ -95,7 +96,9 @@ namespace ExtraterrestrialExhaust.Player
             line.startColor = color;
             line.endColor = color;
             line.sortingOrder = sortingOrder;
-            line.material = new Material(Shader.Find("Sprites/Default"));
+            Material material = RuntimeVisualMaterial.Create("Pickup Collection Burst");
+            if (material)
+                line.material = material;
             return line;
         }
 
