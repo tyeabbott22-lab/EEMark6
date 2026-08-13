@@ -79,64 +79,46 @@ namespace ExtraterrestrialExhaust.Player
 
             if (canReadInput && includeEe5KeyboardFallback && Keyboard.current != null)
             {
-                float legacyTurn = 0f;
-                float legacyThrust = 0f;
+                Keyboard keyboard = Keyboard.current;
+                Vector2 keyboardCommand = Move;
+                bool turnNegativePressed = keyboard.aKey.isPressed
+                    || keyboard.leftArrowKey.isPressed
+                    || keyboard.qKey.isPressed;
+                bool turnPositivePressed = keyboard.dKey.isPressed
+                    || keyboard.rightArrowKey.isPressed
+                    || keyboard.eKey.isPressed;
+                bool turnKeyPressed = turnNegativePressed || turnPositivePressed;
 
-                // The current action asset already owns WASD and the arrow
-                // keys. Adding those values again here makes a half-deflected
-                // stick plus one keyboard key produce an invented vector
-                // (and can cancel a real input in the opposite direction).
-                // Keep the fallback useful for older hand-authored scenes by
-                // restoring cardinal keys only when this action has no such
-                // binding. Q/E/C remain the deliberate EE5 compatibility
-                // aliases because the shared action asset does not bind them.
-                bool hasTurnKeyboardBinding = HasAnyKeyboardBinding(
-                    resolvedMoveAction,
-                    "<Keyboard>/a",
-                    "<Keyboard>/d",
-                    "<Keyboard>/leftArrow",
-                    "<Keyboard>/rightArrow");
-                bool hasThrustKeyboardBinding = HasAnyKeyboardBinding(
-                    resolvedMoveAction,
-                    "<Keyboard>/w",
-                    "<Keyboard>/s",
-                    "<Keyboard>/upArrow",
-                    "<Keyboard>/downArrow",
-                    "<Keyboard>/space");
+                bool stabilizePressed = keyboard.sKey.isPressed
+                    || keyboard.downArrowKey.isPressed
+                    || keyboard.cKey.isPressed;
+                bool thrustPressed = keyboard.wKey.isPressed
+                    || keyboard.upArrowKey.isPressed
+                    || keyboard.spaceKey.isPressed;
 
-                if (!hasTurnKeyboardBinding && Keyboard.current.aKey.isPressed)
-                    legacyTurn -= 1f;
-                if (!hasTurnKeyboardBinding && Keyboard.current.dKey.isPressed)
-                    legacyTurn += 1f;
-                if (Keyboard.current.qKey.isPressed)
-                    legacyTurn -= 1f;
-                if (Keyboard.current.eKey.isPressed)
-                    legacyTurn += 1f;
+                // The generated action asset uses a normalized Dpad
+                // composite, so W+D arrives as approximately .707/.707.
+                // EE5 reads these keys as independent booleans and applies
+                // full thrust plus full torque. Restore that authored command
+                // contract whenever a digital keyboard axis is actually down,
+                // while leaving a gamepad-only command analog.
+                if (turnKeyPressed)
+                {
+                    keyboardCommand.x = KeyboardAxis(
+                        turnNegativePressed,
+                        turnPositivePressed);
+                }
 
-                if (!hasThrustKeyboardBinding
-                    && (Keyboard.current.wKey.isPressed
-                        || Keyboard.current.upArrowKey.isPressed
-                        || Keyboard.current.spaceKey.isPressed))
-                    legacyThrust += 1f;
-                if (!hasThrustKeyboardBinding
-                    && (Keyboard.current.sKey.isPressed
-                        || Keyboard.current.downArrowKey.isPressed))
-                    legacyThrust -= 1f;
-                if (Keyboard.current.cKey.isPressed)
-                    legacyThrust -= 1f;
+                // Stabilization is an exclusive EE5 branch. S/C must win over
+                // W/Space rather than algebraically cancelling to neutral.
+                if (stabilizePressed || thrustPressed)
+                {
+                    keyboardCommand.y = stabilizePressed ? -1f : 1f;
+                }
 
-                // Add instead of replacing the action value so Q/E/C remain
-                // usable alongside a gamepad or a partially authored action
-                // asset. Clamping preserves the expected full-strength button
-                // response without double-counting keys already owned by the
-                // action map.
-                Move = new Vector2(
-                    Mathf.Clamp(Move.x + legacyTurn, -1f, 1f),
-                    Mathf.Clamp(Move.y + legacyThrust, -1f, 1f));
-
-                // Re-apply deadzones after the legacy keys are combined with
-                // the action asset. Keyboard values remain full strength.
-                Move = SanitizeMove(Move);
+                // Re-apply deadzones after the digital compatibility command is
+                // merged with any analog input.
+                Move = SanitizeMove(keyboardCommand);
             }
 
             if (!canReadInput)
@@ -159,27 +141,10 @@ namespace ExtraterrestrialExhaust.Player
             WasFlipPressed = flipRequestLatched;
         }
 
-        static bool HasAnyKeyboardBinding(InputAction action, params string[] paths)
+        static float KeyboardAxis(bool negativePressed, bool positivePressed)
         {
-            if (action == null || paths == null || paths.Length == 0)
-                return false;
-
-            foreach (InputBinding binding in action.bindings)
-            {
-                if (binding.isComposite || string.IsNullOrEmpty(binding.path))
-                    continue;
-
-                for (int i = 0; i < paths.Length; i++)
-                {
-                    if (string.Equals(
-                        binding.path,
-                        paths[i],
-                        System.StringComparison.OrdinalIgnoreCase))
-                        return true;
-                }
-            }
-
-            return false;
+            return (positivePressed ? 1f : 0f)
+                - (negativePressed ? 1f : 0f);
         }
 
         /// <summary>
