@@ -4031,7 +4031,6 @@ namespace ExtraterrestrialExhaust.Editor
             serializedPortal.FindProperty("portalDiameter").floatValue = 3.8f;
             serializedPortal.FindProperty("ringSegments").intValue = 80;
             serializedPortal.ApplyModifiedPropertiesWithoutUndo();
-            CreateSquareOutline(exit.transform, Vector2.one * 0.9f, new Color(0.2f, 1f, 0.85f));
 
             GameObject objectiveObject = new GameObject("Slice Objective Flow");
             SliceObjectiveDirector objectiveDirector = objectiveObject.AddComponent<SliceObjectiveDirector>();

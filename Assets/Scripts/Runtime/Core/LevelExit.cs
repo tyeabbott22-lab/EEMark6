@@ -69,6 +69,7 @@ namespace ExtraterrestrialExhaust.Core
             ResolveReferences();
             exitRenderer = GetComponent<LineRenderer>();
             portalPresentation = GetComponent<ExtractionPortalPresentation>();
+            HideLegacyExitOutline();
             UpdateVisual();
         }
 
@@ -358,6 +359,19 @@ namespace ExtraterrestrialExhaust.Core
 
             exitRenderer.startColor = IsUnlocked ? unlockedColor : lockedColor;
             exitRenderer.endColor = exitRenderer.startColor;
+        }
+
+        void HideLegacyExitOutline()
+        {
+            if (!exitRenderer || !portalPresentation)
+                return;
+
+            // Early FlightTest scenes used a five-point square LineRenderer as
+            // a placeholder exit marker. The authored portal presentation now
+            // supplies the locked/unlocked read, so suppress only that known
+            // generated shape and leave hand-authored line art untouched.
+            if (exitRenderer.positionCount == 5)
+                exitRenderer.enabled = false;
         }
     }
 }
