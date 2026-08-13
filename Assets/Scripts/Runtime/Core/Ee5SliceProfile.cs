@@ -12,15 +12,17 @@ namespace ExtraterrestrialExhaust.Core
     {
         public const float PlayerMass = 8f;
         public const float PlayerGravityScale = 0.285f;
-        // These are the serialized EE5 Rigidbody2D values from the realScene
-        // sniper prefab. The vertical slice intentionally uses the direct
-        // import values so a feel comparison is meaningful.
+        // Keep the raw realScene Rigidbody2D values documented for the eventual
+        // prefab cleanup. The current playable pass uses the lighter overlay
+        // immediately below: it was the last responsive EE6 baseline before the
+        // raw drag was forced at runtime and the craft started feeling soupy.
         public const float PlayerLinearDamping = 0.35f;
         public const float PlayerAngularDamping = 3.25f;
-        public const float PlayerFlightLinearDamping = PlayerLinearDamping;
-        // Preserve the authored EE5 angular drag so the craft carries linear
-        // momentum without becoming uncontrollably loose around its up axis.
-        public const float PlayerFlightAngularDamping = 3.25f;
+        // Temporary presentable-flight overlay. Keep this named separately so
+        // the later prefab-rip pass can switch back to the raw import in one
+        // place after a side-by-side feel check.
+        public const float PlayerFlightLinearDamping = 0.02f;
+        public const float PlayerFlightAngularDamping = 0.7f;
         public const float PlayerMaxHealth = 5f;
         public const float PlayerInvulnerabilityDuration = 0.5f;
         // Copied from EE5's sniper prefab. Keep the physics hurtbox authored
