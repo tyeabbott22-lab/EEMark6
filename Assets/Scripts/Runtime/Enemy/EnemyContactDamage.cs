@@ -5,6 +5,12 @@ using ExtraterrestrialExhaust.Player;
 
 namespace ExtraterrestrialExhaust.Enemy
 {
+    // Resolve the controller's fixed-step attack state before this component
+    // samples the collider pair. Without an explicit order, a solid EE5-style
+    // close bruiser can visually enter contact one physics tick before its
+    // damage authority sees CanAttack, which reads as a missed or jittering
+    // melee strike.
+    [DefaultExecutionOrder(200)]
     [RequireComponent(typeof(Collider2D))]
     public sealed class EnemyContactDamage : MonoBehaviour
     {
@@ -84,7 +90,21 @@ namespace ExtraterrestrialExhaust.Enemy
             TryDamagePlayer(player, hitPoint, direction);
         }
 
+        // Solid close-bruiser prefabs enter attack on the same physics step
+        // that their BoxCollider2D begins touching the player. Handle Enter
+        // as well as Stay so the first authored strike is not delayed until
+        // the next solver tick.
+        void OnCollisionEnter2D(Collision2D collision)
+        {
+            TryDamageFromCollision(collision);
+        }
+
         void OnCollisionStay2D(Collision2D collision)
+        {
+            TryDamageFromCollision(collision);
+        }
+
+        void TryDamageFromCollision(Collision2D collision)
         {
             // The reusable component remains on older solid-body prefabs, but
             // contact damage is a melee attack contract. The EE5 gunner has

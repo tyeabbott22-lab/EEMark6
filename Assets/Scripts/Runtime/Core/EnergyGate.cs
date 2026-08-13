@@ -12,6 +12,10 @@ namespace ExtraterrestrialExhaust.Core
     }
 
     /// <summary>Reusable blocking energy gate that lifts away when deactivated.</summary>
+    // The gate owns the blocking collider and its physics-clock lift. Run its
+    // handoff before the key transport so the key always reads the current
+    // socket/route state rather than a one-frame-old barrier pose.
+    [DefaultExecutionOrder(-100)]
     [RequireComponent(typeof(BoxCollider2D))]
     public sealed class EnergyGate : MonoBehaviour
     {

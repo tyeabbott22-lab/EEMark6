@@ -20,6 +20,9 @@ namespace ExtraterrestrialExhaust.Core
     /// the gate. Other enemies remain active pressure while the carrier
     /// objective progresses.
     /// </summary>
+    // Transport after the gate has advanced. This keeps the delicate key-to-
+    // socket flight and gate lift on one stable physics-clock handoff.
+    [DefaultExecutionOrder(100)]
     [RequireComponent(typeof(Collider2D))]
     [RequireComponent(typeof(Rigidbody2D))]
     public sealed class EnergyKey : MonoBehaviour

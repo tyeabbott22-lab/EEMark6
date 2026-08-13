@@ -17,6 +17,7 @@ namespace ExtraterrestrialExhaust.Enemy
     /// contact range or preserve an authored wander pattern, steer around room
     /// walls, and become inert when defeated.
     /// </summary>
+    [DefaultExecutionOrder(-200)]
     [RequireComponent(typeof(Rigidbody2D))]
     [RequireComponent(typeof(Collider2D))]
     [RequireComponent(typeof(HealthComponent))]
