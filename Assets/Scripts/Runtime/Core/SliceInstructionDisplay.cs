@@ -25,16 +25,27 @@ namespace ExtraterrestrialExhaust.Core
         Coroutine transitionRoutine;
         string activeSourceId;
         Vector3 baseScale = Vector3.one;
+        // Trigger callbacks can arrive while Unity is tearing down a scene or
+        // rebuilding the generated FlightTest hierarchy. Keep that lifecycle
+        // boundary explicit so a late Hide cannot start a coroutine on a
+        // destroyed display component.
+        bool isShuttingDown;
 
         void Awake()
         {
+            isShuttingDown = false;
             EnsureDisplay();
             HideImmediate();
         }
 
+        void OnEnable()
+        {
+            isShuttingDown = false;
+        }
+
         public void Show(string sourceId, string message)
         {
-            if (!this)
+            if (!this || !isActiveAndEnabled || isShuttingDown)
                 return;
 
             EnsureDisplay();
@@ -49,7 +60,7 @@ namespace ExtraterrestrialExhaust.Core
 
         public void Hide(string sourceId)
         {
-            if (!this)
+            if (!this || !isActiveAndEnabled || isShuttingDown)
                 return;
 
             if (!string.IsNullOrEmpty(activeSourceId) && activeSourceId != sourceId)
@@ -61,7 +72,7 @@ namespace ExtraterrestrialExhaust.Core
 
         void StartTransition(bool visible)
         {
-            if (!this)
+            if (!this || !isActiveAndEnabled || isShuttingDown)
                 return;
 
             if (transitionRoutine != null)
@@ -191,11 +202,18 @@ namespace ExtraterrestrialExhaust.Core
 
         void OnDisable()
         {
+            isShuttingDown = true;
             if (transitionRoutine != null)
             {
                 StopCoroutine(transitionRoutine);
                 transitionRoutine = null;
             }
+        }
+
+        void OnDestroy()
+        {
+            isShuttingDown = true;
+            transitionRoutine = null;
         }
     }
 }
