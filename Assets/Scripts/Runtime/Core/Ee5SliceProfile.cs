@@ -109,6 +109,12 @@ namespace ExtraterrestrialExhaust.Core
         // outward knockback reads as an attack beat instead of immediately
         // causing a chase/attack state tug-of-war.
         public const float EnemyMeleeAttackRecoveryDuration = 0.16f;
+        // The purple EE5 melee craft presents one authored sword frame rather
+        // than a separate swing strip. Hold that strike direction inside the
+        // attack band so small player-physics corrections cannot make the
+        // whole sprite popcorn between angles; refresh only after a real
+        // positional re-aim is needed.
+        public const float EnemyMeleeAttackFacingRefreshDegrees = 22f;
         // EE6's melee controller uses a kinematic navigation body and a
         // deterministic range hit. A trigger body preserves wall/target casts
         // without letting scripted motion shove the dynamic player.

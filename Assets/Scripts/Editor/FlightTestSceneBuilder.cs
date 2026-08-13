@@ -1162,6 +1162,10 @@ namespace ExtraterrestrialExhaust.Editor
                     serializedController,
                     "contactDamageRange",
                     ranged ? 0f : Ee5SliceProfile.EnemyMeleeContactRange);
+                changed |= SetFloat(
+                    serializedController,
+                    "attackFacingRefreshDegrees",
+                    ranged ? 0f : Ee5SliceProfile.EnemyMeleeAttackFacingRefreshDegrees);
                 changed |= SetFloat(serializedController, "targetBuffer", 0.04f);
                 changed |= SetEnum(
                     serializedController,
@@ -1572,6 +1576,12 @@ namespace ExtraterrestrialExhaust.Editor
                     "contactDamageRange",
                     ranged ? 0f : Ee5SliceProfile.EnemyMeleeContactRange,
                     $"{prefabPath} contactDamageRange",
+                    issues);
+                CheckSerializedFloat(
+                    serializedController,
+                    "attackFacingRefreshDegrees",
+                    ranged ? 0f : Ee5SliceProfile.EnemyMeleeAttackFacingRefreshDegrees,
+                    $"{prefabPath} attackFacingRefreshDegrees",
                     issues);
                 CheckSerializedBool(
                     serializedController,
@@ -2648,6 +2658,13 @@ namespace ExtraterrestrialExhaust.Editor
                         $"{label} root scale.x={enemyObject.transform.localScale.x:0.###} "
                         + $"(expected {expectedRootScaleX:0.###})");
                 }
+
+                CheckSerializedFloat(
+                    serializedController,
+                    "attackFacingRefreshDegrees",
+                    ranged ? 0f : Ee5SliceProfile.EnemyMeleeAttackFacingRefreshDegrees,
+                    $"{label} attack facing refresh",
+                    issues);
             }
 
             EnemyWeapon weapon = enemyObject.GetComponent<EnemyWeapon>();
@@ -3748,6 +3765,9 @@ namespace ExtraterrestrialExhaust.Editor
             serializedController.FindProperty("contactDamageRange").floatValue = ranged
                 ? 0f
                 : Ee5SliceProfile.EnemyMeleeContactRange;
+            serializedController.FindProperty("attackFacingRefreshDegrees").floatValue = ranged
+                ? 0f
+                : Ee5SliceProfile.EnemyMeleeAttackFacingRefreshDegrees;
             serializedController.FindProperty("targetBuffer").floatValue = 0.04f;
             // Match the authored EE5 roles: the white gunner moves at 2 and
             // the purple close hunter at 3 units per second.

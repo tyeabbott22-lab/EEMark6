@@ -56,6 +56,8 @@ namespace ExtraterrestrialExhaust.Enemy
         [SerializeField, Min(0f)] float contactDamageRange = Ee5SliceProfile.EnemyMeleeContactRange;
         [Tooltip("Post-hit hold that lets the contact knockback read before the hunter resumes pursuit.")]
         [SerializeField, Min(0f)] float attackRecoveryDuration = Ee5SliceProfile.EnemyMeleeAttackRecoveryDuration;
+        [Tooltip("Melee aim stays committed inside this angular band before it re-aims, preventing a single-frame target correction from making the sword pop.")]
+        [SerializeField, Min(0f)] float attackFacingRefreshDegrees = Ee5SliceProfile.EnemyMeleeAttackFacingRefreshDegrees;
         [SerializeField, Min(0f)] float chaseSpeed = 2.5f;
         [SerializeField] PlayerCharacter target;
 
@@ -261,6 +263,9 @@ namespace ExtraterrestrialExhaust.Enemy
                 : 0f;
             attackRecoveryDuration = isMelee
                 ? Ee5SliceProfile.EnemyMeleeAttackRecoveryDuration
+                : 0f;
+            attackFacingRefreshDegrees = isMelee
+                ? Ee5SliceProfile.EnemyMeleeAttackFacingRefreshDegrees
                 : 0f;
             if (bodyCollider)
             {
@@ -615,7 +620,13 @@ namespace ExtraterrestrialExhaust.Enemy
             {
                 Vector2 toTarget = target.PhysicsPosition - body.position;
                 if (toTarget.sqrMagnitude > 0.0001f)
-                    FaceTarget(toTarget.normalized);
+                {
+                    Vector2 targetDirection = toTarget.normalized;
+                    if (!IsMelee || ShouldRefreshAttackFacing(targetDirection))
+                        attackFacingDirection = targetDirection;
+
+                    FaceTarget(IsMelee ? attackFacingDirection : targetDirection);
+                }
             }
 
             body.linearVelocity = Vector2.zero;
@@ -755,6 +766,19 @@ namespace ExtraterrestrialExhaust.Enemy
             attackRecoveryRemaining = Mathf.Max(
                 attackRecoveryRemaining,
                 attackRecoveryDuration);
+        }
+
+        bool ShouldRefreshAttackFacing(Vector2 targetDirection)
+        {
+            if (!IsMelee || targetDirection.sqrMagnitude <= 0.0001f)
+                return true;
+
+            if (attackFacingDirection.sqrMagnitude <= 0.0001f)
+                return true;
+
+            return Vector2.Angle(
+                attackFacingDirection,
+                targetDirection) >= Mathf.Max(0f, attackFacingRefreshDegrees);
         }
 
         void UpdateNearMiss(float distance)
