@@ -4264,6 +4264,11 @@ namespace ExtraterrestrialExhaust.Editor
                 ? new Color(1f, 0.65f, 0.1f)
                 : new Color(1f, 0.2f, 0.65f);
             AssignLineMaterial(line);
+            // This is a composition/debug guide only. The imported enemy
+            // sprite is the public presentation; keep the outline available
+            // in the hierarchy for inspection without rendering it in the
+            // production-facing FlightTest scene.
+            line.enabled = false;
 
             SpriteRenderer sprite = enemy.AddComponent<SpriteRenderer>();
             sprite.sprite = LoadFirstSprite(activeSpritePath);
@@ -4840,6 +4845,9 @@ namespace ExtraterrestrialExhaust.Editor
             line.endColor = new Color(0.8f, 0.2f, 1f);
             line.sortingOrder = 5;
             AssignLineMaterial(line);
+            // Keep the old triangle as an editor inspection aid, not as the
+            // visible player art in the career-facing slice.
+            line.enabled = false;
         }
 
         static void CreateCamera(PlayerCharacter target, Transform[] parallaxBackdrops)

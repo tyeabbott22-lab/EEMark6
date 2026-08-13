@@ -1,6 +1,8 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using ExtraterrestrialExhaust.Enemy;
+using ExtraterrestrialExhaust.Player;
 
 namespace ExtraterrestrialExhaust.Core
 {
@@ -93,6 +95,29 @@ namespace ExtraterrestrialExhaust.Core
                     0.45f);
             }
 
+            // The original builder used a triangle and square line as quick
+            // composition guides before the imported sprites were wired. They
+            // are not gameplay hitboxes, and leaving them enabled makes the
+            // public slice read like a debug scene even when the real art is
+            // present. Match the gate cleanup above, but only for these exact
+            // generated shapes so custom authored line art is untouched.
+            PlayerCharacter player = FindFirstObjectByType<PlayerCharacter>();
+            if (player && player.FlightMotor && player.FlightMotor.Visual)
+            {
+                repaired += DisableGeneratedPlayerOutline(
+                    player.FlightMotor.Visual.GetComponent<LineRenderer>());
+            }
+
+            EnemyController[] enemies =
+                FindObjectsByType<EnemyController>(FindObjectsSortMode.None);
+            foreach (EnemyController enemy in enemies)
+            {
+                if (enemy)
+                    repaired += DisableGeneratedOutline(
+                        enemy.GetComponent<LineRenderer>(),
+                        0.55f);
+            }
+
             // Instruction triggers can survive a scene refresh without their
             // display root. Recreate only that transient UI surface; gameplay
             // objective state remains owned by SliceObjectiveDirector.
@@ -126,8 +151,32 @@ namespace ExtraterrestrialExhaust.Core
 
         static int DisableGeneratedOutline(LineRenderer line, float halfExtent)
         {
-            if (!line || !IsGeneratedSquareOutline(line, halfExtent))
+            if (!line || !line.enabled || !IsGeneratedSquareOutline(line, halfExtent))
                 return 0;
+
+            line.enabled = false;
+            return 1;
+        }
+
+        static int DisableGeneratedPlayerOutline(LineRenderer line)
+        {
+            if (!line || !line.enabled || line.positionCount != 4)
+                return 0;
+
+            Vector3[] expected =
+            {
+                new Vector3(0f, 0.7f),
+                new Vector3(-0.45f, -0.45f),
+                new Vector3(0f, -0.2f),
+                new Vector3(0.45f, -0.45f)
+            };
+
+            const float tolerance = 0.02f;
+            for (int i = 0; i < expected.Length; i++)
+            {
+                if (Vector3.Distance(line.GetPosition(i), expected[i]) > tolerance)
+                    return 0;
+            }
 
             line.enabled = false;
             return 1;
