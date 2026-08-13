@@ -243,6 +243,13 @@ namespace ExtraterrestrialExhaust.Enemy
             ResolveMeleeRole();
             if (meleeRole)
                 movementMode = EnemyMovementMode.Chase;
+            if (health)
+            {
+                health.ConfigureMaxHealth(
+                    meleeRole
+                        ? Ee5SliceProfile.EnemyMeleeMaxHealth
+                        : Ee5SliceProfile.EnemyGunnerMaxHealth);
+            }
             ApplyEe5PhysicsProfile();
             if (!gameState)
                 gameState = FindFirstObjectByType<GameStateMachine>();

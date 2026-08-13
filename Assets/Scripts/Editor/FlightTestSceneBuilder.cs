@@ -1158,6 +1158,12 @@ namespace ExtraterrestrialExhaust.Editor
                 SerializedObject serializedHealth = new SerializedObject(health);
                 changed |= SetFloat(
                     serializedHealth,
+                    "maxHealth",
+                    ranged
+                        ? Ee5SliceProfile.EnemyGunnerMaxHealth
+                        : Ee5SliceProfile.EnemyMeleeMaxHealth);
+                changed |= SetFloat(
+                    serializedHealth,
                     "invulnerabilityDuration",
                     Ee5SliceProfile.EnemyInvulnerabilityDuration);
                 serializedHealth.ApplyModifiedPropertiesWithoutUndo();
@@ -1558,6 +1564,16 @@ namespace ExtraterrestrialExhaust.Editor
             else
             {
                 SerializedObject serializedHealth = new SerializedObject(health);
+                float maxHealth = serializedHealth.FindProperty("maxHealth").floatValue;
+                float expectedMaxHealth = ranged
+                    ? Ee5SliceProfile.EnemyGunnerMaxHealth
+                    : Ee5SliceProfile.EnemyMeleeMaxHealth;
+                if (!Mathf.Approximately(maxHealth, expectedMaxHealth))
+                {
+                    issues.Add(
+                        $"{prefabPath} maxHealth={maxHealth} "
+                        + $"(expected {expectedMaxHealth})");
+                }
                 float invulnerability = serializedHealth.FindProperty("invulnerabilityDuration").floatValue;
                 if (!Mathf.Approximately(invulnerability, Ee5SliceProfile.EnemyInvulnerabilityDuration))
                 {
@@ -4074,7 +4090,9 @@ namespace ExtraterrestrialExhaust.Editor
             collider.isTrigger = !ranged && Ee5SliceProfile.EnemyMeleeUsesTriggerBody;
             HealthComponent health = enemy.AddComponent<HealthComponent>();
             SerializedObject serializedHealth = new SerializedObject(health);
-            serializedHealth.FindProperty("maxHealth").floatValue = ranged ? 5f : 3f;
+            serializedHealth.FindProperty("maxHealth").floatValue = ranged
+                ? Ee5SliceProfile.EnemyGunnerMaxHealth
+                : Ee5SliceProfile.EnemyMeleeMaxHealth;
             serializedHealth.FindProperty("invulnerabilityDuration").floatValue =
                 Ee5SliceProfile.EnemyInvulnerabilityDuration;
             serializedHealth.ApplyModifiedPropertiesWithoutUndo();

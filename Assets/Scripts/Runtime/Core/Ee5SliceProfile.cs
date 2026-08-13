@@ -111,6 +111,12 @@ namespace ExtraterrestrialExhaust.Core
         // frame early while the enemy remains dormant until WakeDistance.
         public const float EnemyWakeSignalDistanceMultiplier = 4f;
         public const float EnemyGunnerChaseSpeed = 2f;
+        // realScene's standard enemyGun carries five pips; the named
+        // "Enemy 01 - close bruiser" instance is deliberately a one-hit melee
+        // pressure beat. Keep those role contracts explicit instead of hiding
+        // them in prefab-specific inspector overrides.
+        public const float EnemyGunnerMaxHealth = 5f;
+        public const float EnemyMeleeMaxHealth = 1f;
         // This is the serialized moveSpeed from EE5's "Enemy 01 - close
         // bruiser" scene variant. It is deliberately slower than the generic
         // enemyFast prefab: the close bruiser closes distance with a readable

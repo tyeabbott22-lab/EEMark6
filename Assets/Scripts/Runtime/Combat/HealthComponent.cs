@@ -75,5 +75,17 @@ namespace ExtraterrestrialExhaust.Combat
             invulnerabilityTimer = 0f;
             HealthChanged?.Invoke(CurrentHealth);
         }
+
+        /// <summary>
+        /// Applies a role profile before a scene instance enters combat. This
+        /// keeps imported prefab health values from fighting the EE5 role
+        /// contract while still leaving the serialized prefab available for
+        /// later cleanup and side-by-side inspection.
+        /// </summary>
+        public void ConfigureMaxHealth(float value)
+        {
+            maxHealth = Mathf.Max(1f, value);
+            ResetHealth();
+        }
     }
 }
