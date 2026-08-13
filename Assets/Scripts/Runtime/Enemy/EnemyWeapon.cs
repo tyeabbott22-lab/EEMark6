@@ -155,7 +155,7 @@ namespace ExtraterrestrialExhaust.Enemy
             // controller. Using the interpolated Transform here made shots
             // visually lead/lag the actual player collider at uneven frame
             // rates, especially while the craft was turning under thrust.
-            Vector2 toTarget = target.PhysicsPosition - (Vector2)transform.position;
+            Vector2 toTarget = target.PhysicsPosition - GetPhysicsFirePointPosition();
             if (requireTargetWithinAttackRange && toTarget.magnitude > attackRange)
             {
                 HideTelegraph();
@@ -174,9 +174,9 @@ namespace ExtraterrestrialExhaust.Enemy
 
         void Fire()
         {
-            Transform origin = firePoint ? firePoint : transform;
+            Vector2 originPosition = GetPhysicsFirePointPosition();
             Vector2 direction = target
-                ? (target.PhysicsPosition - (Vector2)origin.position).normalized
+                ? (target.PhysicsPosition - originPosition).normalized
                 : (Vector2)transform.right;
             if (direction.sqrMagnitude <= 0.001f)
                 direction = transform.right;
@@ -184,7 +184,7 @@ namespace ExtraterrestrialExhaust.Enemy
             // The telegraph, projectile, and muzzle event all originate at the
             // same authored point. This matters when the gunner is rotated or
             // its fire point sits noticeably to one side of the body.
-            PlayerProjectile projectile = Instantiate(projectilePrefab, origin.position, Quaternion.identity);
+            PlayerProjectile projectile = Instantiate(projectilePrefab, originPosition, Quaternion.identity);
             projectile.ConfigureEnemyShot(
                 projectileLifetime,
                 Ee5SliceProfile.EnemyGunnerProjectileDamage,
@@ -193,7 +193,15 @@ namespace ExtraterrestrialExhaust.Enemy
             projectile.SetTint(projectileTint);
             projectile.Launch(direction, gameObject, projectileSpeed);
             cooldownRemaining = fireCooldown;
-            Fired?.Invoke(origin.position, direction);
+            Fired?.Invoke(originPosition, direction);
+        }
+
+        Vector2 GetPhysicsFirePointPosition()
+        {
+            if (controller)
+                return controller.PhysicsPoint(firePoint);
+
+            return firePoint ? firePoint.position : transform.position;
         }
 
         void CacheFirePointPose()
@@ -259,15 +267,13 @@ namespace ExtraterrestrialExhaust.Enemy
                 return;
             }
 
-            Transform originTransform = firePoint ? firePoint : transform;
-            Vector2 origin = originTransform.position;
+            Vector2 origin = GetPhysicsFirePointPosition();
             SetTelegraph(origin, aimEnd);
         }
 
         bool HasLineOfSight(out Vector2 visibleEnd)
         {
-            Transform originTransform = firePoint ? firePoint : transform;
-            Vector2 origin = originTransform.position;
+            Vector2 origin = GetPhysicsFirePointPosition();
             Vector2 targetPoint = target ? target.PhysicsPosition : origin;
             Vector2 toTarget = targetPoint - origin;
             float distance = toTarget.magnitude;

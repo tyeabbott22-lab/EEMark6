@@ -135,6 +135,27 @@ namespace ExtraterrestrialExhaust.Enemy
         public Vector3 PhysicsAnchorPosition => body
             ? (Vector3)body.position
             : transform.position;
+        /// <summary>
+        /// Reprojects a child anchor from the rendered hierarchy onto the
+        /// current fixed-step body pose. Kinematic enemies are interpolated
+        /// for display, so using child.position during FixedUpdate can leave a
+        /// projectile or telegraph one render behind the actual enemy.
+        /// </summary>
+        public Vector2 PhysicsPoint(Transform child)
+        {
+            if (!child)
+                return PhysicsPosition;
+
+            if (!body || !child.IsChildOf(transform))
+                return child.position;
+
+            Vector2 localPoint = transform.InverseTransformPoint(child.position);
+            Vector2 scaledLocalPoint = Vector2.Scale(
+                localPoint,
+                new Vector2(transform.localScale.x, transform.localScale.y));
+            Vector2 rotatedPoint = Quaternion.Euler(0f, 0f, body.rotation) * scaledLocalPoint;
+            return body.position + rotatedPoint;
+        }
         // Prefer the authored movement enum, but recover an older EE5 melee
         // prefab when it still says Wander. The melee prefab has contact
         // damage and no weapon; the gunner has both, so the weapon component
@@ -403,14 +424,14 @@ namespace ExtraterrestrialExhaust.Enemy
             {
                 WakeSignalVisible = target != null;
                 WakeSignalHasClearSight = target != null;
-                WakeSignalEnd = target ? GetWakeSignalTargetPoint() : transform.position;
+                WakeSignalEnd = target ? GetWakeSignalTargetPoint() : PhysicsAnchorPosition;
                 wakeSignalCharge = wakeSignalChargeDuration;
                 return;
             }
 
             float signalDistance = GetWakeSignalDistance();
             WakeSignalVisible = distance <= signalDistance;
-            WakeSignalEnd = target ? GetWakeSignalTargetPoint() : transform.position;
+            WakeSignalEnd = target ? GetWakeSignalTargetPoint() : PhysicsAnchorPosition;
 
             if (!WakeSignalVisible)
             {
