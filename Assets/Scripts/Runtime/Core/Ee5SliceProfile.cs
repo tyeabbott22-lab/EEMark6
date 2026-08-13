@@ -21,8 +21,8 @@ namespace ExtraterrestrialExhaust.Core
         // Temporary presentable-flight overlay. Keep this named separately so
         // the later prefab-rip pass can switch back to the raw import in one
         // place after a side-by-side feel check.
-        public const float PlayerFlightLinearDamping = 0.02f;
-        public const float PlayerFlightAngularDamping = 0.7f;
+        public const float PlayerFlightLinearDamping = 0f;
+        public const float PlayerFlightAngularDamping = 0.35f;
         public const float PlayerMaxHealth = 5f;
         public const float PlayerInvulnerabilityDuration = 0.5f;
         // Copied from EE5's sniper prefab. Keep the physics hurtbox authored
@@ -37,6 +37,12 @@ namespace ExtraterrestrialExhaust.Core
         public const float StabilizationSpeed = 720f;
         public const float FlightAngularDamping = 0.85f;
         public const float RotationBoostMultiplier = 0.225f;
+        // Presentable-flight bridge: retain the raw EE5 torque above for the
+        // eventual prefab rip, while the current slice needs a little more
+        // immediate authority and a bounded spin so the craft feels deliberate
+        // instead of either soupy or accidentally uncontrollable.
+        public const float PlayerPresentableRotationTorque = 0.55f;
+        public const float PlayerPresentableMaxAngularVelocity = 360f;
         // EE5's sniper prefab has JetpackMotor and JetpackInput both enabled.
         // JetpackInput applies the same direct force/torque after the motor
         // step. Keep that observable compatibility quirk named and switchable.

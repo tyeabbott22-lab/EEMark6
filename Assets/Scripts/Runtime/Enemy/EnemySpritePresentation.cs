@@ -57,15 +57,15 @@ namespace ExtraterrestrialExhaust.Enemy
         void Reset()
         {
             controller = GetComponent<EnemyController>();
-            spriteRenderer = GetComponent<SpriteRenderer>();
+            spriteRenderer = ResolveVisibleSpriteRenderer();
         }
 
         void Awake()
         {
             if (!controller)
                 controller = GetComponent<EnemyController>();
-            if (!spriteRenderer)
-                spriteRenderer = GetComponent<SpriteRenderer>();
+            if (!spriteRenderer || !spriteRenderer.sprite)
+                spriteRenderer = ResolveVisibleSpriteRenderer();
 
             // Presentation used to carry its own copy of the authored forward
             // axis. If an older prefab says melee faces like the gunner, the
@@ -74,6 +74,28 @@ namespace ExtraterrestrialExhaust.Enemy
 
             renderers = GetComponentsInChildren<Renderer>(true);
             authoredFlipX = spriteRenderer && spriteRenderer.flipX;
+        }
+
+        SpriteRenderer ResolveVisibleSpriteRenderer()
+        {
+            SpriteRenderer direct = GetComponent<SpriteRenderer>();
+            if (direct && direct.sprite)
+                return direct;
+
+            SpriteRenderer fallback = null;
+            foreach (SpriteRenderer candidate in GetComponentsInChildren<SpriteRenderer>(true))
+            {
+                if (!candidate || candidate == direct)
+                    continue;
+
+                if (candidate.sprite && !candidate.name.Contains("Health"))
+                    return candidate;
+
+                if (!fallback && candidate.sprite)
+                    fallback = candidate;
+            }
+
+            return fallback ? fallback : direct;
         }
 
         void Start()

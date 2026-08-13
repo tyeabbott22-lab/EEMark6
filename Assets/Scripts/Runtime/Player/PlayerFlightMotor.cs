@@ -107,7 +107,11 @@ namespace ExtraterrestrialExhaust.Player
         void ApplyEe5Profile()
         {
             thrustForce = Ee5SliceProfile.ThrustForce;
-            rotationTorque = Ee5SliceProfile.RotationTorque;
+            // Keep the raw EE5 value named in the profile, but use the
+            // presentable bridge until FlightTest has been side-by-side tuned
+            // against realScene3. This is one switch instead of scattered
+            // inspector edits across dirty instances.
+            rotationTorque = Ee5SliceProfile.PlayerPresentableRotationTorque;
             rotationAddsThrust = true;
             rotationBoostMultiplier = Ee5SliceProfile.RotationBoostMultiplier;
             stabilizationSpeed = Ee5SliceProfile.StabilizationSpeed;
@@ -255,6 +259,16 @@ namespace ExtraterrestrialExhaust.Player
             // step. Preserve the authored EE5 follow-through before the
             // generic wall-slide cleanup gets another chance to eat it.
             ApplyBrittleFollowThrough();
+
+            // A deliberate ceiling preserves the authored ability to flip,
+            // while preventing a long held Q/E or A/D input from turning the
+            // craft into a blur that is impossible to recover in the slice.
+            float maxAngularVelocity = Ee5SliceProfile.PlayerPresentableMaxAngularVelocity;
+            if (maxAngularVelocity > 0f)
+                body.angularVelocity = Mathf.Clamp(
+                    body.angularVelocity,
+                    -maxAngularVelocity,
+                    maxAngularVelocity);
 
             if (brittlePassThroughTimer <= 0f && removeVelocityIntoColliders)
                 RemoveVelocityIntoColliders();

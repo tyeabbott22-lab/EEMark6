@@ -239,7 +239,7 @@ namespace ExtraterrestrialExhaust.Enemy
             body = GetComponent<Rigidbody2D>();
             bodyCollider = GetComponent<Collider2D>();
             health = GetComponent<HealthComponent>();
-            spriteRenderer = GetComponent<SpriteRenderer>();
+            spriteRenderer = ResolveVisibleSpriteRenderer();
             ResolveMeleeRole();
             if (meleeRole)
                 movementMode = EnemyMovementMode.Chase;
@@ -250,6 +250,30 @@ namespace ExtraterrestrialExhaust.Enemy
             lastChasePosition = body.position;
             homePosition = body.position;
             ResetWander();
+        }
+
+        SpriteRenderer ResolveVisibleSpriteRenderer()
+        {
+            SpriteRenderer direct = GetComponent<SpriteRenderer>();
+            if (direct && direct.sprite)
+                return direct;
+
+            SpriteRenderer fallback = null;
+            foreach (SpriteRenderer candidate in GetComponentsInChildren<SpriteRenderer>(true))
+            {
+                if (!candidate || candidate == direct)
+                    continue;
+
+                // Health strips and blank compatibility renderers should not
+                // become the authority for upright-facing flips.
+                if (candidate.sprite && !candidate.name.Contains("Health"))
+                    return candidate;
+
+                if (!fallback && candidate.sprite)
+                    fallback = candidate;
+            }
+
+            return fallback ? fallback : direct;
         }
 
         void ApplyEe5PhysicsProfile()
