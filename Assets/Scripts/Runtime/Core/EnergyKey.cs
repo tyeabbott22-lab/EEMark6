@@ -391,7 +391,14 @@ namespace ExtraterrestrialExhaust.Core
             if (Vector2.Distance(nextPosition, gateTarget) > 0.15f)
                 return;
 
-            targetGate.DisableGate();
+            // Do not consume the key until the gate accepts the handoff. This
+            // matters when a scene is re-enabled during the lift: the gate
+            // may briefly be resetting while the key is still at its socket.
+            // Keeping FlyingToGate lets the next fixed step retry instead of
+            // leaving an invisible key and a closed route.
+            if (!targetGate.TryDisableGate())
+                return;
+
             FindFirstObjectByType<ScoreSystem>()?.Award(ScoreReason.GateDeactivated);
             SetState(EnergyKeyState.Consumed);
             Destroy(gameObject);

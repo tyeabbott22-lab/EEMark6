@@ -88,10 +88,18 @@ namespace ExtraterrestrialExhaust.Core
             }
         }
 
-        public void DisableGate()
+        /// <summary>
+        /// Accepts the key handoff once. Returning the acceptance result lets
+        /// the key keep its transport state if a scene re-enable or another
+        /// caller catches the gate between its closed and opening states.
+        /// </summary>
+        public bool TryDisableGate()
         {
+            if (state == EnergyGateState.Opening || state == EnergyGateState.Open)
+                return true;
+
             if (state != EnergyGateState.Closed)
-                return;
+                return false;
 
             state = EnergyGateState.Opening;
             // EE5's DoorController opens by moving the wall; it does not
@@ -100,7 +108,13 @@ namespace ExtraterrestrialExhaust.Core
             // the presentation cannot disagree during the handoff.
             Disabled?.Invoke();
             liftRoutine = StartCoroutine(LiftRoutine());
+            return true;
         }
+
+        // Keep the original scene/script entry point intact for hand-authored
+        // callers. Gameplay code that owns a transport object should use the
+        // result-returning method above before consuming that object.
+        public void DisableGate() => TryDisableGate();
 
         IEnumerator LiftRoutine()
         {
