@@ -12,16 +12,12 @@ namespace ExtraterrestrialExhaust.Core
     {
         public const float PlayerMass = 8f;
         public const float PlayerGravityScale = 0.285f;
-        // These two values are the serialized EE5 Rigidbody2D reference. The
-        // Unity 6 vertical slice keeps them documented for comparison, but the
-        // playable EE6 pass uses the lighter free-flight overlay below.
+        // These are the serialized EE5 Rigidbody2D values from the realScene
+        // sniper prefab. The vertical slice intentionally uses the direct
+        // import values so a feel comparison is meaningful.
         public const float PlayerLinearDamping = 0.35f;
         public const float PlayerAngularDamping = 3.25f;
-        // EE5's serialized drag is retained above for reference. The flight
-        // slice is intentionally closer to zero-air-friction space movement;
-        // this small residual keeps a stopped craft from feeling numerically
-        // frozen without bringing back the soupy air-brake the prototype had.
-        public const float PlayerFlightLinearDamping = 0.02f;
+        public const float PlayerFlightLinearDamping = PlayerLinearDamping;
         // Preserve the authored EE5 angular drag so the craft carries linear
         // momentum without becoming uncontrollably loose around its up axis.
         public const float PlayerFlightAngularDamping = 3.25f;
@@ -39,6 +35,10 @@ namespace ExtraterrestrialExhaust.Core
         public const float StabilizationSpeed = 720f;
         public const float FlightAngularDamping = 0.85f;
         public const float RotationBoostMultiplier = 0.225f;
+        // EE5's sniper prefab has JetpackMotor and JetpackInput both enabled.
+        // JetpackInput applies the same direct force/torque after the motor
+        // step. Keep that observable compatibility quirk named and switchable.
+        public const bool PlayerLegacyDirectPhysicsAssist = true;
         // EE5 has no hidden neutral-rotation correction. Upright recovery is
         // an explicit S/C stabilize command; keeping the assist opt-in avoids
         // a second control authority fighting the authored torque on release.
@@ -63,6 +63,12 @@ namespace ExtraterrestrialExhaust.Core
         public const float PlayerBoostedExhaustWidthMultiplier = 1.15f;
         public const float PlayerBoostedExhaustYScale = 1.5f;
         public const float PlayerBoostedParticleEmissionMultiplier = 1.4f;
+        // EE5 expands these root-space X anchors by 1.55 when its visual-size
+        // hack is active. These are the resulting sniper positions.
+        public static readonly Vector3 PlayerLeftExhaustAnchor =
+            new Vector3(-0.246f * 1.55f, 0.087f, 0f);
+        public static readonly Vector3 PlayerRightExhaustAnchor =
+            new Vector3(0.24f * 1.55f, 0.074f, 0f);
         public static readonly Color PlayerBoostedExhaustCoreColor =
             new Color(0.85f, 1f, 1f, 1f);
         public static readonly Color PlayerBoostedExhaustMidColor =

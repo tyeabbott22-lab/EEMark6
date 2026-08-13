@@ -47,7 +47,8 @@ namespace ExtraterrestrialExhaust.Player
         [SerializeField] int exhaustSortingOrder = -1;
 
         [Header("Exhaust Anchors")]
-        [SerializeField, Min(0f)] float exhaustSideOffset = 0.28f;
+        [SerializeField] Vector3 leftExhaustAnchor = new Vector3(-0.28f, -0.35f, 0f);
+        [SerializeField] Vector3 rightExhaustAnchor = new Vector3(0.28f, -0.35f, 0f);
         [SerializeField, Min(0f)] float exhaustLength = 0.55f;
         [SerializeField, Min(0f)] float turnExhaustAmount = 1f;
         [SerializeField] Vector2 squashScale = new Vector2(1.25f, 0.75f);
@@ -97,8 +98,9 @@ namespace ExtraterrestrialExhaust.Player
             visual = visual ? visual : transform;
             visualRenderer = visualRenderer ? visualRenderer : visual.GetComponent<SpriteRenderer>();
             visualBaseScale = visual.localScale;
-            EnsureExhaust(ref leftExhaust, "Left Exhaust", -Mathf.Abs(exhaustSideOffset));
-            EnsureExhaust(ref rightExhaust, "Right Exhaust", Mathf.Abs(exhaustSideOffset));
+            EnsureExhaust(ref leftExhaust, "Left Exhaust", leftExhaustAnchor);
+            EnsureExhaust(ref rightExhaust, "Right Exhaust", rightExhaustAnchor);
+            ApplyAuthoredExhaustAnchors();
             EnsureParticleExhaust(ref leftExhaustParticles, "Left Exhaust Particles", leftExhaust);
             EnsureParticleExhaust(ref rightExhaustParticles, "Right Exhaust Particles", rightExhaust);
             CacheExhaustAnchors();
@@ -115,6 +117,8 @@ namespace ExtraterrestrialExhaust.Player
             boostedExhaustStartColor = Ee5SliceProfile.PlayerBoostedExhaustCoreColor;
             boostedExhaustMidColor = Ee5SliceProfile.PlayerBoostedExhaustMidColor;
             boostedExhaustEndColor = Ee5SliceProfile.PlayerBoostedExhaustTipColor;
+            leftExhaustAnchor = Ee5SliceProfile.PlayerLeftExhaustAnchor;
+            rightExhaustAnchor = Ee5SliceProfile.PlayerRightExhaustAnchor;
         }
 
         void OnEnable()
@@ -293,6 +297,19 @@ namespace ExtraterrestrialExhaust.Player
             exhaustAnchorsCached = true;
         }
 
+        void ApplyAuthoredExhaustAnchors()
+        {
+            if (leftExhaust && (!visual || !leftExhaust.IsChildOf(visual)))
+                leftExhaust.localPosition = enforceEe5Profile
+                    ? Ee5SliceProfile.PlayerLeftExhaustAnchor
+                    : leftExhaustAnchor;
+
+            if (rightExhaust && (!visual || !rightExhaust.IsChildOf(visual)))
+                rightExhaust.localPosition = enforceEe5Profile
+                    ? Ee5SliceProfile.PlayerRightExhaustAnchor
+                    : rightExhaustAnchor;
+        }
+
         void SyncExhaustAnchors()
         {
             if (!exhaustAnchorsCached || !flightMotor)
@@ -398,13 +415,13 @@ namespace ExtraterrestrialExhaust.Player
                     : PlayerFlightControlMode.Coasting);
         }
 
-        void EnsureExhaust(ref Transform exhaust, string name, float xPosition)
+        void EnsureExhaust(ref Transform exhaust, string name, Vector3 localPosition)
         {
             if (!exhaust)
             {
                 GameObject exhaustObject = new GameObject(name);
                 exhaustObject.transform.SetParent(transform, false);
-                exhaustObject.transform.localPosition = new Vector3(xPosition, -0.35f, 0f);
+                exhaustObject.transform.localPosition = localPosition;
                 exhaust = exhaustObject.transform;
             }
 

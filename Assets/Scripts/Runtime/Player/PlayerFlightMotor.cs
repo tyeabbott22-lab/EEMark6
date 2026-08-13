@@ -125,7 +125,7 @@ namespace ExtraterrestrialExhaust.Player
             // flight contract. Do not let a stale prefab override silently
             // reintroduce a different damping/body mode after the builder has
             // validated the scene. This is the same profile used by the EE5
-            // realScene instance, with the current EE6 linear carry-through.
+            // realScene instance, including its authored linear damping.
             // Keep the physics root at unit scale as well. The enlarged craft
             // art lives on Craft Visual; scaling this object changes collider
             // size and Rigidbody2D inertia, which is exactly the kind of old
@@ -244,6 +244,12 @@ namespace ExtraterrestrialExhaust.Player
             if (thrusting)
                 body.AddRelativeForce(Vector2.up * thrustForce, ForceMode2D.Force);
 
+            // realScene3's sniper instance also has JetpackInput's direct
+            // fallback enabled beside JetpackMotor. It is a strange but
+            // observable part of the reference feel, so reproduce it as a
+            // named compatibility pass owned by the motor.
+            ApplyEe5LegacyDirectPhysicsAssist(command, thrusting, turning);
+
             // A brittle break has already disabled the contact collider, but
             // Unity can still report the old contact until the next physics
             // step. Preserve the authored EE5 follow-through before the
@@ -292,6 +298,31 @@ namespace ExtraterrestrialExhaust.Player
             body.AddTorque(-inputAmount * rotationTorque, ForceMode2D.Force);
             if (rotationAddsThrust)
                 body.AddRelativeForce(Vector2.up * (Mathf.Abs(inputAmount) * thrustForce * rotationBoostMultiplier), ForceMode2D.Force);
+        }
+
+        void ApplyEe5LegacyDirectPhysicsAssist(
+            Vector2 command,
+            bool thrusting,
+            bool turning)
+        {
+            if (!Ee5SliceProfile.PlayerLegacyDirectPhysicsAssist
+                || !body.simulated
+                || body.bodyType != RigidbodyType2D.Dynamic)
+                return;
+
+            if (thrusting)
+                body.AddRelativeForce(Vector2.up * thrustForce, ForceMode2D.Force);
+
+            if (!turning)
+                return;
+
+            body.AddTorque(-command.x * rotationTorque, ForceMode2D.Force);
+            if (rotationAddsThrust)
+            {
+                body.AddRelativeForce(
+                    Vector2.up * (Mathf.Abs(command.x) * thrustForce * rotationBoostMultiplier),
+                    ForceMode2D.Force);
+            }
         }
 
         void Stabilize()
