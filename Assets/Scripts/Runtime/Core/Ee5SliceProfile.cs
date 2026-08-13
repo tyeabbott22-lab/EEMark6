@@ -46,7 +46,14 @@ namespace ExtraterrestrialExhaust.Core
         // let the release handoff catch accidental spin. Held turns still
         // permit flips, matching the authored realScene control contract.
         public const float PlayerPresentableRotationTorque = 0.85f;
-        public const float PlayerPresentableMaxAngularVelocity = 270f;
+        // Physics2DSettings in EE5 allows 360 degrees/second. The old 270 cap
+        // made the Unity 6 craft feel reluctant to turn even after the drag
+        // correction above. Keep the reference limit explicit here.
+        public const float PlayerPresentableMaxAngularVelocity = 360f;
+        // Temporary direct-response bridge: torque remains in the stack for
+        // the eventual prefab rip, while this bounded handoff makes a held
+        // keyboard turn reach the authored rotation envelope immediately.
+        public const float PlayerPresentableTurnAcceleration = 2160f;
         // EE5's sniper prefab has JetpackMotor and JetpackInput both enabled.
         // JetpackInput applies the same direct force/torque after the motor
         // step. Keep that observable compatibility quirk named and switchable.

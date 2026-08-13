@@ -253,6 +253,14 @@ namespace ExtraterrestrialExhaust.Player
             // named compatibility pass owned by the motor.
             ApplyEe5LegacyDirectPhysicsAssist(command, thrusting, turning);
 
+            // Presentable bridge: the imported EE5 stack reaches its rotation
+            // envelope quickly because the tiny authored collider has very low
+            // rotational inertia. Use the same bounded angular-speed handoff
+            // here instead of making the player wait on a slow torque ramp.
+            // Release still returns to the neutral assist below, so this does
+            // not create an uncontrolled spin once the turn key is let go.
+            ApplyPresentableTurnResponse(command.x, turning);
+
             // A brittle break has already disabled the contact collider, but
             // Unity can still report the old contact until the next physics
             // step. Preserve the authored EE5 follow-through before the
@@ -310,6 +318,20 @@ namespace ExtraterrestrialExhaust.Player
             body.AddTorque(-inputAmount * rotationTorque, ForceMode2D.Force);
             if (rotationAddsThrust)
                 body.AddRelativeForce(Vector2.up * (Mathf.Abs(inputAmount) * thrustForce * rotationBoostMultiplier), ForceMode2D.Force);
+        }
+
+        void ApplyPresentableTurnResponse(float inputAmount, bool turning)
+        {
+            if (!turning)
+                return;
+
+            float targetAngularVelocity = -Mathf.Clamp(inputAmount, -1f, 1f)
+                * Ee5SliceProfile.PlayerPresentableMaxAngularVelocity;
+            body.angularVelocity = Mathf.MoveTowards(
+                body.angularVelocity,
+                targetAngularVelocity,
+                Ee5SliceProfile.PlayerPresentableTurnAcceleration
+                * Time.fixedDeltaTime);
         }
 
         void ApplyEe5LegacyDirectPhysicsAssist(
