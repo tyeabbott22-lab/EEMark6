@@ -629,6 +629,19 @@ namespace ExtraterrestrialExhaust.Editor
             RepairSceneReference(objective, "exit", exit);
             RepairSceneReference(objective, "gameState", gameState);
 
+            // The HUD mirrors the same chain for status text and banners. Keep
+            // those links serialized too; runtime lookup remains a recovery
+            // path for hand-authored scenes, not the generated scene contract.
+            GameplayHud hud = UnityEngine.Object.FindFirstObjectByType<GameplayHud>();
+            if (hud)
+            {
+                RepairSceneReference(hud, "encounter", encounter);
+                RepairSceneReference(hud, "energyKey", energyKey);
+                RepairSceneReference(hud, "exit", exit);
+                RepairSceneReference(hud, "gameState", gameState);
+                RepairSceneReference(hud, "objectiveDirector", objective);
+            }
+
             EditorSceneManager.MarkSceneDirty(activeScene);
             Selection.activeGameObject = objective.gameObject;
             List<string> remainingIssues = GetGeneratedSceneContractIssues();
@@ -2266,6 +2279,21 @@ namespace ExtraterrestrialExhaust.Editor
                     serializedHud,
                     "gameState",
                     "HUD game state",
+                    issues);
+                CheckObjectReference(
+                    serializedHud,
+                    "encounter",
+                    "HUD encounter",
+                    issues);
+                CheckObjectReference(
+                    serializedHud,
+                    "energyKey",
+                    "HUD energy key",
+                    issues);
+                CheckObjectReference(
+                    serializedHud,
+                    "exit",
+                    "HUD exit",
                     issues);
             }
             GameObject stopper = GameObject.Find("Flight Stopper Zone");

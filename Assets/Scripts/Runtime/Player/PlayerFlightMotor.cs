@@ -65,6 +65,8 @@ namespace ExtraterrestrialExhaust.Player
         RigidbodyConstraints2D constraintsBeforeStopper;
         bool savedStopperConstraints;
         float turnReleaseTimer;
+        float lastSpinScoreRotation;
+        float intentionalSpinDegrees;
         readonly ContactPoint2D[] contactBuffer = new ContactPoint2D[8];
 
         public Rigidbody2D Body => body;
@@ -96,6 +98,7 @@ namespace ExtraterrestrialExhaust.Player
                 visual = transform;
             facingRight = visual.localScale.x >= 0f;
             initialFacingRight = facingRight;
+            lastSpinScoreRotation = body.rotation;
         }
 
         void ApplyEe5Profile()
@@ -140,6 +143,12 @@ namespace ExtraterrestrialExhaust.Player
         {
             Vector2 command = input ? input.Move : Vector2.zero;
             AppliedFlightInput = Vector2.zero;
+
+            // EE5 awards a flip for a deliberate 360-degree flight rotation,
+            // not only for the separate X-facing toggle. Track it on the
+            // physics clock so interpolation and render rate cannot create
+            // duplicate credits or make the result depend on frame timing.
+            TrackIntentionalSpinScore(command);
 
             if (stateMachine.CurrentState != PlayerFlightState.FreeFlight)
             {
@@ -204,6 +213,36 @@ namespace ExtraterrestrialExhaust.Player
 
             if (removeVelocityIntoColliders)
                 RemoveVelocityIntoColliders();
+        }
+
+        void TrackIntentionalSpinScore(Vector2 command)
+        {
+            if (!body)
+                return;
+
+            float currentRotation = body.rotation;
+            float rotationDelta = Mathf.Abs(
+                Mathf.DeltaAngle(lastSpinScoreRotation, currentRotation));
+            lastSpinScoreRotation = currentRotation;
+
+            bool intentionalSpin = stateMachine
+                && stateMachine.CurrentState == PlayerFlightState.FreeFlight
+                && !inStopperZone
+                && command.y >= -0.2f
+                && Mathf.Abs(command.x) >= 0.01f;
+
+            if (!intentionalSpin)
+            {
+                intentionalSpinDegrees = 0f;
+                return;
+            }
+
+            intentionalSpinDegrees += rotationDelta;
+            while (intentionalSpinDegrees >= 360f)
+            {
+                intentionalSpinDegrees -= 360f;
+                FindFirstObjectByType<ScoreSystem>()?.Award(ScoreReason.Flip);
+            }
         }
 
         void ApplyRotation(float inputAmount)
