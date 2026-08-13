@@ -59,6 +59,7 @@ namespace ExtraterrestrialExhaust.Player
         Rigidbody2D body;
         PlayerFlightInput input;
         PlayerFlightStateMachine stateMachine;
+        PlayerFlightPresentation presentation;
         bool facingRight = true;
         bool initialFacingRight = true;
         bool inStopperZone;
@@ -95,6 +96,7 @@ namespace ExtraterrestrialExhaust.Player
 
             input = GetComponent<PlayerFlightInput>();
             stateMachine = GetComponent<PlayerFlightStateMachine>();
+            presentation = GetComponent<PlayerFlightPresentation>();
             if (!visual)
                 visual = transform.Find("Craft Visual");
             if (!visual)
@@ -492,9 +494,13 @@ namespace ExtraterrestrialExhaust.Player
                 return;
 
             facingRight = !facingRight;
-            Vector3 scale = visual.localScale;
-            scale.x = Mathf.Abs(scale.x) * (facingRight ? 1f : -1f);
-            visual.localScale = scale;
+            // PlayerFlightPresentation is the visible flip owner when the
+            // presentable stack exists. The old motor write caused two
+            // scripts to fight over Craft Visual during the same frame and
+            // made the squash/flip transition look intermittently sticky.
+            // Keep a direct fallback for stripped-down prefab tests.
+            if (!presentation)
+                ApplyVisualFacingFallback();
             PlayerCameraFollow.Instance?.ZoomForPlayerFlip();
             Flipped?.Invoke(facingRight);
         }
@@ -509,6 +515,12 @@ namespace ExtraterrestrialExhaust.Player
                 ExitStopperZone();
 
             facingRight = initialFacingRight;
+            if (!presentation)
+                ApplyVisualFacingFallback();
+        }
+
+        void ApplyVisualFacingFallback()
+        {
             if (!visual)
                 return;
 

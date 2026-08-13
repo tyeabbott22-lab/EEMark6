@@ -52,17 +52,21 @@ namespace ExtraterrestrialExhaust.Core
         // Temporary direct-response bridge: torque remains in the stack for
         // the eventual prefab rip, while this bounded handoff makes a held
         // keyboard turn reach the authored rotation envelope immediately.
-        // Keep the earlier presentability bridge at a readable middle ground:
-        // 2160 degrees/second squared reaches the reference 360-degree
-        // envelope in about a sixth of a second, while the restored angular
-        // damping prevents a released tap from becoming a free spin.
-        public const float PlayerPresentableTurnAcceleration = 2160f;
+        // Temporary FlightTest response bridge: the reference torque is kept
+        // above, but the rebuilt player needs to enter its rotation envelope
+        // promptly on a keyboard tap. 2880 degrees/second squared reaches
+        // the 360-degree envelope in about an eighth of a second without
+        // changing the authored maximum turn speed.
+        public const float PlayerPresentableTurnAcceleration = 2880f;
         // The reference craft damps naturally, but the rebuilt stack can carry
         // a stale angular-velocity impulse through a short keyboard tap. Bleed
         // that impulse on release without rotating the craft toward upright;
         // this keeps deliberate flips possible while making a released turn
         // feel immediately controllable in the presentable slice.
-        public const float PlayerPresentableReleaseBrake = 1440f;
+        // A short release should stop reading as inertia soup. This is still
+        // a brake, not an upright correction: deliberate flips remain free
+        // while neutral input settles in roughly 0.17 seconds from full turn.
+        public const float PlayerPresentableReleaseBrake = 2160f;
         public const float PlayerPresentableReleaseBrakeDelay = 0.04f;
         // Short-term FlightTest bridge: let one bounded turn response own the
         // player instead of stacking motor torque, legacy direct input, and a
@@ -296,8 +300,8 @@ namespace ExtraterrestrialExhaust.Core
         // Keep the temporary pickup grace generous enough for the current
         // player bridge: the EE5 orbit remains unchanged, but a slow/awkward
         // prototype craft should not miss the key during its single pass.
-        public const float EnergyKeyCollectionAssistDistance = 1.75f;
-        public const float EnergyKeyGateUnlockRange = 2f;
+        public const float EnergyKeyCollectionAssistDistance = 2.15f;
+        public const float EnergyKeyGateUnlockRange = 2.4f;
         public const float EnergyKeyGateFlySpeed = 14f;
         public static readonly Vector3 EnergyKeyPlayerOffset =
             new Vector3(0.5f, 0.7f, 0f);
