@@ -289,10 +289,11 @@ namespace ExtraterrestrialExhaust.Enemy
                 movementMode = EnemyMovementMode.Chase;
             if (health)
             {
-                health.ConfigureMaxHealth(
+                health.ConfigureDamageRules(
                     meleeRole
                         ? Ee5SliceProfile.EnemyMeleeMaxHealth
-                        : Ee5SliceProfile.EnemyGunnerMaxHealth);
+                        : Ee5SliceProfile.EnemyGunnerMaxHealth,
+                    Ee5SliceProfile.EnemyInvulnerabilityDuration);
             }
             ApplyEe5PhysicsProfile();
             if (!gameState)
@@ -318,8 +319,16 @@ namespace ExtraterrestrialExhaust.Enemy
             float expectedHealth = ResolveMeleeRole()
                 ? Ee5SliceProfile.EnemyMeleeMaxHealth
                 : Ee5SliceProfile.EnemyGunnerMaxHealth;
-            if (health && !Mathf.Approximately(health.MaxHealth, expectedHealth))
-                health.ConfigureMaxHealth(expectedHealth);
+            if (health
+                && (!Mathf.Approximately(health.MaxHealth, expectedHealth)
+                    || !Mathf.Approximately(
+                        health.InvulnerabilityDuration,
+                        Ee5SliceProfile.EnemyInvulnerabilityDuration)))
+            {
+                health.ConfigureDamageRules(
+                    expectedHealth,
+                    Ee5SliceProfile.EnemyInvulnerabilityDuration);
+            }
         }
 
         SpriteRenderer ResolveVisibleSpriteRenderer()

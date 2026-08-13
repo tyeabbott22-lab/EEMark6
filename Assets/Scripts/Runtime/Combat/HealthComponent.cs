@@ -15,6 +15,7 @@ namespace ExtraterrestrialExhaust.Combat
 
         public float CurrentHealth { get; private set; }
         public float MaxHealth => maxHealth;
+        public float InvulnerabilityDuration => invulnerabilityDuration;
         public bool IsAlive => CurrentHealth > 0f;
         public bool IsInvulnerable => invulnerabilityTimer > 0f;
 
@@ -85,6 +86,19 @@ namespace ExtraterrestrialExhaust.Combat
         public void ConfigureMaxHealth(float value)
         {
             maxHealth = Mathf.Max(1f, value);
+            ResetHealth();
+        }
+
+        /// <summary>
+        /// Applies both halves of an imported actor's combat contract. Enemy
+        /// prefabs from older EE6 passes can carry the generic health cooldown,
+        /// so configuring max health alone is not enough to reproduce the EE5
+        /// one-shot melee / five-pip gunner timing.
+        /// </summary>
+        public void ConfigureDamageRules(float healthValue, float invulnerabilityValue)
+        {
+            maxHealth = Mathf.Max(1f, healthValue);
+            invulnerabilityDuration = Mathf.Max(0f, invulnerabilityValue);
             ResetHealth();
         }
     }
