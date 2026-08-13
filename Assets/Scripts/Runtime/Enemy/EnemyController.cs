@@ -781,10 +781,16 @@ namespace ExtraterrestrialExhaust.Enemy
             // EnemyHealth.Die ordering so the burst and key handoff begin
             // inside the same readable hit-stop beat.
             FindFirstObjectByType<GameStateMachine>()?.TriggerEnemyDefeatSlowdown();
-            Defeated?.Invoke(this);
 
+            // Make the defeat authoritative before external systems observe it.
+            // EncounterController, EnergyKey, and trigger callbacks can all
+            // react to Defeated in the same physics step; leaving a collider
+            // enabled until after the event creates a one-frame dead-but-solid
+            // enemy that can double-hit the player or block the key handoff.
             foreach (Collider2D collider in GetComponentsInChildren<Collider2D>(true))
                 collider.enabled = false;
+
+            Defeated?.Invoke(this);
         }
 
         /// <summary>

@@ -756,6 +756,9 @@ namespace ExtraterrestrialExhaust.Editor
             bool repairedEnemyHitboxes =
                 ApplyEe5EnemyHitbox(melee.gameObject, false)
                 | ApplyEe5EnemyHitbox(carrier.gameObject, true);
+            bool repairedEnemyDeathPresentation =
+                RepairEnemyDeathPresentation(melee.gameObject)
+                | RepairEnemyDeathPresentation(carrier.gameObject);
 
             Transform keyTarget = gate.transform.Find("Key Target");
             if (!keyTarget)
@@ -821,6 +824,9 @@ namespace ExtraterrestrialExhaust.Editor
                         : string.Empty)
                     + (repairedEnemyHitboxes
                         ? " Authored EE5 enemy hurtboxes were also repaired."
+                        : string.Empty)
+                    + (repairedEnemyDeathPresentation
+                        ? " Enemy defeat burst wiring was also repaired."
                         : string.Empty));
             }
             else
@@ -1333,6 +1339,8 @@ namespace ExtraterrestrialExhaust.Editor
                 serializedPresentation.ApplyModifiedPropertiesWithoutUndo();
             }
 
+            changed |= RepairEnemyDeathPresentation(prefabContents);
+
             EnemyContactDamage contactDamage = prefabContents.GetComponent<EnemyContactDamage>();
             if (!contactDamage)
             {
@@ -1752,6 +1760,29 @@ namespace ExtraterrestrialExhaust.Editor
                     issues.Add($"{prefabPath} contact cooldown={cooldown}");
                 if (!Mathf.Approximately(knockback, Ee5SliceProfile.EnemyContactKnockback))
                     issues.Add($"{prefabPath} contact knockback={knockback}");
+            }
+
+            EnemyDeathPresentation deathPresentation =
+                prefab.GetComponent<EnemyDeathPresentation>();
+            if (!deathPresentation)
+            {
+                issues.Add($"{prefabPath} has no EnemyDeathPresentation");
+            }
+            else
+            {
+                SerializedObject serializedDeath = new SerializedObject(deathPresentation);
+                CheckSpriteArray(
+                    serializedDeath,
+                    "burstFrames",
+                    LoadSprites(EnemyBurstSpritePath, LegacyEnemyBurstSpritePath),
+                    $"{prefabPath} burstFrames",
+                    issues);
+                CheckSerializedBool(
+                    serializedDeath,
+                    "hideActorImmediately",
+                    true,
+                    $"{prefabPath} hideActorImmediately",
+                    issues);
             }
 
             EnemySpritePresentation presentation = prefab.GetComponent<EnemySpritePresentation>();
@@ -2826,6 +2857,29 @@ namespace ExtraterrestrialExhaust.Editor
                     issues);
             }
 
+            EnemyDeathPresentation deathPresentation =
+                enemyObject.GetComponent<EnemyDeathPresentation>();
+            if (!deathPresentation)
+            {
+                issues.Add($"{label} EnemyDeathPresentation");
+            }
+            else
+            {
+                SerializedObject serializedDeath = new SerializedObject(deathPresentation);
+                CheckSpriteArray(
+                    serializedDeath,
+                    "burstFrames",
+                    LoadSprites(EnemyBurstSpritePath, LegacyEnemyBurstSpritePath),
+                    $"{label} burstFrames",
+                    issues);
+                CheckSerializedBool(
+                    serializedDeath,
+                    "hideActorImmediately",
+                    true,
+                    $"{label} hideActorImmediately",
+                    issues);
+            }
+
             Sprite expectedActiveSprite = LoadFirstSprite(
                 ranged ? EnemySpritePath : MeleeSpritePath);
             SpriteRenderer spriteRenderer = enemyObject.GetComponent<SpriteRenderer>();
@@ -3452,6 +3506,15 @@ namespace ExtraterrestrialExhaust.Editor
                 SpriteRenderer spriteRenderer = enemy.GetComponent<SpriteRenderer>();
                 if (spriteRenderer)
                     PrefabUtility.RecordPrefabInstancePropertyModifications(spriteRenderer);
+                EditorUtility.SetDirty(enemy);
+            }
+
+            if (RepairEnemyDeathPresentation(enemy))
+            {
+                EnemyDeathPresentation deathPresentation =
+                    enemy.GetComponent<EnemyDeathPresentation>();
+                if (deathPresentation)
+                    PrefabUtility.RecordPrefabInstancePropertyModifications(deathPresentation);
                 EditorUtility.SetDirty(enemy);
             }
 
@@ -4165,6 +4228,53 @@ namespace ExtraterrestrialExhaust.Editor
             }
             AssetDatabase.SaveAssets();
             return controller;
+        }
+
+        static bool RepairEnemyDeathPresentation(GameObject enemyObject)
+        {
+            if (!enemyObject)
+                return false;
+
+            EnemyDeathPresentation deathPresentation =
+                enemyObject.GetComponent<EnemyDeathPresentation>();
+            bool changed = false;
+            if (!deathPresentation)
+            {
+                deathPresentation = enemyObject.AddComponent<EnemyDeathPresentation>();
+                changed = true;
+            }
+
+            SerializedObject serializedDeath = new SerializedObject(deathPresentation);
+            changed |= SetSpriteArrayIfDifferent(
+                serializedDeath,
+                "burstFrames",
+                LoadSprites(EnemyBurstSpritePath, LegacyEnemyBurstSpritePath));
+
+            SerializedProperty defeatAudio =
+                serializedDeath.FindProperty("defeatAudio");
+            AudioClip expectedAudio =
+                AssetDatabase.LoadAssetAtPath<AudioClip>(EnemyBurstAudioPath);
+            if (defeatAudio != null && defeatAudio.objectReferenceValue != expectedAudio)
+            {
+                defeatAudio.objectReferenceValue = expectedAudio;
+                changed = true;
+            }
+
+            changed |= SetFloat(serializedDeath, "burstScale", 3f);
+            changed |= SetFloat(serializedDeath, "audioVolume", 0.65f);
+            changed |= SetBool(serializedDeath, "hideActorImmediately", true);
+            SerializedProperty sortingOrder =
+                serializedDeath.FindProperty("burstSortingOrder");
+            if (sortingOrder != null && sortingOrder.intValue != 40)
+            {
+                sortingOrder.intValue = 40;
+                changed = true;
+            }
+
+            serializedDeath.ApplyModifiedPropertiesWithoutUndo();
+            if (changed)
+                EditorUtility.SetDirty(deathPresentation);
+            return changed;
         }
 
         static void CreateEnemyHealthDisplay(Transform enemy, bool ranged)
