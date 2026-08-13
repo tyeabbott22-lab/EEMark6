@@ -140,6 +140,8 @@ namespace ExtraterrestrialExhaust.Enemy
         void ApplyState(EnemyState state)
         {
             EnemyState previousState = currentState;
+            bool leavingWake = previousState == EnemyState.Waking
+                && (state == EnemyState.Chasing || state == EnemyState.Attacking);
             bool preserveDormantFrame = state == EnemyState.Waking
                 && previousState == EnemyState.Dormant
                 && currentFrames != null
@@ -189,6 +191,16 @@ namespace ExtraterrestrialExhaust.Enemy
                 && currentFrames.Length > 0)
             {
                 frameIndex = Random.Range(0, currentFrames.Length);
+            }
+
+            if (leavingWake)
+            {
+                // EnemyController commits the combat state on the physics
+                // clock. Finish the authored intro on that same event instead
+                // of leaving one render frame of idle/scream art visible
+                // after the hunter has already started attacking.
+                FinishWake();
+                return;
             }
 
             if (restoreFacingAfterWake

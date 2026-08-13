@@ -918,9 +918,18 @@ namespace ExtraterrestrialExhaust.Enemy
 
                 if (IsBlockingTargetCollider(hit.collider))
                 {
-                    allowedDistance = Mathf.Min(
-                        allowedDistance,
-                        Mathf.Max(0f, hit.distance - targetBuffer));
+                    // The repaired melee role uses a trigger navigation body
+                    // and a deterministic range hit. Stopping at the target's
+                    // collider surface would leave the hunter outside
+                    // ContactDamageReach, so it would chase forever without
+                    // ever entering its authored strike envelope. Ranged or
+                    // experimental solid-body roles retain the old buffer.
+                    if (!IsMelee)
+                    {
+                        allowedDistance = Mathf.Min(
+                            allowedDistance,
+                            Mathf.Max(0f, hit.distance - targetBuffer));
+                    }
                     continue;
                 }
 
