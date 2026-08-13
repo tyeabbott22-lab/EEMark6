@@ -743,6 +743,16 @@ namespace ExtraterrestrialExhaust.Editor
                 return;
             }
 
+            // Older FlightTest scenes already have the authoritative EnergyGate
+            // but predate the EE5 laser-network presentation. Add the layer in
+            // place so repair upgrades the authored scene without rebuilding or
+            // replacing any preserved prefabs.
+            if (!gate.GetComponent<ProgrammableLaserGate>())
+            {
+                Undo.AddComponent<ProgrammableLaserGate>(gate.gameObject);
+                EditorUtility.SetDirty(gate.gameObject);
+            }
+
             Transform keyTarget = gate.transform.Find("Key Target");
             if (!keyTarget)
             {
@@ -2357,6 +2367,8 @@ namespace ExtraterrestrialExhaust.Editor
                         Vector3.one * Ee5SliceProfile.EnergyGateArtworkScale) > 0.02f)
                     issues.Add("Energy Gate artwork scale does not match the authored collider");
             }
+            if (!energyGateObject || !energyGateObject.GetComponent<ProgrammableLaserGate>())
+                issues.Add("Energy Gate programmable laser network");
             CheckSceneObjectPosition(
                 GameObject.Find("Level Exit"),
                 Ee5SliceProfile.VerticalSliceExitPosition,
@@ -4082,6 +4094,16 @@ namespace ExtraterrestrialExhaust.Editor
                 Ee5SliceProfile.EnergyGateLiftSpeed;
             serializedGate.FindProperty("keyTarget").objectReferenceValue = keyTarget.transform;
             serializedGate.ApplyModifiedPropertiesWithoutUndo();
+            ProgrammableLaserGate laserGate = gate.AddComponent<ProgrammableLaserGate>();
+            SerializedObject serializedLaserGate = new SerializedObject(laserGate);
+            serializedLaserGate.FindProperty("beamCount").intValue = 3;
+            serializedLaserGate.FindProperty("beamSpacing").floatValue = 0.12f;
+            serializedLaserGate.FindProperty("coreWidth").floatValue = 0.055f;
+            serializedLaserGate.FindProperty("glowWidth").floatValue = 0.32f;
+            serializedLaserGate.FindProperty("pulseSpeed").floatValue = 3f;
+            serializedLaserGate.FindProperty("pulseAmount").floatValue = 0.18f;
+            serializedLaserGate.FindProperty("sortingOrder").intValue = 12;
+            serializedLaserGate.ApplyModifiedPropertiesWithoutUndo();
             EnergyGatePresentation gatePresentation = gate.AddComponent<EnergyGatePresentation>();
             SerializedObject serializedGatePresentation = new SerializedObject(gatePresentation);
             serializedGatePresentation.FindProperty("unlockColor").colorValue =

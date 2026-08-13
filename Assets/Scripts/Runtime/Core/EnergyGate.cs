@@ -48,6 +48,19 @@ namespace ExtraterrestrialExhaust.Core
         /// than treating key impact as an instantaneous teleport.
         /// </summary>
         public bool IsRouteClear => state == EnergyGateState.Open;
+        public float OpeningProgress
+        {
+            get
+            {
+                if (state == EnergyGateState.Open)
+                    return 1f;
+                if (state == EnergyGateState.Closed || liftDistance <= 0f)
+                    return 0f;
+
+                return Mathf.Clamp01(1f - Vector3.Distance(transform.position, closedPosition) / liftDistance);
+            }
+        }
+        public float BarrierHeight => gateCollider ? gateCollider.size.y : 0f;
         public Transform KeyTarget => keyTarget ? keyTarget : transform;
         public event Action Disabled;
         public event Action RouteCleared;
