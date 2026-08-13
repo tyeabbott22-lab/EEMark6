@@ -277,6 +277,13 @@ namespace ExtraterrestrialExhaust.Core
                     break;
                 case EnergyKeyState.OrbitingPlayer:
                     FollowPlayerOrbit();
+                    // Trigger callbacks are the EE5 contract, but a rebuilt
+                    // scene can briefly have an older layer matrix or a player
+                    // collider override while Unity is refreshing prefabs.
+                    // Re-evaluate the same authored distance on the physics
+                    // clock so collecting the key never depends on callback
+                    // ordering or a single missed overlap frame.
+                    TryCollectResolvedPlayer();
                     break;
                 case EnergyKeyState.FollowingPlayer:
                     FollowPlayer();
@@ -441,7 +448,23 @@ namespace ExtraterrestrialExhaust.Core
                 return;
 
             PlayerCharacter otherPlayer = other.GetComponentInParent<PlayerCharacter>();
-            if (!otherPlayer || !player || !otherPlayer.CanReceiveGameplayInput)
+            TryCollectPlayer(otherPlayer);
+        }
+
+        void TryCollectResolvedPlayer()
+        {
+            if (!player)
+                return;
+
+            TryCollectPlayer(player);
+        }
+
+        void TryCollectPlayer(PlayerCharacter otherPlayer)
+        {
+            if (state != EnergyKeyState.OrbitingPlayer
+                || !otherPlayer
+                || !player
+                || !otherPlayer.CanReceiveGameplayInput)
                 return;
 
             // Use the collider's owning player for the proximity check. The

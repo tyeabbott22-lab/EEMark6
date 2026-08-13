@@ -171,10 +171,16 @@ namespace ExtraterrestrialExhaust.Enemy
         public bool IsSpriteFlippedUpright => spriteFlippedUpright;
         public bool CanAttack => State == EnemyState.Attacking;
         /// <summary>
+        /// The melee prefab is intentionally a trigger navigation body. Keeping
+        /// this fact public lets contact damage use the actual physics callback
+        /// instead of inventing a center-distance hit that lands early.
+        /// </summary>
+        public bool UsesTriggerContactBody => IsMelee && bodyCollider && bodyCollider.isTrigger;
+        /// <summary>
         /// The range at which this role is allowed to own the attack state.
-        /// Melee uses the smaller deterministic contact envelope rather than
-        /// its wider authored brake band; otherwise the kinematic hunter would
-        /// stop before EnemyContactDamage could ever reach the player.
+        /// Ranged enemies use their authored aim range. Melee exposes its
+        /// serialized center-distance fallback for gizmos/legacy scenes, while
+        /// generated trigger scenes use IsWithinMeleeContact as the authority.
         /// </summary>
         public float AttackReach => IsMelee ? ContactDamageReach : attackRange;
         public float ContactDamageReach => Mathf.Min(
@@ -182,6 +188,32 @@ namespace ExtraterrestrialExhaust.Enemy
             Mathf.Max(0f, contactDamageRange));
         public bool IsAttackRecoveryActive => IsMelee && attackRecoveryRemaining > 0f;
         public bool IsCombatActive => State == EnemyState.Chasing || State == EnemyState.Attacking;
+
+        /// <summary>
+        /// Tests the authored player/enemy collider pair. EE5's melee damage
+        /// came from overlap, so the EE6 trigger body should enter its attack
+        /// state at the same physical moment instead of at an arbitrary radius.
+        /// </summary>
+        public bool IsWithinMeleeContact(PlayerCharacter candidate)
+        {
+            if (!IsMelee || !candidate)
+                return false;
+
+            Collider2D candidateCollider = candidate.GetComponent<Collider2D>();
+            if (bodyCollider && candidateCollider)
+            {
+                ColliderDistance2D separation = Physics2D.Distance(
+                    bodyCollider,
+                    candidateCollider);
+                return separation.distance <= Mathf.Max(0f, targetBuffer);
+            }
+
+            // Keep older hand-authored scenes playable if one side lost its
+            // collider. The serialized range is deliberately only a recovery
+            // path; generated scenes use the collider-pair test above.
+            return Vector2.Distance(PhysicsPosition, candidate.PhysicsPosition)
+                <= ContactDamageReach;
+        }
         public float WakeProgress => State == EnemyState.Waking && wakeTotalDuration > 0f
             ? Mathf.Clamp01(wakeTimer / Mathf.Max(0.01f, wakeTotalDuration))
             : 0f;
@@ -441,20 +473,18 @@ namespace ExtraterrestrialExhaust.Enemy
             }
 
             // Ranged enemies use their authored attack range as a state
-            // contract. A melee hunter has two distances: the wider authored
-            // state/brake band and the actual strike envelope. It must keep
-            // chasing until the latter, because the trigger body intentionally
-            // does not physically overlap the player's dynamic craft.
-            float attackStartRange = IsMelee
-                ? ContactDamageReach
-                : Mathf.Max(0f, attackRange);
+            // contract. The melee hunter enters attack on the actual collider
+            // contact, matching EE5's OnTriggerStay/OnCollisionStay contract.
+            // Its wider exit band still prevents state chatter after knockback.
+            bool meleeContact = IsMelee && IsWithinMeleeContact(target);
+            float attackStartRange = Mathf.Max(0f, attackRange);
             float attackStopRange = Mathf.Max(
-                attackStartRange,
+                IsMelee ? 0f : attackStartRange,
                 Mathf.Max(0f, attackExitRange));
             bool stayInAttack = State == EnemyState.Attacking
                 && distance <= attackStopRange;
             SetState(
-                stayInAttack || distance <= attackStartRange
+                meleeContact || stayInAttack || (!IsMelee && distance <= attackStartRange)
                     ? EnemyState.Attacking
                     : EnemyState.Chasing);
         }
@@ -969,12 +999,12 @@ namespace ExtraterrestrialExhaust.Enemy
 
                 if (IsBlockingTargetCollider(hit.collider))
                 {
-                    // The repaired melee role uses a trigger navigation body
-                    // and a deterministic range hit. Stopping at the target's
-                    // collider surface would leave the hunter outside
-                    // ContactDamageReach, so it would chase forever without
-                    // ever entering its authored strike envelope. Ranged or
-                    // experimental solid-body roles retain the old buffer.
+                    // The repaired melee role uses a trigger navigation body;
+                    // it is allowed to cross the target cast and lets the
+                    // collider-pair contact test choose the attack frame.
+                    // Ranged or experimental solid-body roles retain the
+                    // separation buffer so their navigation cannot overlap the
+                    // dynamic player.
                     if (!IsMelee)
                     {
                         allowedDistance = Mathf.Min(

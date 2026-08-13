@@ -25,39 +25,39 @@ namespace ExtraterrestrialExhaust.Enemy
             cooldownRemaining = Mathf.Max(
                 0f,
                 cooldownRemaining - Time.fixedDeltaTime);
+        }
 
-            // EE5's melee enemy dealt contact damage while physically
-            // overlapping the player. EE6 deliberately keeps the navigation
-            // body just outside that overlap to eliminate rigidbody tug-of-war
-            // and the resulting jitter. Preserve the readable attack timing
-            // with a range hit instead of reintroducing that collision loop.
+        void OnTriggerEnter2D(Collider2D other) => TryDamageFromCollider(other);
+
+        void OnTriggerStay2D(Collider2D other) => TryDamageFromCollider(other);
+
+        void TryDamageFromCollider(Collider2D other)
+        {
             if (!controller || !controller.IsMelee || !controller.CanAttack)
                 return;
 
-            PlayerCharacter player = controller.Target;
-            if (!player || !player.CanReceiveGameplayInput)
+            PlayerCharacter player = other
+                ? other.GetComponentInParent<PlayerCharacter>()
+                : null;
+            if (!player || !player.CanReceiveGameplayInput || cooldownRemaining > 0f)
                 return;
 
-            Vector2 enemyPosition = controller.PhysicsPosition;
-            Vector2 playerPosition = player.PhysicsPosition;
-            if (cooldownRemaining > 0f
-                || Vector2.Distance(enemyPosition, playerPosition) > controller.ContactDamageReach)
-                return;
-
-            Vector2 direction = (playerPosition - enemyPosition).normalized;
+            Vector2 direction = (player.PhysicsPosition - controller.PhysicsPosition).normalized;
             if (direction.sqrMagnitude <= 0.001f)
                 direction = Vector2.right;
 
-            TryDamagePlayer(player, playerPosition, direction);
+            Vector2 hitPoint = other.ClosestPoint(controller.PhysicsAnchorPosition);
+            TryDamagePlayer(player, hitPoint, direction);
         }
 
         void OnCollisionStay2D(Collision2D collision)
         {
             // The reusable component remains on older solid-body prefabs, but
             // contact damage is a melee attack contract. The EE5 gunner has
-            // projectile pressure, not a hidden collision attack, and the
-            // repaired melee role normally uses the range path below because
-            // its trigger navigation body does not emit collision callbacks.
+            // projectile pressure, not a hidden collision attack. The repaired
+            // melee role normally reaches this component through the trigger
+            // callbacks above; this solid-body path keeps old hand-authored
+            // scenes compatible without changing their contact authority.
             if (!controller || !controller.IsMelee || !controller.CanAttack)
                 return;
 
