@@ -242,11 +242,11 @@ namespace ExtraterrestrialExhaust.Player
 
             AppliedFlightInput = command;
 
-            // The imported EE5 stack has several historical input paths that
-            // can all write to the same Rigidbody2D. Keep those paths
-            // available below for the eventual prefab reconstruction, but
-            // make the current playable slice deterministic: one bounded
-            // response owns rotation, while thrust remains a single force.
+            // The imported EE5 player has two observable desktop writers: the
+            // motor and JetpackInput's direct fallback. Keep the choice
+            // explicit in the profile so the presentable route can reproduce
+            // that stack instead of silently replacing it with a new control
+            // model.
             bool usePresentableTurnResponse =
                 Ee5SliceProfile.PlayerPresentableTurnResponseOwnsRotation;
             if (!usePresentableTurnResponse)
@@ -276,17 +276,17 @@ namespace ExtraterrestrialExhaust.Player
             if (!usePresentableTurnResponse)
                 ApplyEe5LegacyDirectPhysicsAssist(command, thrusting, turning);
 
-            // Presentable bridge: the imported EE5 stack reaches its rotation
-            // envelope quickly because the tiny authored collider has very low
-            // rotational inertia. Use the same bounded angular-speed handoff
-            // here instead of making the player wait on a slow torque ramp.
-            // Release uses a short angular brake below. It does not auto-upright
-            // the craft, so the player can still stop at a deliberate angle or
-            // hold a turn for a full flip without fighting a hidden correction.
-            if (turning)
-                ApplyPresentableTurnResponse(command.x);
-            else if (turnReleaseTimer >= Ee5SliceProfile.PlayerPresentableReleaseBrakeDelay)
-                ApplyPresentableReleaseBrake();
+            // Optional presentable bridge: when enabled, the rebuilt stack
+            // reaches its rotation envelope through a bounded handoff. The
+            // EE5 gold route leaves this disabled and uses the authored torque
+            // plus direct-input path below.
+            if (usePresentableTurnResponse)
+            {
+                if (turning)
+                    ApplyPresentableTurnResponse(command.x);
+                else if (turnReleaseTimer >= Ee5SliceProfile.PlayerPresentableReleaseBrakeDelay)
+                    ApplyPresentableReleaseBrake();
+            }
 
             // A brittle break has already disabled the contact collider, but
             // Unity can still report the old contact until the next physics

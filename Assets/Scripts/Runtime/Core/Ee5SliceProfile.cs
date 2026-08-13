@@ -10,22 +10,15 @@ namespace ExtraterrestrialExhaust.Core
     /// </summary>
     public static class Ee5SliceProfile
     {
-        public const float PlayerMass = 8f;
-        public const float PlayerGravityScale = 0.285f;
-        // These are the values on EE5's realScene3 sniper prefab. Keep the
-        // source contract visible here so the playable bridge does not drift
-        // into a second hand-tuned movement model.
-        public const float PlayerLinearDamping = 0.35f;
-        public const float PlayerAngularDamping = 3.25f;
-        // Fast-track presentation bridge: the raw EE5 drag is preserved above
-        // for the eventual prefab rip, but it made the Unity 6 craft feel
-        // visibly soupy in the current FlightTest slice. Keep the correction
-        // centralized so it can be removed once the imported prefab is clean.
-        public const float PlayerFlightLinearDamping = 0f;
-        // Keep the reference's rotational damping. The temporary bridge only
-        // removes linear air drag; lowering angular damping as well made the
-        // craft carry accidental spin and made the turn/release contract feel
-        // unrelated to realScene3.
+        // These are the serialized Rigidbody2D values on EE5's sniper prefab,
+        // which is the player instance used by realScene3. Keep the physics
+        // root on the reference contract; the enlarged child visual must not
+        // be compensated with a heavier body or hidden air resistance.
+        public const float PlayerMass = 1f;
+        public const float PlayerGravityScale = 1f;
+        public const float PlayerLinearDamping = 0f;
+        public const float PlayerAngularDamping = 0.05f;
+        public const float PlayerFlightLinearDamping = PlayerLinearDamping;
         public const float PlayerFlightAngularDamping = PlayerAngularDamping;
         public const float PlayerMaxHealth = 5f;
         public const float PlayerInvulnerabilityDuration = 0.5f;
@@ -36,8 +29,12 @@ namespace ExtraterrestrialExhaust.Core
         public static readonly Vector2 PlayerHitboxOffset =
             new Vector2(-0.004f, 0f);
 
-        public const float ThrustForce = 55f;
-        public const float RotationTorque = 0.4f;
+        // These are the serialized JetpackMotor values on the same prefab.
+        // PlayerFlightMotor deliberately keeps the adjacent direct-input
+        // assist enabled below because EE5's JetpackInput also writes this
+        // force/torque path for the desktop keyboard route.
+        public const float ThrustForce = 30f;
+        public const float RotationTorque = 3f;
         public const float StabilizationSpeed = 720f;
         public const float FlightAngularDamping = 0.85f;
         public const float RotationBoostMultiplier = 0.225f;
@@ -45,10 +42,10 @@ namespace ExtraterrestrialExhaust.Core
         // as a temporary keyboard bridge, so short taps are readable without
         // inventing a second torque value that changes the craft's inertia.
         public const float PlayerPresentableRotationTorque = RotationTorque;
-        // Physics2DSettings in EE5 allows 360 degrees/second. The old 270 cap
-        // made the Unity 6 craft feel reluctant to turn even after the drag
-        // correction above. Keep the reference limit explicit here.
-        public const float PlayerPresentableMaxAngularVelocity = 360f;
+        // Unity's default Rigidbody2D cap is 7 radians/second. The source
+        // player relies on that cap, so keep the equivalent degree value when
+        // the rebuilt motor applies its explicit safety clamp.
+        public const float PlayerPresentableMaxAngularVelocity = 400f;
         // Temporary direct-response bridge: torque remains in the stack for
         // the eventual prefab rip, while this bounded handoff makes a held
         // keyboard turn reach the authored rotation envelope immediately.
@@ -68,12 +65,11 @@ namespace ExtraterrestrialExhaust.Core
         // while neutral input settles in roughly 0.17 seconds from full turn.
         public const float PlayerPresentableReleaseBrake = 2160f;
         public const float PlayerPresentableReleaseBrakeDelay = 0.04f;
-        // Short-term FlightTest bridge: let one bounded turn response own the
-        // player instead of stacking motor torque, legacy direct input, and a
-        // second corrective response. The original paths stay in the motor
-        // for the later prefab-rip pass, but are not allowed to fight the
-        // presentable slice.
-        public const bool PlayerPresentableTurnResponseOwnsRotation = true;
+        // The reference sniper has both JetpackMotor and JetpackInput enabled.
+        // Restore that observable desktop stack for the presentable route;
+        // the bounded response remains available as an isolated lab mode, but
+        // it must not replace the reference's authored torque behavior.
+        public const bool PlayerPresentableTurnResponseOwnsRotation = false;
         // EE5's sniper prefab has JetpackMotor and JetpackInput both enabled.
         // JetpackInput applies the same direct force/torque after the motor
         // step. Keep that observable compatibility quirk named and switchable.
