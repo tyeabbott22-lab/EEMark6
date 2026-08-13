@@ -17,7 +17,11 @@ namespace ExtraterrestrialExhaust.Core
         // playable EE6 pass uses the lighter free-flight overlay below.
         public const float PlayerLinearDamping = 0.35f;
         public const float PlayerAngularDamping = 3.25f;
-        public const float PlayerFlightLinearDamping = 0.08f;
+        // EE5's serialized drag is retained above for reference. The flight
+        // slice is intentionally closer to zero-air-friction space movement;
+        // this small residual keeps a stopped craft from feeling numerically
+        // frozen without bringing back the soupy air-brake the prototype had.
+        public const float PlayerFlightLinearDamping = 0.02f;
         // Preserve the authored EE5 angular drag so the craft carries linear
         // momentum without becoming uncontrollably loose around its up axis.
         public const float PlayerFlightAngularDamping = 3.25f;
@@ -125,6 +129,18 @@ namespace ExtraterrestrialExhaust.Core
         // deterministic range hit. A trigger body preserves wall/target casts
         // without letting scripted motion shove the dynamic player.
         public const bool EnemyMeleeUsesTriggerBody = true;
+        // These are the actual EE5 enemyFast/enemyGun BoxCollider2D values,
+        // including their artwork-relative offsets. They are deliberately
+        // separate from attack range: a hurtbox defines projectile contact,
+        // while the controller's attack envelope defines readable behavior.
+        public static readonly Vector2 EnemyMeleeHitboxOffset =
+            new Vector2(-0.27931988f, 0.13768846f);
+        public static readonly Vector2 EnemyMeleeHitboxSize =
+            new Vector2(0.70768476f, 0.63822603f);
+        public static readonly Vector2 EnemyGunnerHitboxOffset =
+            new Vector2(-0.2606567f, 0.13837318f);
+        public static readonly Vector2 EnemyGunnerHitboxSize =
+            new Vector2(0.87690234f, 1.151379f);
         // A small exit band prevents a melee hunter from alternating between
         // Chasing and Attacking when the player hovers exactly on its brake
         // radius. The authored EE5 movement remains the reference; this band

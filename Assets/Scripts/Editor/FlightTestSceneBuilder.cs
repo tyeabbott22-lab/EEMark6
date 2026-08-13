@@ -3767,10 +3767,17 @@ namespace ExtraterrestrialExhaust.Editor
             body.interpolation = RigidbodyInterpolation2D.Interpolate;
             body.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
 
-            CircleCollider2D collider = enemy.AddComponent<CircleCollider2D>();
-            // The melee hitbox is slightly larger than its visual body so that
-            // contact damage becomes reliable before the chase state brakes.
-            collider.radius = ranged ? 0.55f : 0.72f;
+            BoxCollider2D collider = enemy.AddComponent<BoxCollider2D>();
+            // Preserve the offset silhouette hurtboxes from EE5's enemyGun and
+            // enemyFast prefabs. Melee contact timing remains a separate
+            // controller contract, so this does not reintroduce rigidbody
+            // overlap jitter.
+            collider.offset = ranged
+                ? Ee5SliceProfile.EnemyGunnerHitboxOffset
+                : Ee5SliceProfile.EnemyMeleeHitboxOffset;
+            collider.size = ranged
+                ? Ee5SliceProfile.EnemyGunnerHitboxSize
+                : Ee5SliceProfile.EnemyMeleeHitboxSize;
             collider.isTrigger = !ranged && Ee5SliceProfile.EnemyMeleeUsesTriggerBody;
             HealthComponent health = enemy.AddComponent<HealthComponent>();
             SerializedObject serializedHealth = new SerializedObject(health);
@@ -4000,6 +4007,7 @@ namespace ExtraterrestrialExhaust.Editor
                 AssetDatabase.LoadAssetAtPath<AudioClip>(EnemyBurstAudioPath);
             serializedDeath.FindProperty("burstScale").floatValue = 3f;
             serializedDeath.FindProperty("burstSortingOrder").intValue = 40;
+            serializedDeath.FindProperty("hideActorImmediately").boolValue = true;
             serializedDeath.FindProperty("audioVolume").floatValue = 0.65f;
             serializedDeath.ApplyModifiedPropertiesWithoutUndo();
 

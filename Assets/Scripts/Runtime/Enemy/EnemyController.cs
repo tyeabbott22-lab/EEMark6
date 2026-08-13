@@ -269,12 +269,37 @@ namespace ExtraterrestrialExhaust.Enemy
                 : 0f;
             if (bodyCollider)
             {
-                // Navigation still sees the player and walls through
-                // Collider2D.Cast, but the melee body no longer pushes the
-                // dynamic craft while the range hit is being evaluated.
-                bodyCollider.isTrigger = isMelee
-                    && Ee5SliceProfile.EnemyMeleeUsesTriggerBody;
+                ConfigureEe5Hitbox(isMelee);
             }
+        }
+
+        void ConfigureEe5Hitbox(bool isMelee)
+        {
+            // The imported EE6 prefabs were originally built with centered
+            // circles. EE5's enemyFast and enemyGun use small, offset boxes
+            // aligned to the actual sprite silhouette. Rebuild that shape at
+            // runtime as a compatibility bridge for existing scene instances;
+            // the editor builder writes the same BoxCollider2D for new scenes.
+            BoxCollider2D authoredBox = GetComponent<BoxCollider2D>();
+            if (!authoredBox)
+                authoredBox = gameObject.AddComponent<BoxCollider2D>();
+
+            authoredBox.offset = isMelee
+                ? Ee5SliceProfile.EnemyMeleeHitboxOffset
+                : Ee5SliceProfile.EnemyGunnerHitboxOffset;
+            authoredBox.size = isMelee
+                ? Ee5SliceProfile.EnemyMeleeHitboxSize
+                : Ee5SliceProfile.EnemyGunnerHitboxSize;
+            authoredBox.isTrigger = isMelee
+                && Ee5SliceProfile.EnemyMeleeUsesTriggerBody;
+
+            foreach (Collider2D collider in GetComponents<Collider2D>())
+            {
+                if (collider != authoredBox)
+                    collider.enabled = false;
+            }
+
+            bodyCollider = authoredBox;
         }
 
         bool ResolveMeleeRole()
