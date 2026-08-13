@@ -1434,6 +1434,9 @@ namespace ExtraterrestrialExhaust.Editor
             if (!contactDamage)
                 return;
 
+            // The preserve-scene path may add this component to the instance;
+            // keep its serialized values in the same explicit contract as a
+            // repaired melee prefab without mutating that prefab implicitly.
             SerializedObject serialized = new SerializedObject(contactDamage);
             SetFloat(serialized, "damage", Ee5SliceProfile.EnemyContactDamage);
             SetFloat(serialized, "cooldown", Ee5SliceProfile.EnemyContactCooldown);
@@ -3095,6 +3098,20 @@ namespace ExtraterrestrialExhaust.Editor
                 return false;
 
             bool changed = false;
+
+            // Keep the physics root at unit scale. The EE5 craft's visual
+            // enlargement belongs on the child named "Craft Visual"; putting
+            // it on this root also enlarges the hitbox and changes how every
+            // Rigidbody2D force reads in world space. This guard is especially
+            // important for preserved prefab instances, where an old scale
+            // tweak can otherwise survive a scene rebuild unnoticed.
+            if (Vector3.Distance(root.transform.localScale, Vector3.one) > 0.001f)
+            {
+                root.transform.localScale = Vector3.one;
+                EditorUtility.SetDirty(root.transform);
+                changed = true;
+            }
+
             Rigidbody2D body = root.GetComponent<Rigidbody2D>();
             if (body)
             {
@@ -3186,6 +3203,13 @@ namespace ExtraterrestrialExhaust.Editor
             {
                 issues.Add($"{label}: missing Player Craft");
                 return;
+            }
+
+            if (Vector3.Distance(root.transform.localScale, Vector3.one) > 0.001f)
+            {
+                issues.Add(
+                    $"{label}: root scale={root.transform.localScale} (expected (1, 1, 1)); "
+                    + "keep enlargement/flip state on Craft Visual");
             }
 
             Rigidbody2D body = root.GetComponent<Rigidbody2D>();
@@ -3421,6 +3445,7 @@ namespace ExtraterrestrialExhaust.Editor
             // generated scene still needs an explicit physics contract. This
             // keeps the Inspector honest before PlayerFlightMotor.Awake runs.
             ApplyPlayerCraftPhysicsProfile(player);
+            PrefabUtility.RecordPrefabInstancePropertyModifications(player.transform);
             Rigidbody2D body = player.GetComponent<Rigidbody2D>();
             if (body)
                 PrefabUtility.RecordPrefabInstancePropertyModifications(body);

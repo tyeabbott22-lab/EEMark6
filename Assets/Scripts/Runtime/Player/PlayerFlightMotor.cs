@@ -126,6 +126,11 @@ namespace ExtraterrestrialExhaust.Player
             // reintroduce a different damping/body mode after the builder has
             // validated the scene. This is the same profile used by the EE5
             // realScene instance, with the current EE6 linear carry-through.
+            // Keep the physics root at unit scale as well. The enlarged craft
+            // art lives on Craft Visual; scaling this object changes collider
+            // size and Rigidbody2D inertia, which is exactly the kind of old
+            // presentation hack that makes turning feel inexplicably slow.
+            transform.localScale = Vector3.one;
             body.mass = Ee5SliceProfile.PlayerMass;
             body.bodyType = RigidbodyType2D.Dynamic;
             body.simulated = true;
