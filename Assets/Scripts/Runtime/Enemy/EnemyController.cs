@@ -332,6 +332,16 @@ namespace ExtraterrestrialExhaust.Enemy
             // FlightTest is intentionally allowed to keep dirty prefab/scene
             // values, but those values must not make the playable slice drift
             // from the EE5 close-bruiser and enemyGun references.
+            //
+            // The serialized movement enum is intentionally not trusted here:
+            // preserved realScene instances can carry an old Chase/Wander value
+            // after their component graph has been repaired. EE5's role is
+            // structural—EnemyWeapon means persistent wandering gunner, while
+            // EnemyContactDamage means close-bruiser chase—so make that choice
+            // once before the state machine evaluates its first fixed step.
+            movementMode = isMelee
+                ? EnemyMovementMode.Chase
+                : EnemyMovementMode.Wander;
             chaseSpeed = isMelee
                 ? Ee5SliceProfile.EnemyMeleeChaseSpeed
                 : Ee5SliceProfile.EnemyGunnerChaseSpeed;
