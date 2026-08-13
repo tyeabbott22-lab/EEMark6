@@ -2027,9 +2027,19 @@ namespace ExtraterrestrialExhaust.Editor
                 Ee5SliceProfile.VerticalSliceMeleeSpawn,
                 "Purple Melee Hunter",
                 issues);
+            AddGeneratedEnemyContractIssues(
+                GameObject.Find("Purple Melee Hunter"),
+                false,
+                "Purple Melee Hunter",
+                issues);
             CheckSceneObjectPosition(
                 GameObject.Find("White Gunner"),
                 Ee5SliceProfile.VerticalSliceGunnerSpawn,
+                "White Gunner",
+                issues);
+            AddGeneratedEnemyContractIssues(
+                GameObject.Find("White Gunner"),
+                true,
                 "White Gunner",
                 issues);
             GameObject energyGateObject = GameObject.Find("Energy Gate");
@@ -2314,6 +2324,154 @@ namespace ExtraterrestrialExhaust.Editor
             if (enemies == null || enemies.Length < 2)
                 issues.Add($"Enemy roster ({enemies?.Length ?? 0}/2)");
             return issues;
+        }
+
+        static void AddGeneratedEnemyContractIssues(
+            GameObject enemyObject,
+            bool ranged,
+            string label,
+            List<string> issues)
+        {
+            if (!enemyObject)
+            {
+                issues.Add($"{label} object");
+                return;
+            }
+
+            EnemyController controller = enemyObject.GetComponent<EnemyController>();
+            if (!controller)
+            {
+                issues.Add($"{label} EnemyController");
+            }
+            else
+            {
+                SerializedObject serializedController = new SerializedObject(controller);
+                bool forwardNegativeX = serializedController
+                    .FindProperty("forwardIsLocalNegativeX")?.boolValue ?? false;
+                if (forwardNegativeX != ranged)
+                {
+                    issues.Add(
+                        $"{label} facing basis={(forwardNegativeX ? "negative X" : "positive X")} "
+                        + $"(expected {(ranged ? "negative" : "positive")} X)");
+                }
+
+                float expectedRootScaleX = ranged
+                    ? Ee5SliceProfile.EnemyGunnerRootScaleX
+                    : Ee5SliceProfile.EnemyMeleeRootScaleX;
+                if (!Mathf.Approximately(enemyObject.transform.localScale.x, expectedRootScaleX))
+                {
+                    issues.Add(
+                        $"{label} root scale.x={enemyObject.transform.localScale.x:0.###} "
+                        + $"(expected {expectedRootScaleX:0.###})");
+                }
+            }
+
+            EnemyWeapon weapon = enemyObject.GetComponent<EnemyWeapon>();
+            if (ranged != (weapon != null))
+            {
+                issues.Add(
+                    ranged
+                        ? $"{label} EnemyWeapon is missing"
+                        : $"{label} has EnemyWeapon but is the melee role");
+            }
+
+            EnemyContactDamage contactDamage = enemyObject.GetComponent<EnemyContactDamage>();
+            if (!contactDamage)
+            {
+                issues.Add($"{label} EnemyContactDamage");
+            }
+            else
+            {
+                SerializedObject serializedContact = new SerializedObject(contactDamage);
+                CheckSerializedFloat(
+                    serializedContact,
+                    "damage",
+                    Ee5SliceProfile.EnemyContactDamage,
+                    $"{label} contact damage",
+                    issues);
+                CheckSerializedFloat(
+                    serializedContact,
+                    "cooldown",
+                    Ee5SliceProfile.EnemyContactCooldown,
+                    $"{label} contact cooldown",
+                    issues);
+                CheckSerializedFloat(
+                    serializedContact,
+                    "knockback",
+                    Ee5SliceProfile.EnemyContactKnockback,
+                    $"{label} contact knockback",
+                    issues);
+            }
+
+            Sprite expectedActiveSprite = LoadFirstSprite(
+                ranged ? EnemySpritePath : MeleeSpritePath);
+            SpriteRenderer spriteRenderer = enemyObject.GetComponent<SpriteRenderer>();
+            if (!spriteRenderer)
+            {
+                issues.Add($"{label} SpriteRenderer");
+            }
+            else if (spriteRenderer.sprite != expectedActiveSprite)
+            {
+                string actualPath = spriteRenderer.sprite
+                    ? AssetDatabase.GetAssetPath(spriteRenderer.sprite)
+                    : "<missing>";
+                issues.Add(
+                    $"{label} active sprite uses {actualPath} "
+                    + $"(expected {(ranged ? EnemySpritePath : MeleeSpritePath)})");
+            }
+
+            EnemySpritePresentation presentation =
+                enemyObject.GetComponent<EnemySpritePresentation>();
+            if (!presentation)
+            {
+                issues.Add($"{label} EnemySpritePresentation");
+                return;
+            }
+
+            SerializedObject serializedPresentation = new SerializedObject(presentation);
+            CheckSpriteArray(
+                serializedPresentation,
+                "dormantSprites",
+                LoadSprites(ranged ? EnemyIdleSpritePath : MeleeIdleSpritePath),
+                $"{label} dormantSprites",
+                issues);
+            CheckSpriteArray(
+                serializedPresentation,
+                "alertSprites",
+                LoadSprites(ranged ? EnemyDefeatSpritePath : MeleeDefeatSpritePath),
+                $"{label} alertSprites",
+                issues);
+            CheckSpriteArray(
+                serializedPresentation,
+                "activeSprites",
+                LoadSprites(ranged ? EnemySpritePath : MeleeSpritePath),
+                $"{label} activeSprites",
+                issues);
+            CheckSpriteArray(
+                serializedPresentation,
+                "defeatedSprites",
+                LoadSprites(ranged ? EnemyDefeatSpritePath : MeleeDefeatSpritePath),
+                $"{label} defeatedSprites",
+                issues);
+
+            CheckSerializedBool(
+                serializedPresentation,
+                "faceDormantTowardTarget",
+                ranged || Ee5SliceProfile.EnemyMeleeFacesDormantTarget,
+                $"{label} dormant facing",
+                issues);
+            CheckSerializedBool(
+                serializedPresentation,
+                "forwardIsLocalNegativeX",
+                ranged,
+                $"{label} sprite facing basis",
+                issues);
+            CheckSerializedBool(
+                serializedPresentation,
+                "restoreFacingAfterWake",
+                true,
+                $"{label} wake facing restore",
+                issues);
         }
 
         static List<string> GetPlayerCraftSpriteIssues(
