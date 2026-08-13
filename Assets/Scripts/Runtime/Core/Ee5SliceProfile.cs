@@ -22,11 +22,11 @@ namespace ExtraterrestrialExhaust.Core
         // visibly soupy in the current FlightTest slice. Keep the correction
         // centralized so it can be removed once the imported prefab is clean.
         public const float PlayerFlightLinearDamping = 0f;
-        // The first bridge pass left this at 1.1. That was still enough to
-        // make short turn taps feel sticky once the enlarged presentation
-        // hierarchy was in play. Neutral recovery below now owns the braking
-        // beat, so the body can answer a deliberate turn more directly.
-        public const float PlayerFlightAngularDamping = 0.65f;
+        // Keep the reference's rotational damping. The temporary bridge only
+        // removes linear air drag; lowering angular damping as well made the
+        // craft carry accidental spin and made the turn/release contract feel
+        // unrelated to realScene3.
+        public const float PlayerFlightAngularDamping = PlayerAngularDamping;
         public const float PlayerMaxHealth = 5f;
         public const float PlayerInvulnerabilityDuration = 0.5f;
         // Copied from EE5's sniper prefab. Keep the physics hurtbox authored
@@ -41,11 +41,10 @@ namespace ExtraterrestrialExhaust.Core
         public const float StabilizationSpeed = 720f;
         public const float FlightAngularDamping = 0.85f;
         public const float RotationBoostMultiplier = 0.225f;
-        // Fast-track presentation response: retain the raw EE5 torque above,
-        // but give keyboard turns enough authority to read immediately and
-        // let the release handoff catch accidental spin. Held turns still
-        // permit flips, matching the authored realScene control contract.
-        public const float PlayerPresentableRotationTorque = 0.85f;
+        // Use the realScene3 motor torque. The bounded response below remains
+        // as a temporary keyboard bridge, so short taps are readable without
+        // inventing a second torque value that changes the craft's inertia.
+        public const float PlayerPresentableRotationTorque = RotationTorque;
         // Physics2DSettings in EE5 allows 360 degrees/second. The old 270 cap
         // made the Unity 6 craft feel reluctant to turn even after the drag
         // correction above. Keep the reference limit explicit here.
@@ -53,19 +52,19 @@ namespace ExtraterrestrialExhaust.Core
         // Temporary direct-response bridge: torque remains in the stack for
         // the eventual prefab rip, while this bounded handoff makes a held
         // keyboard turn reach the authored rotation envelope immediately.
-        // Last-mile feel hotfix: reach the authored 360-degree envelope in
-        // roughly a tenth of a second so short A/D or Q/E holds read as a
-        // deliberate turn instead of a sluggish torque ramp. The cap itself
-        // stays at the EE5 Physics2D limit; cleanup can remove this bridge
-        // once the imported prefab owns the final inertia directly.
-        public const float PlayerPresentableTurnAcceleration = 3600f;
+        // Keep the earlier presentability bridge at a readable middle ground:
+        // 2160 degrees/second squared reaches the reference 360-degree
+        // envelope in about a sixth of a second, while the restored angular
+        // damping prevents a released tap from becoming a free spin.
+        public const float PlayerPresentableTurnAcceleration = 2160f;
         // EE5's sniper prefab has JetpackMotor and JetpackInput both enabled.
         // JetpackInput applies the same direct force/torque after the motor
         // step. Keep that observable compatibility quirk named and switchable.
         public const bool PlayerLegacyDirectPhysicsAssist = true;
-        // Presentable bridge only: settle a released tap near upright while
-        // preserving deliberate held-turn flips. S/C remains authoritative.
-        public const bool UprightAssistEnabled = true;
+        // realScene3 has no hidden neutral correction. S/C is the explicit
+        // stabilize command; leaving this off prevents a release tap from
+        // fighting an intentional partial turn or flip.
+        public const bool UprightAssistEnabled = false;
         public const float UprightAssistWindow = 28f;
         public const float UprightAssistSpeed = 180f;
         public const float UprightAssistAngularBrake = 720f;
