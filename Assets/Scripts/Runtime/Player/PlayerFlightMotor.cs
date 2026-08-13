@@ -107,10 +107,9 @@ namespace ExtraterrestrialExhaust.Player
         void ApplyEe5Profile()
         {
             thrustForce = Ee5SliceProfile.ThrustForce;
-            // Keep the raw EE5 value named in the profile, but use the
-            // presentable bridge until FlightTest has been side-by-side tuned
-            // against realScene3. This is one switch instead of scattered
-            // inspector edits across dirty instances.
+            // Use the realScene3 sniper contract at runtime. This intentionally
+            // overrides stale prefab/scene overrides in one place while the
+            // reusable prefab is being cleaned up later.
             rotationTorque = Ee5SliceProfile.PlayerPresentableRotationTorque;
             rotationAddsThrust = true;
             rotationBoostMultiplier = Ee5SliceProfile.RotationBoostMultiplier;
@@ -260,9 +259,8 @@ namespace ExtraterrestrialExhaust.Player
             // generic wall-slide cleanup gets another chance to eat it.
             ApplyBrittleFollowThrough();
 
-            // A deliberate ceiling preserves the authored ability to flip,
-            // while preventing a long held Q/E or A/D input from turning the
-            // craft into a blur that is impossible to recover in the slice.
+            // Keep the reference's full flip authority. A zero profile value
+            // means no artificial angular-velocity ceiling is applied.
             float maxAngularVelocity = Ee5SliceProfile.PlayerPresentableMaxAngularVelocity;
             if (maxAngularVelocity > 0f)
                 body.angularVelocity = Mathf.Clamp(

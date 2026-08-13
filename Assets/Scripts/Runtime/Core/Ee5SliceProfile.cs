@@ -12,20 +12,16 @@ namespace ExtraterrestrialExhaust.Core
     {
         public const float PlayerMass = 8f;
         public const float PlayerGravityScale = 0.285f;
-        // Keep the raw realScene Rigidbody2D values documented for the eventual
-        // prefab cleanup. The current playable pass uses the lighter overlay
-        // immediately below: it was the last responsive EE6 baseline before the
-        // raw drag was forced at runtime and the craft started feeling soupy.
+        // These are the values on EE5's realScene3 sniper prefab. Keep the
+        // source contract visible here so the playable bridge does not drift
+        // into a second hand-tuned movement model.
         public const float PlayerLinearDamping = 0.35f;
         public const float PlayerAngularDamping = 3.25f;
-        // Temporary presentable-flight overlay. Keep this named separately so
-        // the later prefab-rip pass can switch back to the raw import in one
-        // place after a side-by-side feel check.
-        public const float PlayerFlightLinearDamping = 0f;
-        // Keep linear motion frictionless, but give the craft enough rotational
-        // damping to settle after a tap instead of carrying a lazy spin across
-        // the whole room. This is the presentable bridge, not the raw prefab rip.
-        public const float PlayerFlightAngularDamping = 1.1f;
+        // The temporary presentable bridge now intentionally uses the imported
+        // contract. A single source of truth is easier to side-by-side test
+        // than a collection of corrective inspector overrides.
+        public const float PlayerFlightLinearDamping = PlayerLinearDamping;
+        public const float PlayerFlightAngularDamping = PlayerAngularDamping;
         public const float PlayerMaxHealth = 5f;
         public const float PlayerInvulnerabilityDuration = 0.5f;
         // Copied from EE5's sniper prefab. Keep the physics hurtbox authored
@@ -40,24 +36,21 @@ namespace ExtraterrestrialExhaust.Core
         public const float StabilizationSpeed = 720f;
         public const float FlightAngularDamping = 0.85f;
         public const float RotationBoostMultiplier = 0.225f;
-        // Presentable-flight bridge: retain the raw EE5 torque above for the
-        // eventual prefab rip, while the current slice needs a little more
-        // immediate authority and a bounded spin so the craft feels deliberate
-        // instead of either soupy or accidentally uncontrollable.
-        public const float PlayerPresentableRotationTorque = 0.72f;
-        public const float PlayerPresentableMaxAngularVelocity = 270f;
+        // Match the realScene3 sniper. Do not add an artificial spin ceiling:
+        // the reference permits a deliberate full flip and the input fallback
+        // already supplies the authored turn authority.
+        public const float PlayerPresentableRotationTorque = RotationTorque;
+        public const float PlayerPresentableMaxAngularVelocity = 0f;
         // EE5's sniper prefab has JetpackMotor and JetpackInput both enabled.
         // JetpackInput applies the same direct force/torque after the motor
         // step. Keep that observable compatibility quirk named and switchable.
         public const bool PlayerLegacyDirectPhysicsAssist = true;
-        // The raw EE5 path has no hidden neutral-rotation correction, but the
-        // current career-presentable bridge needs a small settle so a new player
-        // can read the craft without losing the authored ability to flip. S/C
-        // remains the full-strength explicit stabilize command.
-        public const bool UprightAssistEnabled = true;
+        // The raw EE5 path has no hidden neutral-rotation correction. S/C is
+        // the explicit stabilize command, so leave deliberate flips alone.
+        public const bool UprightAssistEnabled = false;
         public const float UprightAssistWindow = 20f;
-        // Presentable bridge values; the later raw prefab-rip pass can disable
-        // the assist without changing the underlying EE5 constants above.
+        // Retained as serialized compatibility fields for older prefabs. They
+        // are inert while UprightAssistEnabled is false.
         public const float UprightAssistSpeed = 96f;
         public const float UprightAssistAngularBrake = 120f;
         // Brief release delay keeps the settle from fighting the final turn tap.
