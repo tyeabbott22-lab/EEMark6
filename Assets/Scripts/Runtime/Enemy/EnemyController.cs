@@ -885,6 +885,14 @@ namespace ExtraterrestrialExhaust.Enemy
                 collider.enabled = false;
 
             Defeated?.Invoke(this);
+
+            // EE5 destroys the defeated actor after its death event has been
+            // broadcast and its detached burst has been spawned. Keeping the
+            // controller alive as an invisible shell leaves stale weapon,
+            // target-resolution, and hitbox objects in preserved scenes. All
+            // gameplay listeners have already received the event above, so the
+            // actor can now leave the room cleanly while the burst continues.
+            Destroy(gameObject);
         }
 
         /// <summary>
