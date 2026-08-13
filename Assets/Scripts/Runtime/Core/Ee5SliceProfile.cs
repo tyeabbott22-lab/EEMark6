@@ -56,12 +56,13 @@ namespace ExtraterrestrialExhaust.Core
         // remains the full-strength explicit stabilize command.
         public const bool UprightAssistEnabled = true;
         public const float UprightAssistWindow = 20f;
-        // Optional comfort-profile values; not used by the EE5 gold slice.
+        // Presentable bridge values; the later raw prefab-rip pass can disable
+        // the assist without changing the underlying EE5 constants above.
         public const float UprightAssistSpeed = 96f;
         public const float UprightAssistAngularBrake = 120f;
-        // Optional comfort-profile release delay.
+        // Brief release delay keeps the settle from fighting the final turn tap.
         public const float UprightAssistReleaseDelay = 0.06f;
-        // Optional comfort-profile spin ceiling.
+        // Only the low-speed neutral settle uses this ceiling; held turns remain free.
         public const float UprightAssistMaxAngularSpeed = 110f;
         // The keyboard bindings remain full-strength, while a drifting analog
         // stick must not become an invisible rotation command. These are input
