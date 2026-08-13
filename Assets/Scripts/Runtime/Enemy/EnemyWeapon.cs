@@ -82,7 +82,9 @@ namespace ExtraterrestrialExhaust.Enemy
             mirrorFirePointYWithUprightFlip =
                 Ee5SliceProfile.EnemyGunnerMirrorFirePointYWithUprightFlip;
             if (firePoint)
-                firePoint.localPosition = Ee5SliceProfile.EnemyGunnerFirePointLocalPosition;
+                firePoint.localPosition =
+                    Ee5SliceProfile.EnemyGunnerFirePointLocalPosition
+                    * Ee5SliceProfile.EnemyVisualSizeMultiplier;
         }
 
         void OnEnable()

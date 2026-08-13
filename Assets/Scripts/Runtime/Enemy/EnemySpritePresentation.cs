@@ -10,6 +10,7 @@ namespace ExtraterrestrialExhaust.Enemy
     /// </summary>
     [RequireComponent(typeof(EnemyController))]
     [RequireComponent(typeof(SpriteRenderer))]
+    [DefaultExecutionOrder(-150)]
     public sealed class EnemySpritePresentation : MonoBehaviour
     {
         [SerializeField] SpriteRenderer spriteRenderer;
@@ -17,6 +18,9 @@ namespace ExtraterrestrialExhaust.Enemy
         [SerializeField] Sprite[] alertSprites;
         [SerializeField] Sprite[] activeSprites;
         [SerializeField] Sprite[] defeatedSprites;
+        [Header("EE5 Visual Contract")]
+        [Tooltip("Scales only the enemy artwork. The root hitbox and movement body stay at authored EE5 size.")]
+        [SerializeField, Min(1f)] float visualSizeMultiplier = Ee5SliceProfile.EnemyVisualSizeMultiplier;
         [SerializeField, Min(0.1f)] float animationFramesPerSecond = 10f;
         [SerializeField, Min(0.1f)] float dormantFramesPerSecond = 8f;
         [SerializeField, Min(0.1f)] float wakeFramesPerSecond = 14f;
@@ -67,6 +71,8 @@ namespace ExtraterrestrialExhaust.Enemy
             if (!spriteRenderer || !spriteRenderer.sprite)
                 spriteRenderer = ResolveVisibleSpriteRenderer();
 
+            spriteRenderer = EnsureScaledVisual(spriteRenderer);
+
             // Presentation used to carry its own copy of the authored forward
             // axis. If an older prefab says melee faces like the gunner, the
             // controller is the authoritative role-specific source at runtime.
@@ -76,8 +82,61 @@ namespace ExtraterrestrialExhaust.Enemy
             authoredFlipX = spriteRenderer && spriteRenderer.flipX;
         }
 
+        SpriteRenderer EnsureScaledVisual(SpriteRenderer source)
+        {
+            if (!source || visualSizeMultiplier <= 1.001f)
+                return source;
+
+            Transform existing = transform.Find("Scaled Enemy Visual");
+            if (existing)
+            {
+                SpriteRenderer existingRenderer = existing.GetComponent<SpriteRenderer>();
+                if (existingRenderer)
+                {
+                    source.enabled = false;
+                    return existingRenderer;
+                }
+            }
+
+            GameObject scaledObject = new GameObject("Scaled Enemy Visual");
+            scaledObject.transform.SetParent(transform, false);
+            scaledObject.transform.localScale = Vector3.one * visualSizeMultiplier;
+
+            SpriteRenderer scaledRenderer = scaledObject.AddComponent<SpriteRenderer>();
+            CopyRenderer(source, scaledRenderer);
+            source.enabled = false;
+            return scaledRenderer;
+        }
+
+        static void CopyRenderer(SpriteRenderer source, SpriteRenderer destination)
+        {
+            if (!source || !destination)
+                return;
+
+            destination.sprite = source.sprite;
+            destination.color = source.color;
+            destination.flipX = source.flipX;
+            destination.flipY = source.flipY;
+            destination.drawMode = source.drawMode;
+            destination.size = source.size;
+            destination.tileMode = source.tileMode;
+            destination.maskInteraction = source.maskInteraction;
+            destination.spriteSortPoint = source.spriteSortPoint;
+            destination.sortingLayerID = source.sortingLayerID;
+            destination.sortingOrder = source.sortingOrder;
+            destination.sharedMaterial = source.sharedMaterial;
+            destination.enabled = source.enabled;
+        }
+
         SpriteRenderer ResolveVisibleSpriteRenderer()
         {
+            Transform scaledVisual = transform.Find("Scaled Enemy Visual");
+            SpriteRenderer scaledRenderer = scaledVisual
+                ? scaledVisual.GetComponent<SpriteRenderer>()
+                : null;
+            if (scaledRenderer && scaledRenderer.sprite)
+                return scaledRenderer;
+
             SpriteRenderer direct = GetComponent<SpriteRenderer>();
             if (direct && direct.sprite)
                 return direct;

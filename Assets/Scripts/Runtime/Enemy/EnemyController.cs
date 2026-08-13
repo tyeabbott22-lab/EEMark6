@@ -284,6 +284,11 @@ namespace ExtraterrestrialExhaust.Enemy
 
         void Start()
         {
+            // EnemySpritePresentation installs the EE5 visual-only scale in
+            // its earlier execution slot. Re-resolve here so facing writes to
+            // the visible clone rather than the disabled source renderer.
+            spriteRenderer = ResolveVisibleSpriteRenderer();
+
             // HealthComponent and EnemyController are independent components;
             // Unity does not promise their Awake order. Re-assert the role
             // health contract after every component has initialized so a stale
@@ -298,6 +303,13 @@ namespace ExtraterrestrialExhaust.Enemy
 
         SpriteRenderer ResolveVisibleSpriteRenderer()
         {
+            Transform scaledVisual = transform.Find("Scaled Enemy Visual");
+            SpriteRenderer scaledRenderer = scaledVisual
+                ? scaledVisual.GetComponent<SpriteRenderer>()
+                : null;
+            if (scaledRenderer && scaledRenderer.sprite)
+                return scaledRenderer;
+
             SpriteRenderer direct = GetComponent<SpriteRenderer>();
             if (direct && direct.sprite)
                 return direct;

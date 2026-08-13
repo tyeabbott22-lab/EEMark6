@@ -26,7 +26,19 @@ namespace ExtraterrestrialExhaust.Enemy
         {
             health = GetComponent<HealthComponent>();
             if (!displayRenderer)
-                displayRenderer = GetComponentInChildren<SpriteRenderer>(true);
+            {
+                // The EE5 visual-size bridge adds a SpriteRenderer child at
+                // runtime. Prefer the authored health socket before falling
+                // back to a broad child search, otherwise an older prefab
+                // with a missing serialized reference can accidentally bind
+                // the disabled source/enemy renderer as its health display.
+                Transform healthObject = transform.Find("Health Display");
+                if (healthObject)
+                    displayRenderer = healthObject.GetComponent<SpriteRenderer>();
+
+                if (!displayRenderer)
+                    displayRenderer = GetComponentInChildren<SpriteRenderer>(true);
+            }
 
             alpha = 0f;
             ApplyAlpha();

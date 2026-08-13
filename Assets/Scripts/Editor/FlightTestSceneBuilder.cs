@@ -514,6 +514,10 @@ namespace ExtraterrestrialExhaust.Editor
             changed |= SetBool(serializedPresentation, "randomizeDormantStartFrame", true);
             changed |= SetFloat(
                 serializedPresentation,
+                "visualSizeMultiplier",
+                Ee5SliceProfile.EnemyVisualSizeMultiplier);
+            changed |= SetFloat(
+                serializedPresentation,
                 "dormantFacingHysteresis",
                 Ee5SliceProfile.EnemyDormantFacingHysteresis);
             changed |= SetSpriteArrayIfDifferent(
@@ -2978,6 +2982,12 @@ namespace ExtraterrestrialExhaust.Editor
                 LoadSprites(ranged ? EnemyDefeatSpritePath : MeleeDefeatSpritePath),
                 $"{label} defeatedSprites",
                 issues);
+            CheckSerializedFloat(
+                serializedPresentation,
+                "visualSizeMultiplier",
+                Ee5SliceProfile.EnemyVisualSizeMultiplier,
+                $"{label} visualSizeMultiplier",
+                issues);
 
             CheckSerializedBool(
                 serializedPresentation,
@@ -4285,6 +4295,8 @@ namespace ExtraterrestrialExhaust.Editor
             serializedPresentation.FindProperty("dormantFramesPerSecond").floatValue = 8f;
             serializedPresentation.FindProperty("wakeFramesPerSecond").floatValue = 14f;
             serializedPresentation.FindProperty("defeatDisplayDuration").floatValue = 0.3f;
+            serializedPresentation.FindProperty("visualSizeMultiplier").floatValue =
+                Ee5SliceProfile.EnemyVisualSizeMultiplier;
             serializedPresentation.FindProperty("pingPongDormantAnimation").boolValue = true;
             serializedPresentation.FindProperty("randomizeDormantStartFrame").boolValue = true;
             serializedPresentation.FindProperty("faceDormantTowardTarget").boolValue =

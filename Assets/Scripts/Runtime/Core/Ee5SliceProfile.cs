@@ -220,6 +220,11 @@ namespace ExtraterrestrialExhaust.Core
         // sprite or changing the target angle at runtime.
         public const float EnemyMeleeRootScaleX = -1f;
         public const float EnemyGunnerRootScaleX = 1f;
+        // realScene enemyGun and the close-bruiser instances enlarge only the
+        // sprite presentation. Their authored offset BoxCollider2D remains at
+        // the smaller gameplay silhouette, so copying this on the Rigidbody
+        // root would make contact timing drift.
+        public const float EnemyVisualSizeMultiplier = 1.5f;
         public const float EnemyGunnerFireCooldown = 1f;
         public const float EnemyGunnerProjectileSpeed = 6f;
         // EnemyBullet's authored lifetime in the EE5 bullet prefab is two
