@@ -72,6 +72,7 @@ namespace ExtraterrestrialExhaust.Player
         Gradient normalExhaustGradient;
         Gradient boostedExhaustGradient;
         readonly List<Material> runtimeMaterials = new();
+        bool externalCaptureActive;
 
         void Awake()
         {
@@ -147,6 +148,19 @@ namespace ExtraterrestrialExhaust.Player
         void Update()
         {
             SyncExhaustAnchors();
+
+            // LevelExit owns the craft scale during extraction. Without this
+            // handoff, the scripted flight state restores neutral scale every
+            // render frame while the portal is trying to pull the craft in.
+            if (externalCaptureActive)
+            {
+                squashTimer = 0f;
+                AnimateExhaust(leftExhaust, leftExhaustParticles, 0f, false);
+                AnimateExhaust(rightExhaust, rightExhaustParticles, 0f, false);
+                UpdateThrustAudio(false);
+                UpdateSpriteAnimation(false);
+                return;
+            }
 
             if (stateMachine && !stateMachine.AcceptsPlayerInput)
             {
@@ -239,6 +253,7 @@ namespace ExtraterrestrialExhaust.Player
         /// </summary>
         public void ResetPresentation()
         {
+            externalCaptureActive = false;
             squashTimer = 0f;
             ResetSpriteAnimation();
             SyncExhaustAnchors();
@@ -254,6 +269,26 @@ namespace ExtraterrestrialExhaust.Player
             if (flightMotor && !flightMotor.FacingRight)
                 targetScale.x = -Mathf.Abs(targetScale.x);
             visual.localScale = targetScale;
+        }
+
+        /// <summary>
+        /// Temporarily gives a scripted route animation ownership of the
+        /// player's visual transform. Physics and gameplay state remain owned
+        /// by the caller; this only prevents normal flight presentation from
+        /// fighting the scripted scale.
+        /// </summary>
+        public void BeginExternalCapture()
+        {
+            externalCaptureActive = true;
+            squashTimer = 0f;
+            AnimateExhaust(leftExhaust, leftExhaustParticles, 0f, false);
+            AnimateExhaust(rightExhaust, rightExhaustParticles, 0f, false);
+            UpdateThrustAudio(false);
+        }
+
+        public void EndExternalCapture()
+        {
+            externalCaptureActive = false;
         }
 
         void HandleFlipped(bool facingRight)

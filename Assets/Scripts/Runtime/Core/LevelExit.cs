@@ -55,6 +55,7 @@ namespace ExtraterrestrialExhaust.Core
         bool[] capturedColliderStates;
         SpriteRenderer[] capturedRenderers;
         Color[] capturedRendererColors;
+        PlayerFlightPresentation capturedPresentation;
         EncounterController subscribedEncounter;
         EnergyGate subscribedGate;
         public bool IsCapturing => capturing;
@@ -174,6 +175,8 @@ namespace ExtraterrestrialExhaust.Core
         {
             capturing = true;
             capturedPlayer = player;
+            capturedPresentation = player.GetComponent<PlayerFlightPresentation>();
+            capturedPresentation?.BeginExternalCapture();
             portalPresentation?.BeginCapture();
             player.FlightState.TrySetState(PlayerFlightState.Scripted);
             PlayerCameraFollow.Instance?.Shake(0.12f, captureDuration);
@@ -344,6 +347,8 @@ namespace ExtraterrestrialExhaust.Core
             if (capturedVisual)
                 capturedVisual.localScale = captureStartVisualScale;
 
+            capturedPresentation?.EndExternalCapture();
+
             if (capturedColliders != null && capturedColliderStates != null)
             {
                 for (int i = 0; i < capturedColliders.Length; i++)
@@ -369,6 +374,7 @@ namespace ExtraterrestrialExhaust.Core
             capturedBodyState = false;
             capturedBody = null;
             capturedPlayer = null;
+            capturedPresentation = null;
             capturing = false;
         }
 
