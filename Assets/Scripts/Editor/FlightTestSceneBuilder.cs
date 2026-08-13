@@ -3037,6 +3037,23 @@ namespace ExtraterrestrialExhaust.Editor
                 SetSerializedObjectReference(weapon, "projectilePrefab", projectilePrefab);
             }
 
+            // Preserve Prefabs means preserve their gameplay tuning, not
+            // preserve a stale partial sprite array. Apply the exact EE5 intro
+            // contract as a scene-instance override so the rebuild self-heals
+            // the visual without rewriting the user's authored prefab asset.
+            if (RepairEnemyIntroSpritePresentation(enemy, weapon != null))
+            {
+                EnemySpritePresentation presentation =
+                    enemy.GetComponent<EnemySpritePresentation>();
+                if (presentation)
+                    PrefabUtility.RecordPrefabInstancePropertyModifications(presentation);
+
+                SpriteRenderer spriteRenderer = enemy.GetComponent<SpriteRenderer>();
+                if (spriteRenderer)
+                    PrefabUtility.RecordPrefabInstancePropertyModifications(spriteRenderer);
+                EditorUtility.SetDirty(enemy);
+            }
+
             return controller;
         }
 
