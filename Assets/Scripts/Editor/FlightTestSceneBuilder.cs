@@ -3279,6 +3279,19 @@ namespace ExtraterrestrialExhaust.Editor
                 }
             }
 
+            // The controller's runtime profile also repairs this value during
+            // Awake, but the generated scene validator reads serialized
+            // instance data before Play. Preserve-prefab builds therefore
+            // need the role-specific attack handoff written as an instance
+            // override, otherwise an older gunner prefab can report the
+            // melee default even though its runtime behavior is correct.
+            SetSerializedFloat(
+                controller,
+                "attackFacingRefreshDegrees",
+                weapon
+                    ? 0f
+                    : Ee5SliceProfile.EnemyMeleeAttackFacingRefreshDegrees);
+
             // Preserve Prefabs means preserve their gameplay tuning, not
             // preserve a stale partial sprite array. Apply the exact EE5 intro
             // contract as a scene-instance override so the rebuild self-heals
