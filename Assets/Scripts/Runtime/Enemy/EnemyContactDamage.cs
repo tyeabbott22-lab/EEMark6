@@ -79,9 +79,7 @@ namespace ExtraterrestrialExhaust.Enemy
             if (!controller.IsWithinMeleeContact(player))
                 return;
 
-            Vector2 direction = (player.PhysicsPosition - controller.PhysicsPosition).normalized;
-            if (direction.sqrMagnitude <= 0.001f)
-                direction = Vector2.right;
+            Vector2 direction = controller.ContactDirectionTo(player);
 
             Collider2D playerCollider = player.GetComponent<Collider2D>();
             Vector2 hitPoint = playerCollider
@@ -105,9 +103,7 @@ namespace ExtraterrestrialExhaust.Enemy
             if (!player || !player.CanReceiveGameplayInput || cooldownRemaining > 0f)
                 return;
 
-            Vector2 direction = (player.PhysicsPosition - controller.PhysicsPosition).normalized;
-            if (direction.sqrMagnitude <= 0.001f)
-                direction = Vector2.right;
+            Vector2 direction = controller.ContactDirectionTo(player);
 
             Vector2 hitPoint = other.ClosestPoint(controller.PhysicsAnchorPosition);
             TryDamagePlayer(player, hitPoint, direction);
@@ -142,9 +138,12 @@ namespace ExtraterrestrialExhaust.Enemy
             if (!player || !player.CanReceiveGameplayInput || cooldownRemaining > 0f)
                 return;
 
-            Vector2 direction = (player.PhysicsPosition - controller.PhysicsPosition).normalized;
-            if (direction.sqrMagnitude <= 0.001f && collision.contactCount > 0)
+            Vector2 direction = controller.ContactDirectionTo(player);
+            if ((player.PhysicsPosition - controller.PhysicsPosition).sqrMagnitude <= 0.0001f
+                && collision.contactCount > 0)
+            {
                 direction = -collision.GetContact(0).normal;
+            }
 
             Vector2 hitPoint = collision.contactCount > 0
                 ? collision.GetContact(0).point

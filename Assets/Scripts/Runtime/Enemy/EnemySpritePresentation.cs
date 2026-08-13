@@ -42,6 +42,7 @@ namespace ExtraterrestrialExhaust.Enemy
         [SerializeField, Min(0f)] float dormantFacingHysteresis = Ee5SliceProfile.EnemyDormantFacingHysteresis;
 
         EnemyController controller;
+        SpriteRenderer scaledSourceRenderer;
         Renderer[] renderers;
         Sprite[] currentFrames;
         EnemyState currentState;
@@ -93,6 +94,7 @@ namespace ExtraterrestrialExhaust.Enemy
                 SpriteRenderer existingRenderer = existing.GetComponent<SpriteRenderer>();
                 if (existingRenderer)
                 {
+                    scaledSourceRenderer = source;
                     source.enabled = false;
                     return existingRenderer;
                 }
@@ -104,6 +106,7 @@ namespace ExtraterrestrialExhaust.Enemy
 
             SpriteRenderer scaledRenderer = scaledObject.AddComponent<SpriteRenderer>();
             CopyRenderer(source, scaledRenderer);
+            scaledSourceRenderer = source;
             source.enabled = false;
             return scaledRenderer;
         }
@@ -496,7 +499,22 @@ namespace ExtraterrestrialExhaust.Enemy
                 return;
 
             for (int i = 0; i < renderers.Length; i++)
-                if (renderers[i]) renderers[i].enabled = enabled;
+            {
+                if (!renderers[i])
+                    continue;
+
+                // The 1.5x EE5 art clone is the only visible source once the
+                // visual-size contract is active. State changes used to turn
+                // the original renderer back on here, producing a doubled
+                // silhouette (and apparent jitter) during wake/attack beats.
+                if (renderers[i] == scaledSourceRenderer)
+                {
+                    renderers[i].enabled = false;
+                    continue;
+                }
+
+                renderers[i].enabled = enabled;
+            }
         }
 
         static Sprite[] FirstAvailable(Sprite[] preferred, Sprite[] fallback)

@@ -237,6 +237,27 @@ namespace ExtraterrestrialExhaust.Enemy
             return Vector2.Distance(PhysicsPosition, candidate.PhysicsPosition)
                 <= ContactDamageReach;
         }
+
+        /// <summary>
+        /// Returns the stable outward direction for a contact strike. When the
+        /// two small authored hurtboxes overlap at their exact centers, a raw
+        /// position subtraction has no direction; use the melee aim held by
+        /// the state machine instead of ejecting the player arbitrarily right.
+        /// </summary>
+        public Vector2 ContactDirectionTo(PlayerCharacter candidate)
+        {
+            if (candidate)
+            {
+                Vector2 delta = candidate.PhysicsPosition - PhysicsPosition;
+                if (delta.sqrMagnitude > 0.0001f)
+                    return delta.normalized;
+            }
+
+            if (attackFacingDirection.sqrMagnitude > 0.0001f)
+                return attackFacingDirection.normalized;
+
+            return Vector2.right;
+        }
         public float WakeProgress => State == EnemyState.Waking && wakeTotalDuration > 0f
             ? Mathf.Clamp01(wakeTimer / Mathf.Max(0.01f, wakeTotalDuration))
             : 0f;
