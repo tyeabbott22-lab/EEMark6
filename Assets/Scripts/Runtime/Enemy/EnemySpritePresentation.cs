@@ -26,8 +26,10 @@ namespace ExtraterrestrialExhaust.Enemy
         [SerializeField] bool hideAfterDefeat = true;
 
         [Header("Dormant Facing")]
-        [Tooltip("During EE5's dormant/wake intro, mirror this sprite toward the player before combat takes over.")]
+        [Tooltip("During EE5's dormant/wake intro, mirror this sprite toward the player before combat takes over. The melee prefab intentionally leaves this off: EE5 used a fixed intro mirror instead.")]
         [SerializeField] bool faceDormantTowardTarget;
+        [Tooltip("Apply the EE5 fixed intro mirror to the dormant/wake strip, then restore the authored active flip on combat handoff.")]
+        [SerializeField] bool invertDormantSpriteX;
         [Tooltip("The authored sprite points left in its unflipped pose, as the EE5 white gunner does.")]
         [SerializeField] bool forwardIsLocalNegativeX = true;
         [Tooltip("Restore the authored sprite flip as soon as the wake presentation hands control to combat.")]
@@ -71,12 +73,14 @@ namespace ExtraterrestrialExhaust.Enemy
             if (controller)
             {
                 forwardIsLocalNegativeX = controller.ForwardIsLocalNegativeX;
-                // The EE5 melee strip faces the player during its dormant and
-                // wake beats. Recover that contract from the controller role
-                // when an older prefab still serializes the gunner default.
+                // Recover the role-specific EE5 intro contract from the
+                // controller so an older prefab cannot leave the sprite in the
+                // wrong facing mode after a builder repair.
                 faceDormantTowardTarget = controller.IsMelee
                     ? Ee5SliceProfile.EnemyMeleeFacesDormantTarget
                     : true;
+                invertDormantSpriteX = controller.IsMelee
+                    && Ee5SliceProfile.EnemyMeleeInvertsSpriteDuringIntro;
                 dormantFacingHysteresis = Ee5SliceProfile.EnemyDormantFacingHysteresis;
             }
 
@@ -196,6 +200,7 @@ namespace ExtraterrestrialExhaust.Enemy
             }
 
             SetRenderersEnabled(true);
+            ApplyDormantFacing();
             ApplyFrame();
             if (state == EnemyState.Waking)
                 BeginWake();
@@ -210,6 +215,7 @@ namespace ExtraterrestrialExhaust.Enemy
             // enters the scream strip during the final warning window.
             currentFrames = FirstAvailable(dormantSprites, activeSprites);
             SetRenderersEnabled(true);
+            ApplyDormantFacing();
             ApplyFrame();
         }
 
@@ -302,13 +308,19 @@ namespace ExtraterrestrialExhaust.Enemy
 
         void UpdateDormantFacing()
         {
-            if (!faceDormantTowardTarget || !spriteRenderer || !controller)
+            if (!spriteRenderer || !controller)
                 return;
 
             if (currentState != EnemyState.Dormant && currentState != EnemyState.Waking)
             {
                 if (restoreFacingAfterWake)
                     spriteRenderer.flipX = authoredFlipX;
+                return;
+            }
+
+            if (!faceDormantTowardTarget)
+            {
+                ApplyDormantFacing();
                 return;
             }
 
@@ -340,6 +352,22 @@ namespace ExtraterrestrialExhaust.Enemy
             playerIsRight = dormantPlayerRight;
             bool flipFromDefault = forwardIsLocalNegativeX ? playerIsRight : !playerIsRight;
             spriteRenderer.flipX = authoredFlipX ^ flipFromDefault;
+        }
+
+        void ApplyDormantFacing()
+        {
+            if (!spriteRenderer || !controller)
+                return;
+
+            if (currentState == EnemyState.Dormant || currentState == EnemyState.Waking)
+            {
+                if (!faceDormantTowardTarget)
+                    spriteRenderer.flipX = authoredFlipX ^ invertDormantSpriteX;
+                return;
+            }
+
+            if (restoreFacingAfterWake)
+                spriteRenderer.flipX = authoredFlipX;
         }
 
         void ApplyWakeFrame()

@@ -88,10 +88,13 @@ namespace ExtraterrestrialExhaust.Core
         // dead band prevents a target hovering on the vertical threshold from
         // toggling the sprite orientation every render frame.
         public const float EnemyFacingFlipHysteresisDegrees = 8f;
-        // The imported melee prefab's root is mirrored like EE5's enemyFast.
-        // Its generated EE6 root starts at neutral rotation, so the dormant
-        // strip must still face the player instead of waiting for combat.
-        public const bool EnemyMeleeFacesDormantTarget = true;
+        // EE5's purple melee intro uses EnemyAI's fixed invertScaleXDuringIntro
+        // path. It does not chase the player's horizontal side while dormant;
+        // the authored active sprite is restored when the intro hands off to
+        // combat. Keeping this false prevents the idle strip from chattering
+        // as the player crosses the enemy's horizontal midpoint.
+        public const bool EnemyMeleeFacesDormantTarget = false;
+        public const bool EnemyMeleeInvertsSpriteDuringIntro = true;
         public const float EnemyDormantFacingHysteresis = 0.2f;
         // Stop just outside the combined player/melee collider radii. This
         // keeps contact damage active without making a dynamic enemy repeatedly
