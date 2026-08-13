@@ -107,6 +107,13 @@ namespace ExtraterrestrialExhaust.Core
         /// effects appear to jitter around the key.
         /// </summary>
         public Vector3 GameplayPosition => body ? (Vector3)body.position : transform.position;
+        /// <summary>
+        /// Interpolated root pose for render-time effects. The child artwork
+        /// carries a deliberate source-canvas correction, while the root pose
+        /// remains centered and visually aligned with the Rigidbody2D's
+        /// interpolation.
+        /// </summary>
+        public Vector3 PresentationPosition => transform.position;
         public event Action<EnergyKeyState, EnergyKeyState> StateChanged;
 
         void Reset() => GetComponent<Collider2D>().isTrigger = true;
