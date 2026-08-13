@@ -133,6 +133,11 @@ namespace ExtraterrestrialExhaust.Enemy
         // is the stronger role signal when serialized values disagree.
         public bool IsMelee => ResolveMeleeRole();
         public bool ForwardIsLocalNegativeX => IsMelee ? false : forwardIsLocalNegativeX;
+        /// <summary>
+        /// Exposes the same upright-side decision used by the body sprite so
+        /// the ranged weapon can mirror its authored muzzle offset in lockstep.
+        /// </summary>
+        public bool IsSpriteFlippedUpright => spriteFlippedUpright;
         public bool CanAttack => State == EnemyState.Attacking;
         public float AttackReach => attackRange;
         public float ContactDamageReach => Mathf.Min(

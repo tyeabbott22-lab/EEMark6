@@ -15,6 +15,9 @@ namespace ExtraterrestrialExhaust.Enemy
         [SerializeField] bool enforceEe5Profile = true;
         [SerializeField] PlayerProjectile projectilePrefab;
         [SerializeField] Transform firePoint;
+        [Tooltip("Mirrors the EE5 gunner muzzle's local Y offset when the upright sprite flips.")]
+        [SerializeField] bool mirrorFirePointYWithUprightFlip =
+            Ee5SliceProfile.EnemyGunnerMirrorFirePointYWithUprightFlip;
         // EE5's enemyGun prefab fires once per second and overrides its bullet
         // travel speed to six units. Keep this cadence deliberate: it gives the
         // player the same readable dodge window as the realScene slice.
@@ -46,6 +49,8 @@ namespace ExtraterrestrialExhaust.Enemy
         EnemyController controller;
         LineRenderer telegraph;
         Material telegraphMaterial;
+        Vector3 initialFirePointLocalPosition;
+        bool firePointPoseCached;
         readonly RaycastHit2D[] lineOfSightHits = new RaycastHit2D[16];
         bool hasEnteredCombat;
 
@@ -60,6 +65,8 @@ namespace ExtraterrestrialExhaust.Enemy
             // a test scene without builder wiring.
             if (!gameState)
                 gameState = FindFirstObjectByType<GameStateMachine>();
+
+            CacheFirePointPose();
         }
 
         void ApplyEe5Profile()
@@ -72,6 +79,10 @@ namespace ExtraterrestrialExhaust.Enemy
             projectileLifetime = Ee5SliceProfile.EnemyGunnerProjectileLifetime;
             projectileKnockback = Ee5SliceProfile.EnemyGunnerProjectileKnockback;
             drawAimTelegraph = Ee5SliceProfile.EnemyGunnerDrawAimTelegraph;
+            mirrorFirePointYWithUprightFlip =
+                Ee5SliceProfile.EnemyGunnerMirrorFirePointYWithUprightFlip;
+            if (firePoint)
+                firePoint.localPosition = Ee5SliceProfile.EnemyGunnerFirePointLocalPosition;
         }
 
         void OnEnable()
@@ -111,8 +122,17 @@ namespace ExtraterrestrialExhaust.Enemy
             UpdateTelegraphIfReady();
         }
 
+        void LateUpdate()
+        {
+            // Keep the rendered muzzle and its projectile origin on the same
+            // side of the upright sprite. FixedUpdate repeats this immediately
+            // before firing so a turn crossing cannot leave one shot behind.
+            UpdateFirePointLocalPositionForFlip();
+        }
+
         void FixedUpdate()
         {
+            UpdateFirePointLocalPositionForFlip();
             if (gameState && !gameState.IsPlaying)
                 return;
 
@@ -174,6 +194,31 @@ namespace ExtraterrestrialExhaust.Enemy
             projectile.Launch(direction, gameObject, projectileSpeed);
             cooldownRemaining = fireCooldown;
             Fired?.Invoke(origin.position, direction);
+        }
+
+        void CacheFirePointPose()
+        {
+            if (!firePoint || !firePoint.IsChildOf(transform))
+                return;
+
+            initialFirePointLocalPosition = firePoint.localPosition;
+            firePointPoseCached = true;
+            UpdateFirePointLocalPositionForFlip();
+        }
+
+        void UpdateFirePointLocalPositionForFlip()
+        {
+            if (!mirrorFirePointYWithUprightFlip
+                || !firePointPoseCached
+                || !firePoint
+                || !firePoint.IsChildOf(transform))
+                return;
+
+            Vector3 localPosition = initialFirePointLocalPosition;
+            localPosition.y = controller && controller.IsSpriteFlippedUpright
+                ? -Mathf.Abs(initialFirePointLocalPosition.y)
+                : Mathf.Abs(initialFirePointLocalPosition.y);
+            firePoint.localPosition = localPosition;
         }
 
         void HandleStateChanged(EnemyController source, EnemyState nextState)

@@ -1353,6 +1353,23 @@ namespace ExtraterrestrialExhaust.Editor
                         Ee5SliceProfile.EnemyGunnerProjectileKnockback);
                     changed |= SetBool(
                         serializedWeapon,
+                        "mirrorFirePointYWithUprightFlip",
+                        Ee5SliceProfile.EnemyGunnerMirrorFirePointYWithUprightFlip);
+                    SerializedProperty firePointProperty =
+                        serializedWeapon.FindProperty("firePoint");
+                    if (firePointProperty != null
+                        && firePointProperty.objectReferenceValue is Transform firePoint)
+                    {
+                        if (firePoint.localPosition != Ee5SliceProfile.EnemyGunnerFirePointLocalPosition)
+                        {
+                            firePoint.localPosition =
+                                Ee5SliceProfile.EnemyGunnerFirePointLocalPosition;
+                            EditorUtility.SetDirty(firePoint);
+                            changed = true;
+                        }
+                    }
+                    changed |= SetBool(
+                        serializedWeapon,
                         "requireTargetWithinAttackRange",
                         Ee5SliceProfile.EnemyGunnerRequiresAttackRange);
                     changed |= SetBool(
@@ -1573,6 +1590,24 @@ namespace ExtraterrestrialExhaust.Editor
                         issues.Add($"{prefabPath} projectileLifetime={projectileLifetime}");
                     if (!Mathf.Approximately(projectileKnockback, Ee5SliceProfile.EnemyGunnerProjectileKnockback))
                         issues.Add($"{prefabPath} projectileKnockback={projectileKnockback}");
+                    SerializedProperty mirrorFirePoint =
+                        serializedWeapon.FindProperty("mirrorFirePointYWithUprightFlip");
+                    if (mirrorFirePoint == null
+                        || mirrorFirePoint.boolValue != Ee5SliceProfile.EnemyGunnerMirrorFirePointYWithUprightFlip)
+                    {
+                        issues.Add($"{prefabPath} mirrorFirePointYWithUprightFlip is not EE5-compatible");
+                    }
+                    SerializedProperty firePoint = serializedWeapon.FindProperty("firePoint");
+                    Transform firePointTransform = firePoint != null
+                        ? firePoint.objectReferenceValue as Transform
+                        : null;
+                    if (!firePointTransform
+                        || Vector3.Distance(
+                            firePointTransform.localPosition,
+                            Ee5SliceProfile.EnemyGunnerFirePointLocalPosition) > 0.001f)
+                    {
+                        issues.Add($"{prefabPath} fire point pose is not EE5-compatible");
+                    }
                     SerializedProperty requiresRange =
                         serializedWeapon.FindProperty("requireTargetWithinAttackRange");
                     SerializedProperty requiresLineOfSight =
@@ -3618,7 +3653,7 @@ namespace ExtraterrestrialExhaust.Editor
                 EnemyWeapon weapon = enemy.AddComponent<EnemyWeapon>();
                 GameObject firePoint = new GameObject("Enemy Fire Point");
                 firePoint.transform.SetParent(enemy.transform, false);
-                firePoint.transform.localPosition = new Vector3(-0.65f, 0f, 0f);
+                firePoint.transform.localPosition = Ee5SliceProfile.EnemyGunnerFirePointLocalPosition;
                 SerializedObject serializedWeapon = new SerializedObject(weapon);
                 serializedWeapon.FindProperty("enforceEe5Profile").boolValue = true;
                 serializedWeapon.FindProperty("gameState").objectReferenceValue = gameState;
@@ -3635,6 +3670,8 @@ namespace ExtraterrestrialExhaust.Editor
                     Ee5SliceProfile.EnemyGunnerProjectileLifetime;
                 serializedWeapon.FindProperty("projectileKnockback").floatValue =
                     Ee5SliceProfile.EnemyGunnerProjectileKnockback;
+                serializedWeapon.FindProperty("mirrorFirePointYWithUprightFlip").boolValue =
+                    Ee5SliceProfile.EnemyGunnerMirrorFirePointYWithUprightFlip;
                 serializedWeapon.FindProperty("projectileTint").colorValue = new Color(0.05f, 1f, 0.16f, 1f);
                 serializedWeapon.FindProperty("drawAimTelegraph").boolValue =
                     Ee5SliceProfile.EnemyGunnerDrawAimTelegraph;

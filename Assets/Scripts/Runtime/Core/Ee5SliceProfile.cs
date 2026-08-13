@@ -137,6 +137,12 @@ namespace ExtraterrestrialExhaust.Core
         public const float EnemyGunnerProjectileDamage = 1f;
         public const float EnemyGunnerProjectileKnockback = 2.5f;
         public const bool EnemyGunnerProjectileDestroysOnUnknownCollision = false;
+        // Copied from the EE5 enemyGun prefab. The small positive Y offset is
+        // part of the authored muzzle silhouette, and it must mirror when the
+        // upright sprite crosses the vertical facing boundary.
+        public static readonly Vector3 EnemyGunnerFirePointLocalPosition =
+            new Vector3(-0.542f, 0.079f, 0f);
+        public const bool EnemyGunnerMirrorFirePointYWithUprightFlip = true;
         public const bool EnemyGunnerRequiresAttackRange = false;
         public const bool EnemyGunnerRequiresLineOfSightToFire = false;
         public const bool EnemyGunnerDrawAimTelegraph = false;
