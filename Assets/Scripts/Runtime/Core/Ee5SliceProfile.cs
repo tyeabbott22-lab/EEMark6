@@ -72,6 +72,12 @@ namespace ExtraterrestrialExhaust.Core
         // component. Keep the reusable experiment available, but do not let
         // ordinary arena-wall contact alter the gold-standard hull loop.
         public const bool PlayerCollisionDamageEnabled = false;
+        // EE5's brittle SpriteShape gives the craft a short physics-clock
+        // pass-through window after the collider is disabled. These values
+        // are intentionally named so the builder, wall prop, and motor share
+        // one contact-handoff contract.
+        public const float BrittleFollowThroughAssistDuration = 0.16f;
+        public const float BrittleAngularVelocityRetention = 0.18f;
 
         // EE5 separates the readable wake-line envelope from the enemy's
         // actual six-unit activation trigger. The telegraph can enter the

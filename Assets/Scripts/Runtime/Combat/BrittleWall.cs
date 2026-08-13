@@ -24,6 +24,11 @@ namespace ExtraterrestrialExhaust.Combat
         [SerializeField, Min(1)] int chipsBeforeBreak = 8;
         [SerializeField, Range(0f, 1f)] float retainedVelocity = 0.94f;
         [SerializeField, Min(0f)] float followThroughNudge = 0.34f;
+        [Tooltip("Physics-clock handoff that prevents the old wall contact from cancelling the break momentum.")]
+        [SerializeField, Min(0f)] float followThroughAssistDuration =
+            Ee5SliceProfile.BrittleFollowThroughAssistDuration;
+        [SerializeField, Range(0f, 1f)] float angularVelocityRetain =
+            Ee5SliceProfile.BrittleAngularVelocityRetention;
         [SerializeField, Min(0f)] float impactCooldown = 0.32f;
         [SerializeField, Min(0f)] float cameraShakeStrength = 0.14f;
         [SerializeField, Min(0f)] float cameraShakeDuration = 0.18f;
@@ -112,7 +117,7 @@ namespace ExtraterrestrialExhaust.Combat
             bool chipBreak = chipsBeforeBreak > 0 && chipHits >= chipsBeforeBreak;
             if (directBreak || chipBreak)
             {
-                Break(playerBody, hitPoint, travelDirection, velocity);
+                Break(player.FlightMotor, hitPoint, travelDirection, velocity);
                 return;
             }
 
@@ -267,7 +272,7 @@ namespace ExtraterrestrialExhaust.Combat
         }
 
         void Break(
-            Rigidbody2D playerBody,
+            PlayerFlightMotor playerMotor,
             Vector2 hitPoint,
             Vector2 travelDirection,
             Vector2 velocity)
@@ -283,11 +288,15 @@ namespace ExtraterrestrialExhaust.Combat
             PlayerCameraFollow.Instance?.Shake(cameraShakeStrength, cameraShakeDuration);
             FindFirstObjectByType<ScoreSystem>()?.AddScore(breakScore, ScoreReason.WallBroken);
 
-            if (playerBody)
+            Rigidbody2D playerBody = playerMotor ? playerMotor.Body : null;
+            if (playerMotor && playerBody)
             {
-                playerBody.linearVelocity = velocity * retainedVelocity;
-                playerBody.angularVelocity *= 0.18f;
-                playerBody.position += travelDirection * followThroughNudge;
+                Vector2 retained = velocity * retainedVelocity;
+                playerMotor.ApplyBrittleFollowThrough(
+                    retained,
+                    travelDirection * followThroughNudge,
+                    followThroughAssistDuration,
+                    angularVelocityRetain);
             }
 
             foreach (Collider2D childCollider in GetComponentsInChildren<Collider2D>(true))

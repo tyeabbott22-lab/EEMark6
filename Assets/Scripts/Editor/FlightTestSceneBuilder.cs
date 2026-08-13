@@ -4480,6 +4480,10 @@ namespace ExtraterrestrialExhaust.Editor
             serialized.FindProperty("chipsBeforeBreak").intValue = 8;
             serialized.FindProperty("retainedVelocity").floatValue = 0.94f;
             serialized.FindProperty("followThroughNudge").floatValue = 0.34f;
+            serialized.FindProperty("followThroughAssistDuration").floatValue =
+                Ee5SliceProfile.BrittleFollowThroughAssistDuration;
+            serialized.FindProperty("angularVelocityRetain").floatValue =
+                Ee5SliceProfile.BrittleAngularVelocityRetention;
             serialized.FindProperty("impactCooldown").floatValue = 0.32f;
             serialized.FindProperty("cameraShakeStrength").floatValue = 0.14f;
             serialized.FindProperty("cameraShakeDuration").floatValue = 0.18f;

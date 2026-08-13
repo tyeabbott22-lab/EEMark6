@@ -67,6 +67,9 @@ namespace ExtraterrestrialExhaust.Player
         float turnReleaseTimer;
         float lastSpinScoreRotation;
         float intentionalSpinDegrees;
+        float brittlePassThroughTimer;
+        Vector2 brittlePassThroughVelocity;
+        float brittleAngularVelocityRetention = 0.18f;
         readonly ContactPoint2D[] contactBuffer = new ContactPoint2D[8];
 
         public Rigidbody2D Body => body;
@@ -215,7 +218,13 @@ namespace ExtraterrestrialExhaust.Player
             if (thrusting)
                 body.AddRelativeForce(Vector2.up * thrustForce, ForceMode2D.Force);
 
-            if (removeVelocityIntoColliders)
+            // A brittle break has already disabled the contact collider, but
+            // Unity can still report the old contact until the next physics
+            // step. Preserve the authored EE5 follow-through before the
+            // generic wall-slide cleanup gets another chance to eat it.
+            ApplyBrittleFollowThrough();
+
+            if (brittlePassThroughTimer <= 0f && removeVelocityIntoColliders)
                 RemoveVelocityIntoColliders();
         }
 
@@ -313,6 +322,45 @@ namespace ExtraterrestrialExhaust.Player
                 if (intoSurface < 0f)
                     body.linearVelocity -= normal * intoSurface;
             }
+        }
+
+        /// <summary>
+        /// Gives a brittle-wall break a short physics-clock handoff. The wall
+        /// owns the impact decision; the motor owns velocity persistence so
+        /// collision cleanup, drag, and the next input step cannot immediately
+        /// turn a successful break into a dead stop.
+        /// </summary>
+        public void ApplyBrittleFollowThrough(
+            Vector2 retainedVelocity,
+            Vector2 positionNudge,
+            float duration,
+            float angularVelocityRetention)
+        {
+            if (!body || retainedVelocity.sqrMagnitude <= 0.0001f)
+                return;
+
+            brittlePassThroughVelocity = retainedVelocity;
+            brittlePassThroughTimer = Mathf.Max(
+                brittlePassThroughTimer,
+                Mathf.Max(0f, duration));
+            brittleAngularVelocityRetention = Mathf.Clamp01(angularVelocityRetention);
+
+            body.linearVelocity = retainedVelocity;
+            body.angularVelocity *= brittleAngularVelocityRetention;
+            body.position += positionNudge;
+            Physics2D.SyncTransforms();
+        }
+
+        void ApplyBrittleFollowThrough()
+        {
+            if (brittlePassThroughTimer <= 0f)
+                return;
+
+            brittlePassThroughTimer -= Time.fixedDeltaTime;
+            if (brittlePassThroughVelocity.sqrMagnitude > body.linearVelocity.sqrMagnitude)
+                body.linearVelocity = brittlePassThroughVelocity;
+
+            body.angularVelocity *= brittleAngularVelocityRetention;
         }
 
         public void Flip()
