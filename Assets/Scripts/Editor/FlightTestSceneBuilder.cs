@@ -3073,6 +3073,28 @@ namespace ExtraterrestrialExhaust.Editor
                     EditorUtility.SetDirty(body);
             }
 
+            CircleCollider2D playerCollider = root.GetComponent<CircleCollider2D>();
+            if (playerCollider)
+            {
+                if (!Mathf.Approximately(playerCollider.radius, Ee5SliceProfile.PlayerHitboxRadius))
+                {
+                    playerCollider.radius = Ee5SliceProfile.PlayerHitboxRadius;
+                    changed = true;
+                }
+                if (playerCollider.offset != Ee5SliceProfile.PlayerHitboxOffset)
+                {
+                    playerCollider.offset = Ee5SliceProfile.PlayerHitboxOffset;
+                    changed = true;
+                }
+                if (playerCollider.isTrigger)
+                {
+                    playerCollider.isTrigger = false;
+                    changed = true;
+                }
+                if (changed)
+                    EditorUtility.SetDirty(playerCollider);
+            }
+
             PlayerFlightMotor motor = root.GetComponent<PlayerFlightMotor>();
             if (motor)
                 changed |= ApplyEe5PlayerMotorProfile(motor);
@@ -3098,6 +3120,21 @@ namespace ExtraterrestrialExhaust.Editor
             }
             else
             {
+                CircleCollider2D playerCollider = root.GetComponent<CircleCollider2D>();
+                if (!playerCollider)
+                {
+                    issues.Add($"{label}: CircleCollider2D missing");
+                }
+                else
+                {
+                    if (!Mathf.Approximately(playerCollider.radius, Ee5SliceProfile.PlayerHitboxRadius))
+                        issues.Add($"{label}: player hitbox radius={playerCollider.radius} (expected {Ee5SliceProfile.PlayerHitboxRadius})");
+                    if (Vector2.Distance(playerCollider.offset, Ee5SliceProfile.PlayerHitboxOffset) > 0.001f)
+                        issues.Add($"{label}: player hitbox offset={playerCollider.offset}");
+                    if (playerCollider.isTrigger)
+                        issues.Add($"{label}: player hitbox must not be a trigger");
+                }
+
                 if (body.bodyType != RigidbodyType2D.Dynamic)
                     issues.Add($"{label}: bodyType={body.bodyType} (expected Dynamic)");
                 if (!body.simulated)
@@ -3565,8 +3602,8 @@ namespace ExtraterrestrialExhaust.Editor
             body.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
 
             CircleCollider2D playerCollider = player.AddComponent<CircleCollider2D>();
-            playerCollider.radius = 0.112f;
-            playerCollider.offset = new Vector2(-0.004f, 0f);
+            playerCollider.radius = Ee5SliceProfile.PlayerHitboxRadius;
+            playerCollider.offset = Ee5SliceProfile.PlayerHitboxOffset;
             PlayerCharacter character = player.AddComponent<PlayerCharacter>();
             PlayerFlightMotor motor = player.GetComponent<PlayerFlightMotor>();
             ApplyEe5PlayerMotorProfile(motor);

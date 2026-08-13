@@ -27,6 +27,12 @@ namespace ExtraterrestrialExhaust.Core
         public const float PlayerFlightAngularDamping = 3.25f;
         public const float PlayerMaxHealth = 5f;
         public const float PlayerInvulnerabilityDuration = 0.5f;
+        // Copied from EE5's sniper prefab. Keep the physics hurtbox authored
+        // on the root body; the enlarged child presentation must never change
+        // the craft's gameplay footprint.
+        public const float PlayerHitboxRadius = 0.112f;
+        public static readonly Vector2 PlayerHitboxOffset =
+            new Vector2(-0.004f, 0f);
 
         public const float ThrustForce = 55f;
         public const float RotationTorque = 0.4f;

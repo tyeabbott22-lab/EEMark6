@@ -135,6 +135,27 @@ namespace ExtraterrestrialExhaust.Player
             body.gravityScale = Ee5SliceProfile.PlayerGravityScale;
             body.interpolation = RigidbodyInterpolation2D.Interpolate;
             body.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
+
+            CircleCollider2D playerCollider = GetComponent<CircleCollider2D>();
+            if (playerCollider)
+            {
+                playerCollider.radius = Ee5SliceProfile.PlayerHitboxRadius;
+                playerCollider.offset = Ee5SliceProfile.PlayerHitboxOffset;
+                playerCollider.isTrigger = false;
+            }
+        }
+
+        void OnDrawGizmosSelected()
+        {
+            CircleCollider2D playerCollider = GetComponent<CircleCollider2D>();
+            if (!playerCollider)
+                return;
+
+            Matrix4x4 previousMatrix = Gizmos.matrix;
+            Gizmos.matrix = transform.localToWorldMatrix;
+            Gizmos.color = new Color(0.2f, 1f, 0.85f, 0.85f);
+            Gizmos.DrawWireSphere(playerCollider.offset, playerCollider.radius);
+            Gizmos.matrix = previousMatrix;
         }
 
         void Update()

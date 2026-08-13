@@ -273,6 +273,26 @@ namespace ExtraterrestrialExhaust.Enemy
             }
         }
 
+        void OnDrawGizmosSelected()
+        {
+            BoxCollider2D hitbox = GetComponent<BoxCollider2D>();
+            if (!hitbox)
+                return;
+
+            Matrix4x4 previousMatrix = Gizmos.matrix;
+            Gizmos.matrix = transform.localToWorldMatrix;
+            Gizmos.color = IsMelee
+                ? new Color(1f, 0.22f, 0.86f, 0.85f)
+                : new Color(0.05f, 1f, 0.16f, 0.85f);
+            Gizmos.DrawWireCube(hitbox.offset, hitbox.size);
+            if (IsMelee)
+            {
+                Gizmos.color = new Color(1f, 0.55f, 0.1f, 0.32f);
+                Gizmos.DrawWireSphere(Vector3.zero, ContactDamageReach);
+            }
+            Gizmos.matrix = previousMatrix;
+        }
+
         void ConfigureEe5Hitbox(bool isMelee)
         {
             // The imported EE6 prefabs were originally built with centered
