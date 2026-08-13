@@ -127,6 +127,14 @@ namespace ExtraterrestrialExhaust.Enemy
         public PlayerCharacter Target => target;
         /// <summary>Authoritative Rigidbody position for physics-step followers.</summary>
         public Vector2 PhysicsPosition => body ? body.position : (Vector2)transform.position;
+        /// <summary>
+        /// Shared fixed-step anchor for effects that belong to the enemy body.
+        /// Wake and defeat presentation must not alternate between an
+        /// interpolated Transform and the controller's physics position.
+        /// </summary>
+        public Vector3 PhysicsAnchorPosition => body
+            ? (Vector3)body.position
+            : transform.position;
         // Prefer the authored movement enum, but recover an older EE5 melee
         // prefab when it still says Wander. The melee prefab has contact
         // damage and no weapon; the gunner has both, so the weapon component
@@ -450,7 +458,7 @@ namespace ExtraterrestrialExhaust.Enemy
         {
             WakeSignalVisible = false;
             WakeSignalHasClearSight = false;
-            WakeSignalEnd = transform.position;
+            WakeSignalEnd = PhysicsAnchorPosition;
             wakeSignalCharge = 0f;
         }
 
@@ -460,7 +468,7 @@ namespace ExtraterrestrialExhaust.Enemy
         Vector2 GetWakeSignalTargetPoint()
         {
             if (!target)
-                return transform.position;
+                return PhysicsAnchorPosition;
 
             Collider2D targetCollider = target.GetComponent<Collider2D>();
             return targetCollider ? targetCollider.bounds.center : target.PhysicsPosition;

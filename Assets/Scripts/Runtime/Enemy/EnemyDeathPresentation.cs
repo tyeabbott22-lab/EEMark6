@@ -51,7 +51,7 @@ namespace ExtraterrestrialExhaust.Enemy
             hasPlayed = true;
             PlayerCameraFollow.Instance?.Shake(0.13f, 0.18f);
             EnemyDeathBurst.Spawn(
-                transform.position,
+                controller.PhysicsAnchorPosition,
                 burstFrames,
                 burstScale,
                 burstSortingOrder,

@@ -89,7 +89,10 @@ namespace ExtraterrestrialExhaust.Enemy
             }
 
             wakeLine.enabled = color.a > 0.01f;
-            SetEndpoints(transform.position, controller.WakeSignalEnd, glanceIntensity);
+            // The controller samples wake state on the physics clock. Use the
+            // same anchor for the line origin so interpolation cannot make the
+            // telegraph visibly detach or chatter during a close approach.
+            SetEndpoints(controller.PhysicsAnchorPosition, controller.WakeSignalEnd, glanceIntensity);
             wakeLine.startWidth = width;
             wakeLine.endWidth = Mathf.Max(0.001f, width * endWidthMultiplier);
             wakeLine.startColor = new Color(
