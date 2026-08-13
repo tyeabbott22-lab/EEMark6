@@ -753,6 +753,10 @@ namespace ExtraterrestrialExhaust.Editor
                 EditorUtility.SetDirty(gate.gameObject);
             }
 
+            bool repairedEnemyHitboxes =
+                ApplyEe5EnemyHitbox(melee.gameObject, false)
+                | ApplyEe5EnemyHitbox(carrier.gameObject, true);
+
             Transform keyTarget = gate.transform.Find("Key Target");
             if (!keyTarget)
             {
@@ -814,6 +818,9 @@ namespace ExtraterrestrialExhaust.Editor
                         : "The scene was repaired but could not be saved; save FlightTest manually.")
                     + (removedLegacyPlaceholders > 0
                         ? $" Removed {removedLegacyPlaceholders} legacy objective placeholder(s)."
+                        : string.Empty)
+                    + (repairedEnemyHitboxes
+                        ? " Authored EE5 enemy hurtboxes were also repaired."
                         : string.Empty));
             }
             else
@@ -1136,6 +1143,7 @@ namespace ExtraterrestrialExhaust.Editor
             }
             EnemyController controller = prefabContents.GetComponent<EnemyController>();
             HealthComponent health = prefabContents.GetComponent<HealthComponent>();
+            changed |= ApplyEe5EnemyHitbox(prefabContents, ranged);
             if (health)
             {
                 SerializedObject serializedHealth = new SerializedObject(health);
@@ -1268,18 +1276,6 @@ namespace ExtraterrestrialExhaust.Editor
                 if (bodyChanged)
                 {
                     EditorUtility.SetDirty(body);
-                    changed = true;
-                }
-            }
-
-            Collider2D bodyCollider = prefabContents.GetComponent<Collider2D>();
-            if (bodyCollider)
-            {
-                bool expectedTrigger = !ranged && Ee5SliceProfile.EnemyMeleeUsesTriggerBody;
-                if (bodyCollider.isTrigger != expectedTrigger)
-                {
-                    bodyCollider.isTrigger = expectedTrigger;
-                    EditorUtility.SetDirty(bodyCollider);
                     changed = true;
                 }
             }
@@ -1424,6 +1420,60 @@ namespace ExtraterrestrialExhaust.Editor
             return changed;
         }
 
+        static bool ApplyEe5EnemyHitbox(GameObject root, bool ranged)
+        {
+            if (!root)
+                return false;
+
+            bool changed = false;
+            BoxCollider2D authoredBox = root.GetComponent<BoxCollider2D>();
+            if (!authoredBox)
+            {
+                authoredBox = root.AddComponent<BoxCollider2D>();
+                changed = true;
+            }
+
+            Vector2 expectedOffset = ranged
+                ? Ee5SliceProfile.EnemyGunnerHitboxOffset
+                : Ee5SliceProfile.EnemyMeleeHitboxOffset;
+            Vector2 expectedSize = ranged
+                ? Ee5SliceProfile.EnemyGunnerHitboxSize
+                : Ee5SliceProfile.EnemyMeleeHitboxSize;
+            bool expectedTrigger = !ranged && Ee5SliceProfile.EnemyMeleeUsesTriggerBody;
+            if (authoredBox.offset != expectedOffset)
+            {
+                authoredBox.offset = expectedOffset;
+                changed = true;
+            }
+            if (authoredBox.size != expectedSize)
+            {
+                authoredBox.size = expectedSize;
+                changed = true;
+            }
+            if (authoredBox.isTrigger != expectedTrigger)
+            {
+                authoredBox.isTrigger = expectedTrigger;
+                changed = true;
+            }
+
+            // Keep one authoritative hurtbox. The old imported circle remains
+            // disabled as a recoverable reference, but it must not disagree
+            // with the box in the editor or create a second damage surface.
+            foreach (Collider2D collider in root.GetComponents<Collider2D>())
+            {
+                if (collider == authoredBox || !collider.enabled)
+                    continue;
+
+                collider.enabled = false;
+                EditorUtility.SetDirty(collider);
+                changed = true;
+            }
+
+            if (changed)
+                EditorUtility.SetDirty(authoredBox);
+            return changed;
+        }
+
         static void ValidateEnemyPrefabProfile(string prefabPath, bool ranged, List<string> issues)
         {
             GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
@@ -1448,16 +1498,29 @@ namespace ExtraterrestrialExhaust.Editor
                 if (body.interpolation != RigidbodyInterpolation2D.Interpolate)
                     issues.Add($"{prefabPath} Rigidbody2D interpolation is not Interpolate");
             }
-            Collider2D bodyCollider = prefab.GetComponent<Collider2D>();
+            BoxCollider2D bodyCollider = prefab.GetComponent<BoxCollider2D>();
             if (!bodyCollider)
             {
-                issues.Add($"{prefabPath} has no root Collider2D");
+                issues.Add($"{prefabPath} has no authored EE5 BoxCollider2D");
             }
             else
             {
                 bool expectedTrigger = !ranged && Ee5SliceProfile.EnemyMeleeUsesTriggerBody;
                 if (bodyCollider.isTrigger != expectedTrigger)
                     issues.Add($"{prefabPath} root collider trigger={bodyCollider.isTrigger}");
+                Vector2 expectedOffset = ranged
+                    ? Ee5SliceProfile.EnemyGunnerHitboxOffset
+                    : Ee5SliceProfile.EnemyMeleeHitboxOffset;
+                Vector2 expectedSize = ranged
+                    ? Ee5SliceProfile.EnemyGunnerHitboxSize
+                    : Ee5SliceProfile.EnemyMeleeHitboxSize;
+                if (Vector2.Distance(bodyCollider.offset, expectedOffset) > 0.001f)
+                    issues.Add($"{prefabPath} hitbox offset={bodyCollider.offset}");
+                if (Vector2.Distance(bodyCollider.size, expectedSize) > 0.001f)
+                    issues.Add($"{prefabPath} hitbox size={bodyCollider.size}");
+                Collider2D[] rootColliders = prefab.GetComponents<Collider2D>();
+                if (rootColliders.Any(collider => collider != bodyCollider && collider.enabled))
+                    issues.Add($"{prefabPath} has an additional enabled root collider");
             }
             HealthComponent health = prefab.GetComponent<HealthComponent>();
             if (!health)
@@ -2680,6 +2743,34 @@ namespace ExtraterrestrialExhaust.Editor
                     issues);
             }
 
+            BoxCollider2D hitbox = enemyObject.GetComponent<BoxCollider2D>();
+            Vector2 expectedHitboxOffset = ranged
+                ? Ee5SliceProfile.EnemyGunnerHitboxOffset
+                : Ee5SliceProfile.EnemyMeleeHitboxOffset;
+            Vector2 expectedHitboxSize = ranged
+                ? Ee5SliceProfile.EnemyGunnerHitboxSize
+                : Ee5SliceProfile.EnemyMeleeHitboxSize;
+            bool expectedHitboxTrigger = !ranged && Ee5SliceProfile.EnemyMeleeUsesTriggerBody;
+            if (!hitbox)
+            {
+                issues.Add($"{label} authored EE5 BoxCollider2D");
+            }
+            else
+            {
+                if (hitbox.isTrigger != expectedHitboxTrigger
+                    || Vector2.Distance(hitbox.offset, expectedHitboxOffset) > 0.001f
+                    || Vector2.Distance(hitbox.size, expectedHitboxSize) > 0.001f)
+                {
+                    issues.Add($"{label} hitbox shape/offset");
+                }
+
+                if (enemyObject.GetComponents<Collider2D>()
+                    .Any(collider => collider != hitbox && collider.enabled))
+                {
+                    issues.Add($"{label} has an additional enabled root collider");
+                }
+            }
+
             EnemyWeapon weapon = enemyObject.GetComponent<EnemyWeapon>();
             if (ranged != (weapon != null))
             {
@@ -3267,6 +3358,11 @@ namespace ExtraterrestrialExhaust.Editor
             SetSerializedObjectReference(controller, "gameState", gameState);
 
             EnemyWeapon weapon = enemy.GetComponent<EnemyWeapon>();
+            if (ApplyEe5EnemyHitbox(enemy, weapon != null))
+            {
+                foreach (Collider2D collider in enemy.GetComponents<Collider2D>())
+                    PrefabUtility.RecordPrefabInstancePropertyModifications(collider);
+            }
             if (weapon)
             {
                 SetSerializedObjectReference(weapon, "gameState", gameState);
