@@ -169,23 +169,11 @@ namespace ExtraterrestrialExhaust.Player
                 return;
             }
 
-            Vector2 command = flightMotor ? flightMotor.AppliedFlightInput : input.Move;
-            PlayerFlightControlMode controlMode = flightMotor
-                ? flightMotor.ControlMode
-                : command.y < -0.2f
-                    ? PlayerFlightControlMode.Stabilizing
-                    : PlayerFlightControlMode.Coasting;
-            bool motorIsTurning = controlMode == PlayerFlightControlMode.Turning
-                || controlMode == PlayerFlightControlMode.TurningAndThrusting;
-            bool motorIsThrusting = controlMode == PlayerFlightControlMode.Thrusting
-                || controlMode == PlayerFlightControlMode.TurningAndThrusting;
-            float thrust = motorIsThrusting
-                ? Mathf.Clamp01(Mathf.Max(0f, command.y))
-                : 0f;
-            float turn = motorIsTurning
-                ? Mathf.Clamp01(Mathf.Abs(command.x))
-                : 0f;
-            bool stabilizing = controlMode == PlayerFlightControlMode.Stabilizing;
+            GetFlightPresentationState(
+                out Vector2 command,
+                out float thrust,
+                out float turn,
+                out bool stabilizing);
             float leftExhaustAmount = stabilizing ? 0f : thrust;
             float rightExhaustAmount = stabilizing ? 0f : thrust;
             bool leftBoosted = false;
@@ -330,13 +318,14 @@ namespace ExtraterrestrialExhaust.Player
 
         void RefreshExhaustPresentation()
         {
-            if (!input || !flightMotor)
+            if (!input)
                 return;
 
-            Vector2 command = input.Move;
-            float thrust = Mathf.Clamp01(Mathf.Max(0f, command.y));
-            float turn = Mathf.Clamp01(Mathf.Abs(command.x));
-            bool stabilizing = command.y < -0.2f;
+            GetFlightPresentationState(
+                out Vector2 command,
+                out float thrust,
+                out float turn,
+                out bool stabilizing);
             float leftAmount = stabilizing ? 0f : thrust;
             float rightAmount = stabilizing ? 0f : thrust;
             bool leftBoosted = false;
@@ -361,6 +350,52 @@ namespace ExtraterrestrialExhaust.Player
 
             AnimateExhaust(leftExhaust, leftExhaustParticles, leftAmount, leftBoosted);
             AnimateExhaust(rightExhaust, rightExhaustParticles, rightAmount, rightBoosted);
+        }
+
+        /// <summary>
+        /// Resolves the command that is actually being presented. The motor's
+        /// fixed-step command is authoritative whenever it exists; reading
+        /// input.Move here would let a render-frame flip refresh exhaust from
+        /// a newer command than the physics body has consumed. That one-frame
+        /// disagreement is especially visible when a turn and flip overlap.
+        /// </summary>
+        void GetFlightPresentationState(
+            out Vector2 command,
+            out float thrust,
+            out float turn,
+            out bool stabilizing)
+        {
+            command = flightMotor ? flightMotor.AppliedFlightInput : input.Move;
+            PlayerFlightControlMode controlMode = flightMotor
+                ? flightMotor.ControlMode
+                : ResolveFallbackControlMode(command);
+            bool motorIsTurning = controlMode == PlayerFlightControlMode.Turning
+                || controlMode == PlayerFlightControlMode.TurningAndThrusting;
+            bool motorIsThrusting = controlMode == PlayerFlightControlMode.Thrusting
+                || controlMode == PlayerFlightControlMode.TurningAndThrusting;
+            thrust = motorIsThrusting
+                ? Mathf.Clamp01(Mathf.Max(0f, command.y))
+                : 0f;
+            turn = motorIsTurning
+                ? Mathf.Clamp01(Mathf.Abs(command.x))
+                : 0f;
+            stabilizing = controlMode == PlayerFlightControlMode.Stabilizing;
+        }
+
+        static PlayerFlightControlMode ResolveFallbackControlMode(Vector2 command)
+        {
+            if (command.y < -0.2f)
+                return PlayerFlightControlMode.Stabilizing;
+
+            bool turning = Mathf.Abs(command.x) >= 0.01f;
+            bool thrusting = command.y > 0.2f;
+            return turning
+                ? (thrusting
+                    ? PlayerFlightControlMode.TurningAndThrusting
+                    : PlayerFlightControlMode.Turning)
+                : (thrusting
+                    ? PlayerFlightControlMode.Thrusting
+                    : PlayerFlightControlMode.Coasting);
         }
 
         void EnsureExhaust(ref Transform exhaust, string name, float xPosition)
