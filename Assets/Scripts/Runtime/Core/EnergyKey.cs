@@ -262,9 +262,6 @@ namespace ExtraterrestrialExhaust.Core
                     // event so the objective handoff has no frame of drift.
                     TryReleaseFromCarrier();
                     break;
-                case EnergyKeyState.FollowingPlayer:
-                    CheckGate();
-                    break;
             }
         }
 
@@ -283,6 +280,12 @@ namespace ExtraterrestrialExhaust.Core
                     break;
                 case EnergyKeyState.FollowingPlayer:
                     FollowPlayer();
+                    // Keep the handoff decision on the same physics clock as
+                    // the carried key and player anchors. Checking this from
+                    // Update mixed a fixed-step key pose with a render-step
+                    // gate pose, which could make the flight-to-gate state
+                    // begin one frame early or late at the unlock threshold.
+                    CheckGate();
                     break;
                 case EnergyKeyState.FlyingToGate:
                     FlyToGate();
