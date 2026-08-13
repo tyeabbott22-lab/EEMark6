@@ -22,7 +22,11 @@ namespace ExtraterrestrialExhaust.Core
         // visibly soupy in the current FlightTest slice. Keep the correction
         // centralized so it can be removed once the imported prefab is clean.
         public const float PlayerFlightLinearDamping = 0f;
-        public const float PlayerFlightAngularDamping = 1.1f;
+        // The first bridge pass left this at 1.1. That was still enough to
+        // make short turn taps feel sticky once the enlarged presentation
+        // hierarchy was in play. Neutral recovery below now owns the braking
+        // beat, so the body can answer a deliberate turn more directly.
+        public const float PlayerFlightAngularDamping = 0.65f;
         public const float PlayerMaxHealth = 5f;
         public const float PlayerInvulnerabilityDuration = 0.5f;
         // Copied from EE5's sniper prefab. Keep the physics hurtbox authored
@@ -39,8 +43,9 @@ namespace ExtraterrestrialExhaust.Core
         public const float RotationBoostMultiplier = 0.225f;
         // Fast-track presentation response: retain the raw EE5 torque above,
         // but give keyboard turns enough authority to read immediately and
-        // cap only runaway spin after a tap. Held turns still permit flips.
-        public const float PlayerPresentableRotationTorque = 0.72f;
+        // let the release handoff catch accidental spin. Held turns still
+        // permit flips, matching the authored realScene control contract.
+        public const float PlayerPresentableRotationTorque = 0.85f;
         public const float PlayerPresentableMaxAngularVelocity = 270f;
         // EE5's sniper prefab has JetpackMotor and JetpackInput both enabled.
         // JetpackInput applies the same direct force/torque after the motor
@@ -49,13 +54,13 @@ namespace ExtraterrestrialExhaust.Core
         // Presentable bridge only: settle a released tap near upright while
         // preserving deliberate held-turn flips. S/C remains authoritative.
         public const bool UprightAssistEnabled = true;
-        public const float UprightAssistWindow = 20f;
-        public const float UprightAssistSpeed = 96f;
-        public const float UprightAssistAngularBrake = 120f;
+        public const float UprightAssistWindow = 28f;
+        public const float UprightAssistSpeed = 180f;
+        public const float UprightAssistAngularBrake = 720f;
         // Brief release delay keeps the settle from fighting the final turn tap.
         public const float UprightAssistReleaseDelay = 0.06f;
         // Only the low-speed neutral settle uses this ceiling; held turns remain free.
-        public const float UprightAssistMaxAngularSpeed = 110f;
+        public const float UprightAssistMaxAngularSpeed = 180f;
         // The keyboard bindings remain full-strength, while a drifting analog
         // stick must not become an invisible rotation command. These are input
         // hygiene values, not a replacement for the authored flight torque.
