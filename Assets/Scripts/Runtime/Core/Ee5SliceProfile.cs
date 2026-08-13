@@ -276,7 +276,10 @@ namespace ExtraterrestrialExhaust.Core
         // gets a small pickup grace so the authored orbit does not become a
         // frustrating chase. Remove this when the imported player is fully
         // side-by-side matched.
-        public const float EnergyKeyCollectionAssistDistance = 1.15f;
+        // Keep the temporary pickup grace generous enough for the current
+        // player bridge: the EE5 orbit remains unchanged, but a slow/awkward
+        // prototype craft should not miss the key during its single pass.
+        public const float EnergyKeyCollectionAssistDistance = 1.75f;
         public const float EnergyKeyGateUnlockRange = 2f;
         public const float EnergyKeyGateFlySpeed = 14f;
         public static readonly Vector3 EnergyKeyPlayerOffset =

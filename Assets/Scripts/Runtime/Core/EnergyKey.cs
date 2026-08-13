@@ -385,6 +385,7 @@ namespace ExtraterrestrialExhaust.Core
             {
                 SetState(EnergyKeyState.FlyingToGate);
                 keyCollider.enabled = false;
+                targetGate.BeginKeyApproach();
                 UpdateAvailabilityVisual();
             }
         }

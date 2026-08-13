@@ -69,6 +69,19 @@ namespace ExtraterrestrialExhaust.Core
         public event Action Disabled;
         public event Action RouteCleared;
 
+        /// <summary>
+        /// Starts the visible incoming-key cue without granting access. The
+        /// key owns the transport threshold; the gate owns the readable
+        /// barrier response so every key delivery path can use the same cue.
+        /// </summary>
+        public void BeginKeyApproach()
+        {
+            if (state != EnergyGateState.Closed)
+                return;
+
+            GetComponent<EnergyGatePresentation>()?.BeginKeyApproach();
+        }
+
         void Awake()
         {
             gateCollider = GetComponent<BoxCollider2D>();
