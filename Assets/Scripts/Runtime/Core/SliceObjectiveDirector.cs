@@ -89,7 +89,13 @@ namespace ExtraterrestrialExhaust.Core
             {
                 nextState = SliceObjectiveState.ReachExtraction;
             }
-            else if (energyKey && energyKey.IsCollected && gate && !gate.IsRouteClear)
+            else if (energyKey
+                && energyKey.IsCollected
+                // A missing gate is an incomplete route contract, not proof
+                // that extraction is available. Keep the HUD on OPEN GATE so
+                // a preserved scene never tells the player to fly into a
+                // portal that LevelExit is correctly keeping locked.
+                && (!gate || !gate.IsRouteClear))
             {
                 nextState = SliceObjectiveState.OpenExtractionGate;
             }

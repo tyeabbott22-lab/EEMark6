@@ -239,7 +239,16 @@ namespace ExtraterrestrialExhaust.Player
                 turnReleaseTimer += Time.fixedDeltaTime;
 
             AppliedFlightInput = command;
-            ApplyRotation(command.x);
+
+            // The imported EE5 stack has several historical input paths that
+            // can all write to the same Rigidbody2D. Keep those paths
+            // available below for the eventual prefab reconstruction, but
+            // make the current playable slice deterministic: one bounded
+            // response owns rotation, while thrust remains a single force.
+            bool usePresentableTurnResponse =
+                Ee5SliceProfile.PlayerPresentableTurnResponseOwnsRotation;
+            if (!usePresentableTurnResponse)
+                ApplyRotation(command.x);
 
             if (!turning && turnReleaseTimer >= uprightAssistReleaseDelay)
                 ApplyNeutralUprightAssist();
@@ -247,11 +256,23 @@ namespace ExtraterrestrialExhaust.Player
             if (thrusting)
                 body.AddRelativeForce(Vector2.up * thrustForce, ForceMode2D.Force);
 
+            if (usePresentableTurnResponse
+                && turning
+                && rotationAddsThrust)
+            {
+                body.AddRelativeForce(
+                    Vector2.up * (Mathf.Abs(command.x)
+                        * thrustForce
+                        * rotationBoostMultiplier),
+                    ForceMode2D.Force);
+            }
+
             // realScene3's sniper instance also has JetpackInput's direct
             // fallback enabled beside JetpackMotor. It is a strange but
             // observable part of the reference feel, so reproduce it as a
             // named compatibility pass owned by the motor.
-            ApplyEe5LegacyDirectPhysicsAssist(command, thrusting, turning);
+            if (!usePresentableTurnResponse)
+                ApplyEe5LegacyDirectPhysicsAssist(command, thrusting, turning);
 
             // Presentable bridge: the imported EE5 stack reaches its rotation
             // envelope quickly because the tiny authored collider has very low

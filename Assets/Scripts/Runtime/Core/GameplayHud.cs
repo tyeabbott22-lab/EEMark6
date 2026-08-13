@@ -173,6 +173,11 @@ namespace ExtraterrestrialExhaust.Core
         {
             Refresh();
             ShowObjectiveBanner(GetObjectiveLabel(next));
+            string transitionCallout = GetObjectiveTransitionCallout(next);
+            if (!string.IsNullOrEmpty(transitionCallout))
+                ShowActionCallout(
+                    transitionCallout,
+                    GetObjectiveTransitionColor(next));
         }
 
         void ShowObjectiveBanner(string objective)
@@ -449,6 +454,40 @@ namespace ExtraterrestrialExhaust.Core
                     return "EXTRACTION COMPLETE";
                 default:
                     return "CLEAR ENCOUNTER";
+            }
+        }
+
+        static string GetObjectiveTransitionCallout(SliceObjectiveState state)
+        {
+            switch (state)
+            {
+                case SliceObjectiveState.CollectEnergyKey:
+                    return "CARRIER DOWN  /  KEY RELEASED";
+                case SliceObjectiveState.OpenExtractionGate:
+                    return "KEY ACQUIRED  /  APPROACH GATE";
+                case SliceObjectiveState.ReachExtraction:
+                    return "ROUTE CLEAR  /  FLY TO EXTRACTION";
+                case SliceObjectiveState.ExtractionComplete:
+                    return "EXTRACTION COMPLETE";
+                default:
+                    return string.Empty;
+            }
+        }
+
+        static Color GetObjectiveTransitionColor(SliceObjectiveState state)
+        {
+            switch (state)
+            {
+                case SliceObjectiveState.CollectEnergyKey:
+                    return new Color(1f, 0.42f, 0.86f, 1f);
+                case SliceObjectiveState.OpenExtractionGate:
+                    return new Color(1f, 0.86f, 0.18f, 1f);
+                case SliceObjectiveState.ReachExtraction:
+                    return new Color(0.2f, 1f, 0.85f, 1f);
+                case SliceObjectiveState.ExtractionComplete:
+                    return new Color(0.55f, 0.9f, 1f, 1f);
+                default:
+                    return Color.white;
             }
         }
 

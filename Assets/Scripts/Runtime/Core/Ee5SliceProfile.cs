@@ -64,6 +64,12 @@ namespace ExtraterrestrialExhaust.Core
         // feel immediately controllable in the presentable slice.
         public const float PlayerPresentableReleaseBrake = 1440f;
         public const float PlayerPresentableReleaseBrakeDelay = 0.04f;
+        // Short-term FlightTest bridge: let one bounded turn response own the
+        // player instead of stacking motor torque, legacy direct input, and a
+        // second corrective response. The original paths stay in the motor
+        // for the later prefab-rip pass, but are not allowed to fight the
+        // presentable slice.
+        public const bool PlayerPresentableTurnResponseOwnsRotation = true;
         // EE5's sniper prefab has JetpackMotor and JetpackInput both enabled.
         // JetpackInput applies the same direct force/torque after the motor
         // step. Keep that observable compatibility quirk named and switchable.
