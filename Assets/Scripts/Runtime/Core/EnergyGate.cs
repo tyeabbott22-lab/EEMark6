@@ -104,18 +104,26 @@ namespace ExtraterrestrialExhaust.Core
 
         IEnumerator LiftRoutine()
         {
+            // EnergyKey transports on FixedUpdate and resolves this moving
+            // socket from the gate hierarchy. Advance the gate on the same
+            // physics clock so the blocker, socket, and key never disagree
+            // for a render frame during the authored lift.
             while (Vector3.Distance(transform.position, targetPosition) > 0.01f)
             {
+                yield return new WaitForFixedUpdate();
+
+                if (state != EnergyGateState.Opening)
+                    yield break;
+
                 transform.position = Vector3.MoveTowards(
                     transform.position,
                     targetPosition,
-                    liftSpeed * Time.deltaTime);
+                    liftSpeed * Time.fixedDeltaTime);
                 // This gate is an authored moving BoxCollider2D without a
                 // Rigidbody2D. Explicitly synchronize the physics scene so the
                 // blocker, key socket, and visual lift agree during the handoff
                 // even when Unity's automatic transform sync is disabled.
                 Physics2D.SyncTransforms();
-                yield return null;
             }
 
             transform.position = targetPosition;
