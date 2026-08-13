@@ -11,7 +11,7 @@ namespace ExtraterrestrialExhaust.Enemy
         [SerializeField, Min(0f)] float damage = 1f;
         [SerializeField, Min(0.01f)] float cooldown = 0.75f;
         [SerializeField, Min(0f)] float knockback = 8f;
-        float nextDamageTime;
+        float cooldownRemaining;
 
         EnemyController controller;
 
@@ -22,6 +22,10 @@ namespace ExtraterrestrialExhaust.Enemy
 
         void FixedUpdate()
         {
+            cooldownRemaining = Mathf.Max(
+                0f,
+                cooldownRemaining - Time.fixedDeltaTime);
+
             // EE5's melee enemy dealt contact damage while physically
             // overlapping the player. EE6 deliberately keeps the navigation
             // body just outside that overlap to eliminate rigidbody tug-of-war
@@ -36,7 +40,8 @@ namespace ExtraterrestrialExhaust.Enemy
 
             Vector2 enemyPosition = controller.PhysicsPosition;
             Vector2 playerPosition = player.PhysicsPosition;
-            if (Vector2.Distance(enemyPosition, playerPosition) > controller.ContactDamageReach)
+            if (cooldownRemaining > 0f
+                || Vector2.Distance(enemyPosition, playerPosition) > controller.ContactDamageReach)
                 return;
 
             Vector2 direction = (playerPosition - enemyPosition).normalized;
@@ -53,7 +58,7 @@ namespace ExtraterrestrialExhaust.Enemy
             // trigger navigation body, so its near-contact FixedUpdate path
             // is the deterministic replacement for this callback.
             PlayerCharacter player = collision.collider.GetComponentInParent<PlayerCharacter>();
-            if (!player || !player.CanReceiveGameplayInput || Time.time < nextDamageTime)
+            if (!player || !player.CanReceiveGameplayInput || cooldownRemaining > 0f)
                 return;
 
             Vector2 direction = (player.PhysicsPosition - controller.PhysicsPosition).normalized;
@@ -69,7 +74,7 @@ namespace ExtraterrestrialExhaust.Enemy
 
         void TryDamagePlayer(PlayerCharacter player, Vector2 hitPoint, Vector2 direction)
         {
-            if (!player || !player.CanReceiveGameplayInput || Time.time < nextDamageTime)
+            if (!player || !player.CanReceiveGameplayInput || cooldownRemaining > 0f)
                 return;
 
             DamageInfo damageInfo = new DamageInfo(
@@ -97,7 +102,10 @@ namespace ExtraterrestrialExhaust.Enemy
                 // who remains alive; the respawn controller owns dead-body reset.
                 if (player.Health.IsAlive && player.FlightMotor && player.FlightMotor.Body)
                     ApplyEe5ContactImpulse(player.FlightMotor.Body, direction);
-                nextDamageTime = Time.time + cooldown;
+                // This component is driven by physics callbacks; use the same
+                // clock as navigation and attack recovery so a render hitch
+                // cannot shorten or stretch the authored melee cadence.
+                cooldownRemaining = cooldown;
             }
         }
 
