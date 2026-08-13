@@ -1175,7 +1175,9 @@ namespace ExtraterrestrialExhaust.Editor
                 changed |= SetFloat(
                     serializedController,
                     "faceTurnSpeed",
-                    Ee5SliceProfile.EnemyFaceTurnSpeed);
+                    ranged
+                        ? Ee5SliceProfile.EnemyGunnerFaceTurnSpeed
+                        : Ee5SliceProfile.EnemyMeleeFaceTurnSpeed);
                 changed |= SetFloat(
                     serializedController,
                     "attackRange",
@@ -4110,7 +4112,7 @@ namespace ExtraterrestrialExhaust.Editor
                 : Ee5SliceProfile.EnemyMeleeAttackFacingRefreshDegrees;
             serializedController.FindProperty("targetBuffer").floatValue = 0.04f;
             // Match the authored EE5 roles: the white gunner moves at 2 and
-            // the purple close hunter at 3 units per second.
+            // the purple close bruiser moves at 2.3 units per second.
             serializedController.FindProperty("chaseSpeed").floatValue = ranged
                 ? Ee5SliceProfile.EnemyGunnerChaseSpeed
                 : Ee5SliceProfile.EnemyMeleeChaseSpeed;
@@ -4139,7 +4141,9 @@ namespace ExtraterrestrialExhaust.Editor
             serializedController.FindProperty("nearMissDistance").floatValue = 1.65f;
             serializedController.FindProperty("nearMissExitDistance").floatValue = 2.15f;
             serializedController.FindProperty("faceTurnSpeed").floatValue =
-                Ee5SliceProfile.EnemyFaceTurnSpeed;
+                ranged
+                    ? Ee5SliceProfile.EnemyGunnerFaceTurnSpeed
+                    : Ee5SliceProfile.EnemyMeleeFaceTurnSpeed;
             serializedController.FindProperty("forwardIsLocalNegativeX").boolValue = ranged;
             serializedController.FindProperty("keepSpriteUpright").boolValue = true;
             serializedController.FindProperty("gameState").objectReferenceValue = gameState;

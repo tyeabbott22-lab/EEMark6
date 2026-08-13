@@ -100,8 +100,16 @@ namespace ExtraterrestrialExhaust.Core
         // frame early while the enemy remains dormant until WakeDistance.
         public const float EnemyWakeSignalDistanceMultiplier = 4f;
         public const float EnemyGunnerChaseSpeed = 2f;
-        public const float EnemyMeleeChaseSpeed = 3f;
-        public const float EnemyFaceTurnSpeed = 5f;
+        // This is the serialized moveSpeed from EE5's "Enemy 01 - close
+        // bruiser" scene variant. It is deliberately slower than the generic
+        // enemyFast prefab: the close bruiser closes distance with a readable
+        // sword beat instead of tunneling into the player.
+        public const float EnemyMeleeChaseSpeed = 2.3f;
+        public const float EnemyGunnerFaceTurnSpeed = 5f;
+        // EE5's close-bruiser scene variant used a slightly quicker facing
+        // response than the white gunner. Keeping this role-specific prevents
+        // the melee sprite from lagging behind without reintroducing jitter.
+        public const float EnemyMeleeFaceTurnSpeed = 6.6f;
         // A kinematic melee body should not visibly rotate for sub-degree target
         // noise after it has reached its attack stop. This is below the authored
         // five-degree-per-step response and only removes render chatter.

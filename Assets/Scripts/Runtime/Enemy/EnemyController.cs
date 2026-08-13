@@ -281,9 +281,16 @@ namespace ExtraterrestrialExhaust.Enemy
             rootScale.x = Mathf.Sign(authoredScaleX) * Mathf.Max(0.0001f, Mathf.Abs(rootScale.x));
             transform.localScale = rootScale;
 
-            // Keep faceTurnSpeed authored on the prefab/scene. The builder
-            // writes the EE5 baseline for generated actors, while prefab-backed
-            // FlightTest instances must retain deliberate inspector tuning.
+            // Enforce the role contract at runtime as a compatibility bridge.
+            // FlightTest is intentionally allowed to keep dirty prefab/scene
+            // values, but those values must not make the playable slice drift
+            // from the EE5 close-bruiser and enemyGun references.
+            chaseSpeed = isMelee
+                ? Ee5SliceProfile.EnemyMeleeChaseSpeed
+                : Ee5SliceProfile.EnemyGunnerChaseSpeed;
+            faceTurnSpeed = isMelee
+                ? Ee5SliceProfile.EnemyMeleeFaceTurnSpeed
+                : Ee5SliceProfile.EnemyGunnerFaceTurnSpeed;
 
             // EE5's ranged gunner aims from local negative X. The purple
             // melee hunter keeps the authored controller basis and relies on
