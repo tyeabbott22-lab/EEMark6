@@ -53,7 +53,12 @@ namespace ExtraterrestrialExhaust.Core
         // Temporary direct-response bridge: torque remains in the stack for
         // the eventual prefab rip, while this bounded handoff makes a held
         // keyboard turn reach the authored rotation envelope immediately.
-        public const float PlayerPresentableTurnAcceleration = 2160f;
+        // Last-mile feel hotfix: reach the authored 360-degree envelope in
+        // roughly a tenth of a second so short A/D or Q/E holds read as a
+        // deliberate turn instead of a sluggish torque ramp. The cap itself
+        // stays at the EE5 Physics2D limit; cleanup can remove this bridge
+        // once the imported prefab owns the final inertia directly.
+        public const float PlayerPresentableTurnAcceleration = 3600f;
         // EE5's sniper prefab has JetpackMotor and JetpackInput both enabled.
         // JetpackInput applies the same direct force/torque after the motor
         // step. Keep that observable compatibility quirk named and switchable.
