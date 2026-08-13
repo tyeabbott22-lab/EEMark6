@@ -4011,7 +4011,6 @@ namespace ExtraterrestrialExhaust.Editor
             keySprite.sortingOrder = 10;
             serializedKey.FindProperty("visual").objectReferenceValue = keyVisual.transform;
             serializedKey.ApplyModifiedPropertiesWithoutUndo();
-            CreateSquareOutline(keyVisual.transform, Vector2.one * 0.5f, new Color(1f, 0.8f, 0.1f));
 
             GameObject exit = new GameObject("Level Exit");
             exit.transform.position = Ee5SliceProfile.VerticalSliceExitPosition;

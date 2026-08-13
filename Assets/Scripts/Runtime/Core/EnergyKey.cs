@@ -118,6 +118,18 @@ namespace ExtraterrestrialExhaust.Core
             if (!visual)
                 visual = transform;
 
+            // Earlier FlightTest builders placed a square debug outline on
+            // the visual root to stand in for the key artwork. EE5's keyFollow
+            // prefab presents the authored key sprite directly; keeping the
+            // legacy line enabled makes the objective read like a placeholder
+            // and exaggerates the source-canvas offset during orbit motion.
+            if (visual != transform)
+            {
+                LineRenderer legacyVisualOutline = visual.GetComponent<LineRenderer>();
+                if (legacyVisualOutline)
+                    legacyVisualOutline.enabled = false;
+            }
+
             if (enforceEe5Profile && visual != transform)
             {
                 // The imported key sheet has a non-centered source canvas. Keep
