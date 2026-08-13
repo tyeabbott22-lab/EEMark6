@@ -1,4 +1,5 @@
 using UnityEngine;
+using ExtraterrestrialExhaust.Core;
 
 namespace ExtraterrestrialExhaust.Combat
 {
@@ -84,12 +85,11 @@ namespace ExtraterrestrialExhaust.Combat
                 ray.endWidth = 0.01f;
                 ray.startColor = color;
                 ray.endColor = new Color(color.r, color.g, color.b, 0f);
-                Shader shader = Shader.Find("Sprites/Default");
-                if (shader)
+                Material material = RuntimeVisualMaterial.Create("Projectile Impact Ray");
+                if (material)
                 {
-                    rayMaterials[i] = new Material(shader);
-                    rayMaterials[i].name = "Projectile Impact Ray";
-                    ray.sharedMaterial = rayMaterials[i];
+                    rayMaterials[i] = material;
+                    ray.sharedMaterial = material;
                 }
                 rayStartColors[i] = ray.startColor;
                 rayEndColors[i] = ray.endColor;

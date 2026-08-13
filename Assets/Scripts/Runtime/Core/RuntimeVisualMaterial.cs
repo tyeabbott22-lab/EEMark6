@@ -15,9 +15,18 @@ namespace ExtraterrestrialExhaust.Core
             if (!shader)
                 return null;
 
-            Material material = new Material(shader);
-            material.name = materialName;
-            return material;
+            try
+            {
+                Material material = new Material(shader);
+                material.name = materialName;
+                return material;
+            }
+            catch (System.Exception exception)
+            {
+                Debug.LogWarning(
+                    $"Runtime visual material '{materialName}' could not be created: {exception.Message}");
+                return null;
+            }
         }
 
         public static Shader FindSpriteShader()

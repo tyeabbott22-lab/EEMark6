@@ -398,6 +398,7 @@ namespace ExtraterrestrialExhaust.Editor
             bool meleeRepaired = RepairEnemyIntroSpriteWiring(EnemyMeleePrefabPath, false);
             bool gunnerRepaired = RepairEnemyIntroSpriteWiring(EnemyGunnerPrefabPath, true);
             bool sceneRepaired = false;
+            bool sceneSaved = false;
 
             Scene activeScene = SceneManager.GetActiveScene();
             if (activeScene.IsValid() && activeScene.path == ScenePath)
@@ -409,7 +410,10 @@ namespace ExtraterrestrialExhaust.Editor
                     GameObject.Find("White Gunner"),
                     true);
                 if (sceneRepaired)
+                {
                     EditorSceneManager.MarkSceneDirty(activeScene);
+                    sceneSaved = EditorSceneManager.SaveScene(activeScene, ScenePath);
+                }
             }
 
             AssetDatabase.SaveAssets();
@@ -419,7 +423,12 @@ namespace ExtraterrestrialExhaust.Editor
                 + $"Purple melee prefab: {meleeRepaired}; white gunner prefab: {gunnerRepaired}; "
                 + $"active FlightTest: {sceneRepaired}. "
                 + "Gameplay physics, movement, weapon cadence, and other inspector tuning were preserved. "
-                + "Rebuild FlightTest with Preserve Prefabs afterward.");
+                + (sceneRepaired
+                    ? (sceneSaved
+                        ? "The repaired active scene was saved."
+                        : "The active scene could not be saved; save FlightTest manually.")
+                    : "No active-scene intro changes were needed.")
+                + " Rebuild FlightTest with Preserve Prefabs afterward if the scene needs regeneration.");
         }
 
         [MenuItem("Extraterrestrial Exhaust/Validate Enemy Prefab Profiles")]
@@ -591,6 +600,7 @@ namespace ExtraterrestrialExhaust.Editor
             PrefabUtility.UnloadPrefabContents(prefabContents);
 
             bool sceneRepaired = false;
+            bool sceneSaved = false;
             Scene activeScene = SceneManager.GetActiveScene();
             if (activeScene.IsValid() && activeScene.path == ScenePath)
             {
@@ -602,6 +612,7 @@ namespace ExtraterrestrialExhaust.Editor
                     {
                         EditorUtility.SetDirty(scenePlayer);
                         EditorSceneManager.MarkSceneDirty(activeScene);
+                        sceneSaved = EditorSceneManager.SaveScene(activeScene, ScenePath);
                     }
                 }
             }
@@ -610,7 +621,12 @@ namespace ExtraterrestrialExhaust.Editor
             Debug.Log(
                 "Applied the EE5 player Rigidbody2D and flight-motor profile. "
                 + $"Prefab changed: {prefabRepaired}; active FlightTest changed: {sceneRepaired}. "
-                + "The intended Unity 6 feel is 0.08 linear damping with 3.25 angular damping.");
+                + "The intended Unity 6 feel is 0.08 linear damping with 3.25 angular damping. "
+                + (sceneRepaired
+                    ? (sceneSaved
+                        ? "The repaired active scene was saved."
+                        : "The active scene could not be saved; save FlightTest manually.")
+                    : "No active-scene physics changes were needed."));
         }
 
         [MenuItem("Extraterrestrial Exhaust/Validate Player Craft Physics Profile")]

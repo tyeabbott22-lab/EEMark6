@@ -216,12 +216,9 @@ namespace ExtraterrestrialExhaust.Player
             aimLine.endWidth = aimLineWidth;
             aimLine.enabled = false;
 
-            Shader shader = Shader.Find("Legacy Shaders/Particles/Alpha Blended");
-            if (!shader)
-                shader = Shader.Find("Sprites/Default");
-            if (shader)
+            aimLineMaterial = RuntimeVisualMaterial.Create("Player Aim Line");
+            if (aimLineMaterial)
             {
-                aimLineMaterial = new Material(shader);
                 aimLineMaterial.color = Color.white;
                 aimLine.sharedMaterial = aimLineMaterial;
             }

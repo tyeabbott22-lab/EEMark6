@@ -1,4 +1,5 @@
 using UnityEngine;
+using ExtraterrestrialExhaust.Core;
 
 namespace ExtraterrestrialExhaust.Enemy
 {
@@ -78,11 +79,9 @@ namespace ExtraterrestrialExhaust.Enemy
             line.endColor = accent;
             line.sortingOrder = sortingOrder;
 
-            Shader shader = Shader.Find("Sprites/Default");
-            if (shader)
+            Material material = RuntimeVisualMaterial.Create("Melee Strike Material");
+            if (material)
             {
-                Material material = new Material(shader);
-                material.name = "Melee Strike Material";
                 line.sharedMaterial = material;
                 materials[materialIndex] = material;
             }

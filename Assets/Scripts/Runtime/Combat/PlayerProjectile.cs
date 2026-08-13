@@ -244,13 +244,9 @@ namespace ExtraterrestrialExhaust.Combat
             trailRenderer.numCornerVertices = 4;
             if (!trailRenderer.sharedMaterial)
             {
-                Shader shader = Shader.Find("Sprites/Default");
-                if (shader)
-                {
-                    trailMaterial = new Material(shader);
-                    trailMaterial.name = "Runtime Projectile Trail";
+                trailMaterial = RuntimeVisualMaterial.Create("Runtime Projectile Trail");
+                if (trailMaterial)
                     trailRenderer.sharedMaterial = trailMaterial;
-                }
             }
 
             ApplyTrailColors(1f);

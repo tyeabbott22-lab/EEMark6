@@ -125,18 +125,14 @@ namespace ExtraterrestrialExhaust.Core
             tether.startColor = tetherColor;
             tether.endColor = tetherColor;
             tether.sortingOrder = 17;
-            Shader shader = Shader.Find("Universal Render Pipeline/2D/Sprite-Unlit-Default");
-            if (!shader)
-                shader = Shader.Find("Sprites/Default");
-            if (shader)
-                tether.material = new Material(shader);
+            tether.sharedMaterial = RuntimeVisualMaterial.Create("Energy Key Tether");
             tether.enabled = false;
         }
 
         void OnDestroy()
         {
-            if (tether && tether.material)
-                Destroy(tether.material);
+            if (tether && tether.sharedMaterial)
+                Destroy(tether.sharedMaterial);
         }
     }
 }
