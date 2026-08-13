@@ -47,6 +47,8 @@ namespace ExtraterrestrialExhaust.Core
 
         [Header("Collection")]
         [SerializeField, Min(0f)] float collectDistance = Ee5SliceProfile.EnergyKeyCollectDistance;
+        [Tooltip("Temporary presentability grace around the raw EE5 pickup distance. The key still snaps into the authored follow state only after this threshold is crossed.")]
+        [SerializeField, Min(0f)] float collectionAssistDistance = Ee5SliceProfile.EnergyKeyCollectionAssistDistance;
         [SerializeField, Min(0f)] float collectionArmDelay;
         [SerializeField, Min(0f)] float minRadiusBeforeCollect;
         [SerializeField] Vector3 playerOffset = Ee5SliceProfile.EnergyKeyPlayerOffset;
@@ -189,6 +191,7 @@ namespace ExtraterrestrialExhaust.Core
             radiusEase = Ee5SliceProfile.EnergyKeyRadiusEase;
             centerFollowSharpness = Ee5SliceProfile.EnergyKeyCenterFollowSharpness;
             collectDistance = Ee5SliceProfile.EnergyKeyCollectDistance;
+            collectionAssistDistance = Ee5SliceProfile.EnergyKeyCollectionAssistDistance;
             playerOffset = Ee5SliceProfile.EnergyKeyPlayerOffset;
             playerFollowSharpness = Ee5SliceProfile.EnergyKeyPlayerFollowSharpness;
             gateUnlockRange = Ee5SliceProfile.EnergyKeyGateUnlockRange;
@@ -478,7 +481,8 @@ namespace ExtraterrestrialExhaust.Core
                 || currentRadiusY < minRadiusBeforeCollect)
                 return;
 
-            if (Vector2.Distance(body.position, otherPlayer.PhysicsPosition) > collectDistance)
+            float pickupDistance = Mathf.Max(collectDistance, collectionAssistDistance);
+            if (Vector2.Distance(body.position, otherPlayer.PhysicsPosition) > pickupDistance)
                 return;
 
             player = otherPlayer;

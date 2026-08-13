@@ -252,6 +252,12 @@ namespace ExtraterrestrialExhaust.Core
         // 96x64 canvas; move the visual down so the gameplay root stays centered.
         public static readonly Vector3 EnergyKeyVisualOffset = new Vector3(0f, -0.13f, 0f);
         public const float EnergyKeyCollectDistance = 0.65f;
+        // Presentable bridge for the current FlightTest player: the raw EE5 key
+        // still uses the tight distance above, but the slower prototype craft
+        // gets a small pickup grace so the authored orbit does not become a
+        // frustrating chase. Remove this when the imported player is fully
+        // side-by-side matched.
+        public const float EnergyKeyCollectionAssistDistance = 1.15f;
         public const float EnergyKeyGateUnlockRange = 2f;
         public const float EnergyKeyGateFlySpeed = 14f;
         public static readonly Vector3 EnergyKeyPlayerOffset =

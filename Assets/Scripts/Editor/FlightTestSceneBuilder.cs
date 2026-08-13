@@ -2605,6 +2605,12 @@ namespace ExtraterrestrialExhaust.Editor
                     issues);
                 CheckSerializedFloat(
                     serializedKey,
+                    "collectionAssistDistance",
+                    Ee5SliceProfile.EnergyKeyCollectionAssistDistance,
+                    "EnergyKey collection assist distance",
+                    issues);
+                CheckSerializedFloat(
+                    serializedKey,
                     "gateUnlockRange",
                     Ee5SliceProfile.EnergyKeyGateUnlockRange,
                     "EnergyKey gate handoff range",
@@ -4506,6 +4512,8 @@ namespace ExtraterrestrialExhaust.Editor
                 Ee5SliceProfile.EnergyKeyGateUnlockRange;
             serializedKey.FindProperty("collectDistance").floatValue =
                 Ee5SliceProfile.EnergyKeyCollectDistance;
+            serializedKey.FindProperty("collectionAssistDistance").floatValue =
+                Ee5SliceProfile.EnergyKeyCollectionAssistDistance;
             serializedKey.FindProperty("playerFollowSharpness").floatValue =
                 Ee5SliceProfile.EnergyKeyPlayerFollowSharpness;
             serializedKey.FindProperty("gateFlySpeed").floatValue =
