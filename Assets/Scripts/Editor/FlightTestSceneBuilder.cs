@@ -631,7 +631,8 @@ namespace ExtraterrestrialExhaust.Editor
             Debug.Log(
                 "Applied the EE5 player Rigidbody2D and flight-motor profile. "
                 + $"Prefab changed: {prefabRepaired}; active FlightTest changed: {sceneRepaired}. "
-                + "The intended Unity 6 feel is 0.08 linear damping with 3.25 angular damping. "
+                + "The tuned EE6 flight profile uses 0.02 linear damping with 3.25 angular damping; "
+                + "the EE5 reference body used 0.35 linear damping. "
                 + (sceneRepaired
                     ? (sceneSaved
                         ? "The repaired active scene was saved."
@@ -3087,6 +3088,11 @@ namespace ExtraterrestrialExhaust.Editor
                     body.bodyType = RigidbodyType2D.Dynamic;
                     changed = true;
                 }
+                if (body.constraints != RigidbodyConstraints2D.None)
+                {
+                    body.constraints = RigidbodyConstraints2D.None;
+                    changed = true;
+                }
                 if (!Mathf.Approximately(body.mass, Ee5SliceProfile.PlayerMass))
                 {
                     body.mass = Ee5SliceProfile.PlayerMass;
@@ -3396,6 +3402,16 @@ namespace ExtraterrestrialExhaust.Editor
 
             PlayerCharacter character = RequireComponent<PlayerCharacter>(player, PlayerPrefabPath);
             PlayerFlightMotor motor = RequireComponent<PlayerFlightMotor>(player, PlayerPrefabPath);
+            // Preserve Prefabs keeps the authored asset intact, but the
+            // generated scene still needs an explicit physics contract. This
+            // keeps the Inspector honest before PlayerFlightMotor.Awake runs.
+            ApplyPlayerCraftPhysicsProfile(player);
+            Rigidbody2D body = player.GetComponent<Rigidbody2D>();
+            if (body)
+                PrefabUtility.RecordPrefabInstancePropertyModifications(body);
+            CircleCollider2D playerCollider = player.GetComponent<CircleCollider2D>();
+            if (playerCollider)
+                PrefabUtility.RecordPrefabInstancePropertyModifications(playerCollider);
             ApplyEe5PlayerMotorProfile(motor);
             PrefabUtility.RecordPrefabInstancePropertyModifications(motor);
             PlayerFlightInput input = RequireComponent<PlayerFlightInput>(player, PlayerPrefabPath);
@@ -3414,9 +3430,6 @@ namespace ExtraterrestrialExhaust.Editor
             SetSerializedObjectReference(weapon, "gameState", gameState);
             SetSerializedObjectReference(weapon, "projectilePrefab", projectilePrefab);
 
-            // Do not normalize the Rigidbody damping here. It is deliberately
-            // authored on PlayerCraft.prefab and the runtime motor now honors
-            // that value instead of replacing it during Awake.
             return character;
         }
 
