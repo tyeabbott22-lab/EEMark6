@@ -67,19 +67,51 @@ namespace ExtraterrestrialExhaust.Core
 
         void Awake()
         {
+            gateCollider = GetComponent<BoxCollider2D>();
+
             if (enforceEe5Profile)
             {
                 liftDistance = Ee5SliceProfile.EnergyGateLiftDistance;
                 liftSpeed = Ee5SliceProfile.EnergyGateLiftSpeed;
+                if (gateCollider)
+                {
+                    gateCollider.size = Ee5SliceProfile.VerticalSliceGateColliderSize;
+                    gateCollider.offset = Vector2.zero;
+                    gateCollider.isTrigger = false;
+                }
             }
 
-            gateCollider = GetComponent<BoxCollider2D>();
+            ResolveKeyTarget();
             line = GetComponent<LineRenderer>();
             closedPosition = transform.position;
             targetPosition = closedPosition + Vector3.up * liftDistance;
             if (gateCollider && !gateCollider.enabled)
                 state = EnergyGateState.Open;
             UpdateVisual(state == EnergyGateState.Open ? disabledColor : activeColor);
+        }
+
+        void ResolveKeyTarget()
+        {
+            if (!keyTarget)
+                keyTarget = transform.Find("Key Target");
+
+            if (!keyTarget && enforceEe5Profile)
+            {
+                GameObject targetObject = new GameObject("Key Target");
+                keyTarget = targetObject.transform;
+                keyTarget.SetParent(transform, false);
+            }
+
+            if (!keyTarget || !enforceEe5Profile)
+                return;
+
+            // The key socket belongs to the gate, not the room root. Repairing
+            // its local pose here keeps older hand-built scenes aligned with
+            // the builder and prevents a missing/stale reference from making
+            // the key fly into empty space.
+            keyTarget.localPosition = Ee5SliceProfile.VerticalSliceGateKeyTarget;
+            keyTarget.localRotation = Quaternion.identity;
+            keyTarget.localScale = Vector3.one;
         }
 
         void OnDisable()

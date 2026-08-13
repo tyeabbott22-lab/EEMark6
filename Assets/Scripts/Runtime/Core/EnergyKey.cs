@@ -529,6 +529,13 @@ namespace ExtraterrestrialExhaust.Core
             if (!requiredEncounter)
                 requiredEncounter = FindFirstObjectByType<EncounterController>();
 
+            // A prefab-backed scene can lose the gate object reference while
+            // Unity is refreshing an older builder result. Recover the single
+            // vertical-slice gate instead of leaving the key permanently in
+            // FollowingPlayer with no destination.
+            if (!targetGate)
+                targetGate = FindFirstObjectByType<EnergyGate>();
+
             if (enemyTarget)
                 return;
 

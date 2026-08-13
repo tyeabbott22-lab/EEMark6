@@ -89,6 +89,11 @@ namespace ExtraterrestrialExhaust.Core
             if (!gate)
                 return;
 
+            // Older scene data can serialize zero after a partially completed
+            // builder pass. A programmable barrier with no beams reads as a
+            // missing gate, so keep the runtime contract visibly valid.
+            beamCount = Mathf.Max(1, beamCount);
+
             while (coreLines.Count < beamCount)
             {
                 int index = coreLines.Count;
