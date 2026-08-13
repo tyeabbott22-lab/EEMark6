@@ -100,6 +100,13 @@ namespace ExtraterrestrialExhaust.Core
         /// its EE5 canvas correction on the child visual.
         /// </summary>
         public Vector3 VisualPosition => visual ? visual.position : transform.position;
+        /// <summary>
+        /// Stable world-space anchor for gameplay-linked effects. Do not use the
+        /// corrected child visual for tethers or sockets: its imported canvas
+        /// offset intentionally rotates with the artwork and would make those
+        /// effects appear to jitter around the key.
+        /// </summary>
+        public Vector3 GameplayPosition => body ? (Vector3)body.position : transform.position;
         public event Action<EnergyKeyState, EnergyKeyState> StateChanged;
 
         void Reset() => GetComponent<Collider2D>().isTrigger = true;

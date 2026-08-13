@@ -54,7 +54,10 @@ namespace ExtraterrestrialExhaust.Core
             }
 
             tether.enabled = true;
-            tether.SetPosition(0, energyKey.VisualPosition);
+            // The child artwork carries the EE5 source-canvas correction and
+            // rotates for the key animation. Attach gameplay-linked effects to
+            // the centered root so that correction never becomes visible jitter.
+            tether.SetPosition(0, energyKey.GameplayPosition);
             tether.SetPosition(1, target.position);
 
             float pulse = 0.5f + Mathf.Sin(Time.time * tetherPulseSpeed) * 0.5f;
