@@ -53,10 +53,14 @@ namespace ExtraterrestrialExhaust.Enemy
 
         void OnCollisionStay2D(Collision2D collision)
         {
-            // Keep the solid-body EE5 contact contract for the ranged gunner
-            // and older authored scenes. The repaired melee role uses a
-            // trigger navigation body, so its near-contact FixedUpdate path
-            // is the deterministic replacement for this callback.
+            // The reusable component remains on older solid-body prefabs, but
+            // contact damage is a melee attack contract. The EE5 gunner has
+            // projectile pressure, not a hidden collision attack, and the
+            // repaired melee role normally uses the range path below because
+            // its trigger navigation body does not emit collision callbacks.
+            if (!controller || !controller.IsMelee || !controller.CanAttack)
+                return;
+
             PlayerCharacter player = collision.collider.GetComponentInParent<PlayerCharacter>();
             if (!player || !player.CanReceiveGameplayInput || cooldownRemaining > 0f)
                 return;

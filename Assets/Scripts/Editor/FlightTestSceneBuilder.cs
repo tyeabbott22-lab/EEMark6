@@ -3804,9 +3804,10 @@ namespace ExtraterrestrialExhaust.Editor
             serializedController.FindProperty("keepSpriteUpright").boolValue = true;
             serializedController.FindProperty("gameState").objectReferenceValue = gameState;
             serializedController.ApplyModifiedPropertiesWithoutUndo();
-            // EE5 gives both roster roles the same close-contact punishment.
-            // The gunner remains primarily a ranged threat, but colliding with
-            // it must never become a free pass through the encounter.
+            // Keep the reusable component on both generated roster prefabs so
+            // older solid-body scenes can recover their melee callback. The
+            // runtime component gates the collision path to melee; the white
+            // gunner's authored damage authority is its projectile weapon.
             EnemyContactDamage contactDamage = enemy.AddComponent<EnemyContactDamage>();
             SerializedObject serializedContact = new SerializedObject(contactDamage);
             serializedContact.FindProperty("damage").floatValue = Ee5SliceProfile.EnemyContactDamage;
