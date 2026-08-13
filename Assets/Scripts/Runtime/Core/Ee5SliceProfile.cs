@@ -17,11 +17,12 @@ namespace ExtraterrestrialExhaust.Core
         // into a second hand-tuned movement model.
         public const float PlayerLinearDamping = 0.35f;
         public const float PlayerAngularDamping = 3.25f;
-        // The temporary presentable bridge now intentionally uses the imported
-        // contract. A single source of truth is easier to side-by-side test
-        // than a collection of corrective inspector overrides.
-        public const float PlayerFlightLinearDamping = PlayerLinearDamping;
-        public const float PlayerFlightAngularDamping = PlayerAngularDamping;
+        // Fast-track presentation bridge: the raw EE5 drag is preserved above
+        // for the eventual prefab rip, but it made the Unity 6 craft feel
+        // visibly soupy in the current FlightTest slice. Keep the correction
+        // centralized so it can be removed once the imported prefab is clean.
+        public const float PlayerFlightLinearDamping = 0f;
+        public const float PlayerFlightAngularDamping = 1.1f;
         public const float PlayerMaxHealth = 5f;
         public const float PlayerInvulnerabilityDuration = 0.5f;
         // Copied from EE5's sniper prefab. Keep the physics hurtbox authored
@@ -36,21 +37,19 @@ namespace ExtraterrestrialExhaust.Core
         public const float StabilizationSpeed = 720f;
         public const float FlightAngularDamping = 0.85f;
         public const float RotationBoostMultiplier = 0.225f;
-        // Match the realScene3 sniper. Do not add an artificial spin ceiling:
-        // the reference permits a deliberate full flip and the input fallback
-        // already supplies the authored turn authority.
-        public const float PlayerPresentableRotationTorque = RotationTorque;
-        public const float PlayerPresentableMaxAngularVelocity = 0f;
+        // Fast-track presentation response: retain the raw EE5 torque above,
+        // but give keyboard turns enough authority to read immediately and
+        // cap only runaway spin after a tap. Held turns still permit flips.
+        public const float PlayerPresentableRotationTorque = 0.72f;
+        public const float PlayerPresentableMaxAngularVelocity = 270f;
         // EE5's sniper prefab has JetpackMotor and JetpackInput both enabled.
         // JetpackInput applies the same direct force/torque after the motor
         // step. Keep that observable compatibility quirk named and switchable.
         public const bool PlayerLegacyDirectPhysicsAssist = true;
-        // The raw EE5 path has no hidden neutral-rotation correction. S/C is
-        // the explicit stabilize command, so leave deliberate flips alone.
-        public const bool UprightAssistEnabled = false;
+        // Presentable bridge only: settle a released tap near upright while
+        // preserving deliberate held-turn flips. S/C remains authoritative.
+        public const bool UprightAssistEnabled = true;
         public const float UprightAssistWindow = 20f;
-        // Retained as serialized compatibility fields for older prefabs. They
-        // are inert while UprightAssistEnabled is false.
         public const float UprightAssistSpeed = 96f;
         public const float UprightAssistAngularBrake = 120f;
         // Brief release delay keeps the settle from fighting the final turn tap.
@@ -64,7 +63,10 @@ namespace ExtraterrestrialExhaust.Core
         public const float PlayerThrustDeadzone = 0.04f;
         public const bool PlayerRemoveVelocityIntoColliders = true;
         public const float PlayerBoostedExhaustLengthMultiplier = 1.25f;
-        public const float PlayerBoostedExhaustWidthMultiplier = 1.15f;
+        // EE5's sniper prefab uses a 1.45 boosted flame size multiplier. Use
+        // that visible cue now; the reusable child hierarchy can be cleaned up
+        // after the player feel pass is locked.
+        public const float PlayerBoostedExhaustWidthMultiplier = 1.45f;
         public const float PlayerBoostedExhaustYScale = 1.5f;
         public const float PlayerBoostedParticleEmissionMultiplier = 1.4f;
         // EE5 expands these root-space X anchors by 1.55 when its visual-size
