@@ -171,9 +171,9 @@ namespace ExtraterrestrialExhaust.Enemy
         public bool IsSpriteFlippedUpright => spriteFlippedUpright;
         public bool CanAttack => State == EnemyState.Attacking;
         /// <summary>
-        /// The melee prefab is intentionally a trigger navigation body. Keeping
-        /// this fact public lets contact damage use the actual physics callback
-        /// instead of inventing a center-distance hit that lands early.
+        /// Legacy hand-authored melee prefabs may still use a trigger navigation
+        /// body. The gold EE5 close-bruiser path uses a solid box; exposing this
+        /// flag keeps the contact fallback explicit for both contracts.
         /// </summary>
         public bool UsesTriggerContactBody => IsMelee && bodyCollider && bodyCollider.isTrigger;
         /// <summary>
@@ -191,8 +191,9 @@ namespace ExtraterrestrialExhaust.Enemy
 
         /// <summary>
         /// Tests the authored player/enemy collider pair. EE5's melee damage
-        /// came from overlap, so the EE6 trigger body should enter its attack
-        /// state at the same physical moment instead of at an arbitrary radius.
+        /// came from overlap, so both the solid close-bruiser body and older
+        /// trigger scenes enter their attack state at the physical contact
+        /// moment instead of at an arbitrary center radius.
         /// </summary>
         public bool IsWithinMeleeContact(PlayerCharacter candidate)
         {
@@ -257,6 +258,20 @@ namespace ExtraterrestrialExhaust.Enemy
             lastChasePosition = body.position;
             homePosition = body.position;
             ResetWander();
+        }
+
+        void Start()
+        {
+            // HealthComponent and EnemyController are independent components;
+            // Unity does not promise their Awake order. Re-assert the role
+            // health contract after every component has initialized so a stale
+            // prefab value cannot make the one-hit bruiser or five-pip gunner
+            // change behavior between scene launches.
+            float expectedHealth = ResolveMeleeRole()
+                ? Ee5SliceProfile.EnemyMeleeMaxHealth
+                : Ee5SliceProfile.EnemyGunnerMaxHealth;
+            if (health && !Mathf.Approximately(health.MaxHealth, expectedHealth))
+                health.ConfigureMaxHealth(expectedHealth);
         }
 
         SpriteRenderer ResolveVisibleSpriteRenderer()

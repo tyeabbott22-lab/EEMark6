@@ -288,11 +288,12 @@ namespace ExtraterrestrialExhaust.Core
             if (runtimeMaterial)
                 return runtimeMaterial;
 
-            Shader shader = Shader.Find("Sprites/Default");
-            runtimeMaterial = new Material(shader)
-            {
-                name = "Programmable Laser Gate (Runtime)"
-            };
+            // Use the shared Unity 6/URP fallback chain. A direct
+            // Sprites/Default lookup can return null in the active render
+            // pipeline and make the gate look absent even though its
+            // gameplay collider is working.
+            runtimeMaterial = RuntimeVisualMaterial.Create(
+                "Programmable Laser Gate (Runtime)");
             return runtimeMaterial;
         }
 
