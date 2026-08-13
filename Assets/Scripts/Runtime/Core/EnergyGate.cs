@@ -34,6 +34,8 @@ namespace ExtraterrestrialExhaust.Core
 
         BoxCollider2D gateCollider;
         LineRenderer line;
+        EnergyGatePresentation presentation;
+        ProgrammableLaserGate programmableLaserGate;
         Vector3 closedPosition;
         Vector3 targetPosition;
         EnergyGateState state = EnergyGateState.Closed;
@@ -79,7 +81,13 @@ namespace ExtraterrestrialExhaust.Core
             if (state != EnergyGateState.Closed)
                 return;
 
-            GetComponent<EnergyGatePresentation>()?.BeginKeyApproach();
+            ResolvePresentationReferences();
+            presentation?.BeginKeyApproach();
+            // Preserved prefab variants may carry the laser barrier without
+            // the older artwork companion. The gameplay handoff must still
+            // produce a visible approach cue in that valid configuration.
+            if (!presentation)
+                programmableLaserGate?.BeginKeyApproach();
         }
 
         void Awake()
@@ -100,11 +108,20 @@ namespace ExtraterrestrialExhaust.Core
 
             ResolveKeyTarget();
             line = GetComponent<LineRenderer>();
+            ResolvePresentationReferences();
             closedPosition = transform.position;
             targetPosition = closedPosition + Vector3.up * liftDistance;
             if (gateCollider && !gateCollider.enabled)
                 state = EnergyGateState.Open;
             UpdateVisual(state == EnergyGateState.Open ? disabledColor : activeColor);
+        }
+
+        void ResolvePresentationReferences()
+        {
+            if (!presentation)
+                presentation = GetComponent<EnergyGatePresentation>();
+            if (!programmableLaserGate)
+                programmableLaserGate = GetComponent<ProgrammableLaserGate>();
         }
 
         void ResolveKeyTarget()
@@ -169,6 +186,12 @@ namespace ExtraterrestrialExhaust.Core
             // while the authored lift is visible so the physical route and
             // the presentation cannot disagree during the handoff.
             Disabled?.Invoke();
+            ResolvePresentationReferences();
+            // EnergyGatePresentation normally forwards this pulse. Keep the
+            // direct fallback here for preserved laser-only prefab variants so
+            // the physical unlock and the visible unlock can never diverge.
+            if (!presentation)
+                programmableLaserGate?.BeginUnlockPulse();
             liftRoutine = StartCoroutine(LiftRoutine());
             return true;
         }

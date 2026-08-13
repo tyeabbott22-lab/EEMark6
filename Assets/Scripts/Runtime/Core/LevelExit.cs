@@ -14,6 +14,8 @@ namespace ExtraterrestrialExhaust.Core
     {
         [SerializeField] EncounterController encounter;
         [SerializeField] EnergyGate requiredGate;
+        [Tooltip("Leave disabled for the EE6 vertical slice. Enable only for a deliberately gate-free test room.")]
+        [SerializeField] bool allowGateFreeExtraction;
         [SerializeField] GameStateMachine gameState;
         [SerializeField] Color lockedColor = new Color(0.35f, 0.35f, 0.45f);
         [SerializeField] Color unlockedColor = new Color(0.2f, 1f, 0.85f);
@@ -60,7 +62,13 @@ namespace ExtraterrestrialExhaust.Core
         // EE5's door state is the extraction gate. Once the delivered key has
         // finished the authored lift and cleared the route, remaining enemies
         // are pressure rather than a hidden second exit condition.
-        public bool IsUnlocked => requiredGate == null || requiredGate.IsRouteClear;
+        // A missing gate reference is a broken route contract, not permission
+        // to skip the EE5 key/gate beat. Gate-free experiments can explicitly
+        // opt out, but the presentable vertical slice fails closed while a
+        // preserved prefab is still recovering its references.
+        public bool IsUnlocked => requiredGate
+            ? requiredGate.IsRouteClear
+            : allowGateFreeExtraction;
 
         void Reset() => GetComponent<Collider2D>().isTrigger = true;
 
