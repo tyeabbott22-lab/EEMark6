@@ -38,22 +38,17 @@ namespace ExtraterrestrialExhaust.Core
         public const float StabilizationSpeed = 720f;
         public const float FlightAngularDamping = 0.85f;
         public const float RotationBoostMultiplier = 0.225f;
-        // Use the realScene3 motor torque. The bounded response below remains
-        // as a temporary keyboard bridge, so short taps are readable without
-        // inventing a second torque value that changes the craft's inertia.
+        // Use the realScene3 motor torque. The optional response bridge below
+        // keeps a separate tuning hook available, but the playable slice uses
+        // this authored torque stack directly.
         public const float PlayerPresentableRotationTorque = RotationTorque;
         // Unity's default Rigidbody2D cap is 7 radians/second. The source
         // player relies on that cap, so keep the equivalent degree value when
         // the rebuilt motor applies its explicit safety clamp.
         public const float PlayerPresentableMaxAngularVelocity = 400f;
-        // Temporary direct-response bridge: torque remains in the stack for
-        // the eventual prefab rip, while this bounded handoff makes a held
-        // keyboard turn reach the authored rotation envelope immediately.
-        // Temporary FlightTest response bridge: the reference torque is kept
-        // above, but the rebuilt player needs to enter its rotation envelope
-        // promptly on a keyboard tap. 2880 degrees/second squared reaches
-        // the 360-degree envelope in about an eighth of a second without
-        // changing the authored maximum turn speed.
+        // Optional direct-response bridge retained for quick A/B tests while
+        // the prefab cleanup is still in flight. It is not the active slice
+        // contract; the authored torque path is the current gold behavior.
         public const float PlayerPresentableTurnAcceleration = 2880f;
         // The reference craft damps naturally, but the rebuilt stack can carry
         // a stale angular-velocity impulse through a short keyboard tap. Bleed
@@ -65,11 +60,11 @@ namespace ExtraterrestrialExhaust.Core
         // while neutral input settles in roughly 0.17 seconds from full turn.
         public const float PlayerPresentableReleaseBrake = 2160f;
         public const float PlayerPresentableReleaseBrakeDelay = 0.04f;
-        // Quick presentable bridge: let the rebuilt motor reach the reference
-        // rotation envelope immediately instead of asking Unity 6 to reproduce
-        // the old duplicated-torque path through two separate writers. The
-        // authored torque values remain above as the cleanup/rip contract.
-        public const bool PlayerPresentableTurnResponseOwnsRotation = true;
+        // Use the authored EE5 torque handoff for the playable slice. The
+        // imported sniper has JetpackMotor plus JetpackInput's direct fallback
+        // enabled, so PlayerFlightMotor intentionally preserves both writers
+        // until the prefab can be cleaned up against a measured reference.
+        public const bool PlayerPresentableTurnResponseOwnsRotation = false;
         // EE5's sniper prefab has JetpackMotor and JetpackInput both enabled.
         // JetpackInput applies the same direct force/torque after the motor
         // step. Keep that observable compatibility quirk named and switchable.

@@ -293,10 +293,17 @@ namespace ExtraterrestrialExhaust.Player
 
         void HandleFlipped(bool facingRight)
         {
-            // EE5 couples the visual flip to a short squash pulse. Keeping the
-            // event on the motor prevents update-order drift between input and
-            // presentation when a flip is triggered by a non-keyboard device.
+            // EE5 changes the visible facing sign immediately, then lets the
+            // squash pulse settle over the next few render frames. Do the same
+            // here instead of lerping through zero, which briefly makes the
+            // craft disappear and reads as a sluggish or broken turn.
             squashTimer = squashDuration;
+            if (visual)
+            {
+                Vector3 scale = visual.localScale;
+                scale.x = Mathf.Abs(scale.x) * (facingRight ? 1f : -1f);
+                visual.localScale = scale;
+            }
             SyncExhaustAnchors();
             RefreshExhaustPresentation();
         }
