@@ -267,6 +267,13 @@ namespace ExtraterrestrialExhaust.Editor
                 Debug.LogException(exception);
                 if (File.Exists(ScenePath))
                     EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+
+                // Menu-driven builds keep the editor usable after restoring
+                // the previous scene. Automated verification must also fail
+                // its process, otherwise Unity exits with code zero after a
+                // broken builder pass and CI can publish a stale FlightTest.
+                if (Application.isBatchMode)
+                    throw;
             }
         }
 
@@ -1312,7 +1319,10 @@ namespace ExtraterrestrialExhaust.Editor
                     Ee5SliceProfile.PlayerBoostedExhaustMidColor;
                 serializedPresentation.FindProperty("boostedExhaustEndColor").colorValue =
                     Ee5SliceProfile.PlayerBoostedExhaustTipColor;
-                serializedPresentation.FindProperty("exhaustSideOffset").floatValue = 0.28f;
+                serializedPresentation.FindProperty("leftExhaustAnchor").vector3Value =
+                    Ee5SliceProfile.PlayerLeftExhaustAnchor;
+                serializedPresentation.FindProperty("rightExhaustAnchor").vector3Value =
+                    Ee5SliceProfile.PlayerRightExhaustAnchor;
                 serializedPresentation.FindProperty("exhaustLength").floatValue = 0.55f;
                 serializedPresentation.FindProperty("turnExhaustAmount").floatValue = 1f;
                 serializedPresentation.FindProperty("squashScale").vector2Value = new Vector2(1.25f, 0.75f);
@@ -4763,7 +4773,10 @@ namespace ExtraterrestrialExhaust.Editor
                 Ee5SliceProfile.PlayerBoostedExhaustMidColor;
             serializedPresentation.FindProperty("boostedExhaustEndColor").colorValue =
                 Ee5SliceProfile.PlayerBoostedExhaustTipColor;
-            serializedPresentation.FindProperty("exhaustSideOffset").floatValue = 0.28f;
+            serializedPresentation.FindProperty("leftExhaustAnchor").vector3Value =
+                Ee5SliceProfile.PlayerLeftExhaustAnchor;
+            serializedPresentation.FindProperty("rightExhaustAnchor").vector3Value =
+                Ee5SliceProfile.PlayerRightExhaustAnchor;
             serializedPresentation.FindProperty("exhaustLength").floatValue = 0.55f;
             serializedPresentation.FindProperty("turnExhaustAmount").floatValue = 1f;
             serializedPresentation.FindProperty("squashScale").vector2Value = new Vector2(1.25f, 0.75f);
