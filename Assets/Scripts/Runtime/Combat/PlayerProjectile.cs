@@ -171,9 +171,22 @@ namespace ExtraterrestrialExhaust.Combat
         /// </summary>
         public void SetLifetime(float value) => lifetime = Mathf.Max(0.01f, value);
 
-        void OnTriggerEnter2D(Collider2D other)
+        // The generated FlightTest projectile uses a trigger collider, but
+        // the imported EE5 bullet variants are not guaranteed to keep that
+        // flag after a prefab/scene refresh. Keep one impact authority and
+        // accept either Unity callback so a stale collider mode cannot make
+        // an otherwise valid shot pass through an enemy or wall.
+        void OnTriggerEnter2D(Collider2D other) => HandleImpact(other);
+
+        void OnCollisionEnter2D(Collision2D collision)
         {
-            if (dying)
+            if (collision != null)
+                HandleImpact(collision.collider);
+        }
+
+        void HandleImpact(Collider2D other)
+        {
+            if (dying || !other)
                 return;
 
             if (IsOwnerCollider(other))
