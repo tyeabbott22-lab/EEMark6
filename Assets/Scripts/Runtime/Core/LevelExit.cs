@@ -32,6 +32,7 @@ namespace ExtraterrestrialExhaust.Core
             new Keyframe(0.28f, 0.08f, 0.35f, 0.7f),
             new Keyframe(1f, 1f, 2.6f, 0f));
         [SerializeField] AnimationCurve angularProgress = null;
+        Collider2D exitCollider;
         LineRenderer exitRenderer;
         ExtractionPortalPresentation portalPresentation;
         bool capturing;
@@ -76,6 +77,7 @@ namespace ExtraterrestrialExhaust.Core
         void Awake()
         {
             ResolveReferences();
+            exitCollider = GetComponent<Collider2D>();
             exitRenderer = GetComponent<LineRenderer>();
             portalPresentation = GetComponent<ExtractionPortalPresentation>();
             HideLegacyExitOutline();
@@ -161,12 +163,35 @@ namespace ExtraterrestrialExhaust.Core
             TryStartCapture(other);
         }
 
+        void FixedUpdate()
+        {
+            if (!IsUnlocked || capturing || extractionComplete || !exitCollider)
+                return;
+
+            // Keep trigger callbacks as the normal EE5 path, but sample the
+            // actual portal shape once per physics step as a recovery path.
+            // This closes the narrow handoff where the gate finishes lifting
+            // while the craft is already overlapping the exit, or where a
+            // refreshed layer matrix drops one TriggerStay callback.
+            PlayerCharacter player = FindFirstObjectByType<PlayerCharacter>();
+            if (!player || !player.CanReceiveGameplayInput || !exitCollider.enabled)
+                return;
+
+            if (exitCollider.OverlapPoint(player.PhysicsPosition))
+                TryStartCapture(player);
+        }
+
         void TryStartCapture(Collider2D other)
+        {
+            PlayerCharacter player = other.GetComponentInParent<PlayerCharacter>();
+            TryStartCapture(player);
+        }
+
+        void TryStartCapture(PlayerCharacter player)
         {
             if (!IsUnlocked || capturing || extractionComplete)
                 return;
 
-            PlayerCharacter player = other.GetComponentInParent<PlayerCharacter>();
             if (player && player.CanReceiveGameplayInput)
                 StartCoroutine(CapturePlayer(player));
         }
