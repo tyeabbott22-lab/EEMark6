@@ -601,7 +601,7 @@ namespace ExtraterrestrialExhaust.Editor
 
             Debug.Log(
                 "Repaired the active FlightTest player to the EE5 profile: "
-                + $"55 thrust, {Ee5SliceProfile.PlayerFlightLinearDamping:0.##} linear damping, one-second player shots, "
+                + $"{Ee5SliceProfile.ThrustForce:0.##} thrust, {Ee5SliceProfile.PlayerFlightLinearDamping:0.##} linear damping, one-second player shots, "
                 + "12 recoil, orange craft sprite, and room-reset death flow. "
                 + (saved
                     ? "The repaired scene was saved."
@@ -1007,6 +1007,7 @@ namespace ExtraterrestrialExhaust.Editor
             InputActionAsset inputAsset,
             PlayerProjectile projectilePrefab)
         {
+            Transform firePoint = EnsurePlayerFirePoint(playerObject);
             Rigidbody2D body = playerObject.GetComponent<Rigidbody2D>();
             if (body)
             {
@@ -1082,6 +1083,7 @@ namespace ExtraterrestrialExhaust.Editor
                 SerializedObject serializedWeapon = new SerializedObject(weapon);
                 serializedWeapon.FindProperty("gameState").objectReferenceValue = gameState;
                 serializedWeapon.FindProperty("projectilePrefab").objectReferenceValue = projectilePrefab;
+                serializedWeapon.FindProperty("firePoint").objectReferenceValue = firePoint;
                 serializedWeapon.FindProperty("enforceEe5Profile").boolValue = true;
                 serializedWeapon.FindProperty("keepFirePointRightOfOrigin").boolValue = true;
                 serializedWeapon.FindProperty("firePointLocalOffset").vector2Value = new Vector2(0.55f, 0f);
@@ -1099,7 +1101,17 @@ namespace ExtraterrestrialExhaust.Editor
             PlayerFlightPresentation presentation = playerObject.GetComponent<PlayerFlightPresentation>();
             if (presentation)
             {
+                AudioSource thrustAudio = playerObject.GetComponent<AudioSource>();
+                if (!thrustAudio)
+                    thrustAudio = playerObject.AddComponent<AudioSource>();
+                thrustAudio.playOnAwake = false;
+                thrustAudio.loop = true;
+                thrustAudio.volume = 0.18f;
+
                 SerializedObject serializedPresentation = new SerializedObject(presentation);
+                serializedPresentation.FindProperty("thrustAudio").objectReferenceValue = thrustAudio;
+                serializedPresentation.FindProperty("thrustClip").objectReferenceValue =
+                    AssetDatabase.LoadAssetAtPath<AudioClip>(ThrustAudioPath);
                 serializedPresentation.FindProperty("enforceEe5Profile").boolValue = true;
                 serializedPresentation.FindProperty("boostedExhaustLengthMultiplier").floatValue =
                     Ee5SliceProfile.PlayerBoostedExhaustLengthMultiplier;
@@ -1126,7 +1138,6 @@ namespace ExtraterrestrialExhaust.Editor
                 serializedPresentation.ApplyModifiedPropertiesWithoutUndo();
             }
 
-            Transform firePoint = playerObject.transform.Find("Fire Point");
             PlayerWeaponPresentation weaponPresentation = playerObject.GetComponent<PlayerWeaponPresentation>();
             if (weaponPresentation && firePoint)
             {
@@ -1142,6 +1153,35 @@ namespace ExtraterrestrialExhaust.Editor
                 serializedWeaponPresentation.FindProperty("cameraShakeDuration").floatValue = 0.05f;
                 serializedWeaponPresentation.ApplyModifiedPropertiesWithoutUndo();
             }
+
+            PlayerDamageFeedback damageFeedback = playerObject.GetComponent<PlayerDamageFeedback>();
+            if (damageFeedback)
+            {
+                SerializedObject serializedDamageFeedback = new SerializedObject(damageFeedback);
+                serializedDamageFeedback.FindProperty("flashColor").colorValue =
+                    new Color(1f, 0.01f, 0.01f, 1f);
+                serializedDamageFeedback.FindProperty("alternateFlashColor").colorValue =
+                    new Color(1f, 0.92f, 0.01f, 1f);
+                serializedDamageFeedback.FindProperty("flashDuration").floatValue = 0.4f;
+                serializedDamageFeedback.FindProperty("flashInterval").floatValue = 1f / 30f;
+                serializedDamageFeedback.ApplyModifiedPropertiesWithoutUndo();
+            }
+        }
+
+        static Transform EnsurePlayerFirePoint(GameObject playerObject)
+        {
+            Transform firePoint = playerObject.transform.Find("Fire Point");
+            if (!firePoint)
+            {
+                firePoint = new GameObject("Fire Point").transform;
+                firePoint.SetParent(playerObject.transform, false);
+            }
+
+            firePoint.localPosition = new Vector3(0.55f, 0f, 0f);
+            firePoint.localRotation = Quaternion.identity;
+            firePoint.localScale = Vector3.one;
+            EditorUtility.SetDirty(firePoint);
+            return firePoint;
         }
 
         static bool RepairEnemyPrefabProfile(string prefabPath, bool ranged)
@@ -2241,6 +2281,7 @@ namespace ExtraterrestrialExhaust.Editor
                     player,
                     expectedSprite,
                     "Player Craft"));
+                AddGeneratedPlayerContractIssues(player, issues);
                 CheckSceneObjectPosition(
                     player,
                     Ee5SliceProfile.VerticalSlicePlayerSpawn,
@@ -2882,6 +2923,69 @@ namespace ExtraterrestrialExhaust.Editor
                     ranged ? 0f : Ee5SliceProfile.EnemyMeleeAttackFacingRefreshDegrees,
                     $"{label} attack facing refresh",
                     issues);
+                SerializedProperty movementMode = serializedController.FindProperty("movementMode");
+                int expectedMovementMode = (int)(ranged
+                    ? EnemyMovementMode.Wander
+                    : EnemyMovementMode.Chase);
+                if (movementMode == null || movementMode.enumValueIndex != expectedMovementMode)
+                    issues.Add($"{label} movement role");
+                CheckSerializedFloat(
+                    serializedController,
+                    "chaseSpeed",
+                    ranged
+                        ? Ee5SliceProfile.EnemyGunnerChaseSpeed
+                        : Ee5SliceProfile.EnemyMeleeChaseSpeed,
+                    $"{label} movement speed",
+                    issues);
+                CheckSerializedFloat(
+                    serializedController,
+                    "faceTurnSpeed",
+                    ranged
+                        ? Ee5SliceProfile.EnemyGunnerFaceTurnSpeed
+                        : Ee5SliceProfile.EnemyMeleeFaceTurnSpeed,
+                    $"{label} facing speed",
+                    issues);
+            }
+
+            Rigidbody2D body = enemyObject.GetComponent<Rigidbody2D>();
+            if (!body)
+            {
+                issues.Add($"{label} Rigidbody2D");
+            }
+            else
+            {
+                if (body.bodyType != RigidbodyType2D.Kinematic)
+                    issues.Add($"{label} body type");
+                if (!Mathf.Approximately(body.linearDamping, 0f)
+                    || !Mathf.Approximately(body.angularDamping, 0.05f))
+                    issues.Add($"{label} body damping");
+                if (body.interpolation != RigidbodyInterpolation2D.Interpolate
+                    || body.collisionDetectionMode != CollisionDetectionMode2D.Continuous)
+                    issues.Add($"{label} body interpolation/collision mode");
+            }
+
+            HealthComponent health = enemyObject.GetComponent<HealthComponent>();
+            if (!health)
+            {
+                issues.Add($"{label} HealthComponent");
+            }
+            else
+            {
+                SerializedObject serializedHealth = new SerializedObject(health);
+                CheckSerializedFloat(
+                    serializedHealth,
+                    "maxHealth",
+                    ranged
+                        ? Ee5SliceProfile.EnemyGunnerMaxHealth
+                        : Ee5SliceProfile.EnemyMeleeMaxHealth,
+                    $"{label} role health",
+                    issues);
+                CheckSerializedFloat(
+                    serializedHealth,
+                    "invulnerabilityDuration",
+                    Ee5SliceProfile.EnemyInvulnerabilityDuration,
+                    $"{label} invulnerability",
+                    issues);
             }
 
             BoxCollider2D hitbox = enemyObject.GetComponent<BoxCollider2D>();
@@ -2928,6 +3032,48 @@ namespace ExtraterrestrialExhaust.Editor
                     "mirrorFirePointYWithUprightFlip",
                     Ee5SliceProfile.EnemyGunnerMirrorFirePointYWithUprightFlip,
                     $"{label} muzzle mirroring",
+                    issues);
+                CheckSerializedBool(
+                    serializedWeapon,
+                    "enforceEe5Profile",
+                    true,
+                    $"{label} weapon profile",
+                    issues);
+                CheckSerializedFloat(
+                    serializedWeapon,
+                    "fireCooldown",
+                    Ee5SliceProfile.EnemyGunnerFireCooldown,
+                    $"{label} fire cooldown",
+                    issues);
+                CheckSerializedFloat(
+                    serializedWeapon,
+                    "projectileSpeed",
+                    Ee5SliceProfile.EnemyGunnerProjectileSpeed,
+                    $"{label} projectile speed",
+                    issues);
+                CheckSerializedFloat(
+                    serializedWeapon,
+                    "projectileLifetime",
+                    Ee5SliceProfile.EnemyGunnerProjectileLifetime,
+                    $"{label} projectile lifetime",
+                    issues);
+                CheckSerializedFloat(
+                    serializedWeapon,
+                    "projectileKnockback",
+                    Ee5SliceProfile.EnemyGunnerProjectileKnockback,
+                    $"{label} projectile knockback",
+                    issues);
+                CheckSerializedBool(
+                    serializedWeapon,
+                    "requireTargetWithinAttackRange",
+                    Ee5SliceProfile.EnemyGunnerRequiresAttackRange,
+                    $"{label} attack-range requirement",
+                    issues);
+                CheckSerializedBool(
+                    serializedWeapon,
+                    "requireLineOfSightToFire",
+                    Ee5SliceProfile.EnemyGunnerRequiresLineOfSightToFire,
+                    $"{label} firing line of sight",
                     issues);
                 Transform firePoint = weapon.FirePoint;
                 if (!firePoint
@@ -3071,6 +3217,228 @@ namespace ExtraterrestrialExhaust.Editor
                 true,
                 $"{label} wake facing restore",
                 issues);
+        }
+
+        /// <summary>
+        /// Verifies the whole public-facing player composition, not merely its
+        /// Rigidbody tuning. This keeps a preserved but stale prefab from
+        /// producing a scene that moves while silently lacking feedback,
+        /// objective-safe death recovery, or a usable weapon muzzle.
+        /// </summary>
+        static void AddGeneratedPlayerContractIssues(
+            GameObject player,
+            List<string> issues)
+        {
+            const string label = "Player Craft";
+            AddPlayerCraftPhysicsIssues(player, label, issues);
+            if (!player)
+                return;
+
+            CheckRequiredComponent<PlayerCharacter>(player, label, issues);
+            CheckRequiredComponent<PlayerFlightStateMachine>(player, label, issues);
+            CheckRequiredComponent<PlayerFlightInput>(player, label, issues);
+            CheckRequiredComponent<PlayerWeaponInput>(player, label, issues);
+            CheckRequiredComponent<PlayerRespawnController>(player, label, issues);
+            CheckRequiredComponent<PlayerFlightPresentation>(player, label, issues);
+            CheckRequiredComponent<PlayerWeaponPresentation>(player, label, issues);
+            CheckRequiredComponent<PlayerDamageFeedback>(player, label, issues);
+            CheckRequiredComponent<PlayerHealthDisplay>(player, label, issues);
+
+            HealthComponent health = player.GetComponent<HealthComponent>();
+            if (!health)
+            {
+                issues.Add($"{label}: HealthComponent missing");
+            }
+            else
+            {
+                SerializedObject serializedHealth = new SerializedObject(health);
+                CheckSerializedFloat(
+                    serializedHealth,
+                    "maxHealth",
+                    Ee5SliceProfile.PlayerMaxHealth,
+                    $"{label}: max health",
+                    issues);
+                CheckSerializedFloat(
+                    serializedHealth,
+                    "invulnerabilityDuration",
+                    Ee5SliceProfile.PlayerInvulnerabilityDuration,
+                    $"{label}: invulnerability duration",
+                    issues);
+            }
+
+            PlayerFlightInput flightInput = player.GetComponent<PlayerFlightInput>();
+            if (flightInput)
+            {
+                SerializedObject serializedInput = new SerializedObject(flightInput);
+                CheckObjectReference(
+                    serializedInput,
+                    "inputActions",
+                    $"{label}: flight input actions",
+                    issues);
+                CheckObjectReference(
+                    serializedInput,
+                    "gameState",
+                    $"{label}: flight game state",
+                    issues);
+                CheckSerializedBool(
+                    serializedInput,
+                    "includeEe5KeyboardFallback",
+                    true,
+                    $"{label}: keyboard fallback",
+                    issues);
+                CheckSerializedFloat(
+                    serializedInput,
+                    "turnDeadzone",
+                    Ee5SliceProfile.PlayerTurnDeadzone,
+                    $"{label}: turn deadzone",
+                    issues);
+                CheckSerializedFloat(
+                    serializedInput,
+                    "thrustDeadzone",
+                    Ee5SliceProfile.PlayerThrustDeadzone,
+                    $"{label}: thrust deadzone",
+                    issues);
+            }
+
+            PlayerWeaponInput weaponInput = player.GetComponent<PlayerWeaponInput>();
+            if (weaponInput)
+            {
+                SerializedObject serializedWeaponInput = new SerializedObject(weaponInput);
+                CheckObjectReference(
+                    serializedWeaponInput,
+                    "inputActions",
+                    $"{label}: weapon input actions",
+                    issues);
+                CheckObjectReference(
+                    serializedWeaponInput,
+                    "gameState",
+                    $"{label}: weapon game state",
+                    issues);
+            }
+
+            PlayerWeapon weapon = player.GetComponent<PlayerWeapon>();
+            if (!weapon)
+            {
+                issues.Add($"{label}: PlayerWeapon missing");
+            }
+            else
+            {
+                SerializedObject serializedWeapon = new SerializedObject(weapon);
+                CheckObjectReference(
+                    serializedWeapon,
+                    "gameState",
+                    $"{label}: weapon game state",
+                    issues);
+                CheckObjectReference(
+                    serializedWeapon,
+                    "projectilePrefab",
+                    $"{label}: projectile prefab",
+                    issues);
+                CheckObjectReference(
+                    serializedWeapon,
+                    "firePoint",
+                    $"{label}: fire point",
+                    issues);
+                CheckSerializedFloat(
+                    serializedWeapon,
+                    "fireCooldown",
+                    Ee5SliceProfile.PlayerFireCooldown,
+                    $"{label}: fire cooldown",
+                    issues);
+                CheckSerializedFloat(
+                    serializedWeapon,
+                    "recoilForce",
+                    Ee5SliceProfile.PlayerRecoilForce,
+                    $"{label}: recoil",
+                    issues);
+            }
+
+            Transform firePoint = player.transform.Find("Fire Point");
+            if (!firePoint
+                || Vector3.Distance(firePoint.localPosition, new Vector3(0.55f, 0f, 0f)) > 0.001f)
+            {
+                issues.Add($"{label}: authored fire point pose");
+            }
+
+            PlayerFlightPresentation flightPresentation =
+                player.GetComponent<PlayerFlightPresentation>();
+            if (flightPresentation)
+            {
+                SerializedObject serializedPresentation =
+                    new SerializedObject(flightPresentation);
+                CheckObjectReference(
+                    serializedPresentation,
+                    "visual",
+                    $"{label}: flight visual",
+                    issues);
+                CheckObjectReference(
+                    serializedPresentation,
+                    "visualRenderer",
+                    $"{label}: flight visual renderer",
+                    issues);
+                CheckObjectReference(
+                    serializedPresentation,
+                    "thrustAudio",
+                    $"{label}: thrust audio source",
+                    issues);
+                CheckObjectReference(
+                    serializedPresentation,
+                    "thrustClip",
+                    $"{label}: thrust audio clip",
+                    issues);
+                CheckSerializedBool(
+                    serializedPresentation,
+                    "enforceEe5Profile",
+                    true,
+                    $"{label}: presentation profile",
+                    issues);
+            }
+
+            PlayerHealthDisplay healthDisplay = player.GetComponent<PlayerHealthDisplay>();
+            if (healthDisplay)
+            {
+                SerializedObject serializedDisplay = new SerializedObject(healthDisplay);
+                CheckObjectReference(
+                    serializedDisplay,
+                    "displayRenderer",
+                    $"{label}: health display renderer",
+                    issues);
+                SerializedProperty healthSprites = serializedDisplay.FindProperty("healthSprites");
+                if (healthSprites == null || healthSprites.arraySize < 2)
+                    issues.Add($"{label}: health display sprites");
+            }
+
+            PlayerRespawnController recovery = player.GetComponent<PlayerRespawnController>();
+            if (recovery)
+            {
+                SerializedObject serializedRecovery = new SerializedObject(recovery);
+                CheckSerializedBool(
+                    serializedRecovery,
+                    "reloadSceneOnDeath",
+                    true,
+                    $"{label}: room-reset death flow",
+                    issues);
+                CheckSerializedBool(
+                    serializedRecovery,
+                    "respawnAutomatically",
+                    false,
+                    $"{label}: automatic respawn",
+                    issues);
+            }
+
+            PlayerCollisionDamage collisionDamage = player.GetComponent<PlayerCollisionDamage>();
+            if (collisionDamage && collisionDamage.enabled != Ee5SliceProfile.PlayerCollisionDamageEnabled)
+                issues.Add($"{label}: collision damage policy");
+        }
+
+        static void CheckRequiredComponent<T>(
+            GameObject root,
+            string label,
+            List<string> issues)
+            where T : Component
+        {
+            if (!root.GetComponent<T>())
+                issues.Add($"{label}: {typeof(T).Name} missing");
         }
 
         static List<string> GetPlayerCraftSpriteIssues(
@@ -3542,37 +3910,64 @@ namespace ExtraterrestrialExhaust.Editor
             player.transform.position = Ee5SliceProfile.VerticalSlicePlayerSpawn;
 
             PlayerCharacter character = RequireComponent<PlayerCharacter>(player, PlayerPrefabPath);
-            PlayerFlightMotor motor = RequireComponent<PlayerFlightMotor>(player, PlayerPrefabPath);
+            RequireComponent<PlayerFlightMotor>(player, PlayerPrefabPath);
+            RequireComponent<PlayerFlightStateMachine>(player, PlayerPrefabPath);
+            RequireComponent<HealthComponent>(player, PlayerPrefabPath);
+            RequireComponent<PlayerRespawnController>(player, PlayerPrefabPath);
+            RequireComponent<PlayerFlightPresentation>(player, PlayerPrefabPath);
+            RequireComponent<PlayerWeaponPresentation>(player, PlayerPrefabPath);
+            RequireComponent<PlayerDamageFeedback>(player, PlayerPrefabPath);
+            RequireComponent<PlayerHealthDisplay>(player, PlayerPrefabPath);
+
+            Sprite[] craftSprites = LoadSprites(
+                PlayerCraftSpriteAssetPath,
+                LegacyPlayerCraftSpriteAssetPath);
+            if (craftSprites.Length == 0)
+                throw new System.InvalidOperationException(
+                    "The public player cannot be built because its verified orange craft sprite is missing.");
+
+            // The authored prefab remains untouched. Repairing the instance
+            // makes this builder resilient to an older local prefab while
+            // keeping the public scene's art and animation contract explicit.
+            RepairPlayerCraftRoot(player, craftSprites);
             // Preserve Prefabs keeps the authored asset intact, but the
             // generated scene still needs an explicit physics contract. This
             // keeps the Inspector honest before PlayerFlightMotor.Awake runs.
             ApplyPlayerCraftPhysicsProfile(player);
-            PrefabUtility.RecordPrefabInstancePropertyModifications(player.transform);
-            Rigidbody2D body = player.GetComponent<Rigidbody2D>();
-            if (body)
-                PrefabUtility.RecordPrefabInstancePropertyModifications(body);
-            CircleCollider2D playerCollider = player.GetComponent<CircleCollider2D>();
-            if (playerCollider)
-                PrefabUtility.RecordPrefabInstancePropertyModifications(playerCollider);
-            ApplyEe5PlayerMotorProfile(motor);
-            PrefabUtility.RecordPrefabInstancePropertyModifications(motor);
-            PlayerFlightInput input = RequireComponent<PlayerFlightInput>(player, PlayerPrefabPath);
-            input.ConfigureInputAsset(inputAsset);
-            PrefabUtility.RecordPrefabInstancePropertyModifications(input);
-            SetSerializedObjectReference(input, "gameState", gameState);
-            SetSerializedFloat(input, "turnDeadzone", Ee5SliceProfile.PlayerTurnDeadzone);
-            SetSerializedFloat(input, "thrustDeadzone", Ee5SliceProfile.PlayerThrustDeadzone);
+            RequireComponent<PlayerFlightInput>(player, PlayerPrefabPath);
+            RequireComponent<PlayerWeaponInput>(player, PlayerPrefabPath);
+            RequireComponent<PlayerWeapon>(player, PlayerPrefabPath);
 
-            PlayerWeaponInput weaponInput = RequireComponent<PlayerWeaponInput>(player, PlayerPrefabPath);
-            weaponInput.ConfigureInputAsset(inputAsset);
-            PrefabUtility.RecordPrefabInstancePropertyModifications(weaponInput);
-            SetSerializedObjectReference(weaponInput, "gameState", gameState);
-
-            PlayerWeapon weapon = RequireComponent<PlayerWeapon>(player, PlayerPrefabPath);
-            SetSerializedObjectReference(weapon, "gameState", gameState);
-            SetSerializedObjectReference(weapon, "projectilePrefab", projectilePrefab);
+            // Use the same complete repair contract as the explicit player
+            // profile menu. Previously this path only wrote movement and
+            // projectile references, leaving stale presentation/death values
+            // to survive a supposedly deterministic public build.
+            ApplyGoldStandardPlayerProfile(
+                player,
+                gameState,
+                inputAsset,
+                projectilePrefab);
+            RecordPlayerInstanceOverrides(player);
 
             return character;
+        }
+
+        static void RecordPlayerInstanceOverrides(GameObject player)
+        {
+            foreach (Component component in player.GetComponents<Component>())
+            {
+                if (component)
+                    PrefabUtility.RecordPrefabInstancePropertyModifications(component);
+            }
+
+            Transform visual = player.transform.Find("Craft Visual");
+            Transform firePoint = player.transform.Find("Fire Point");
+            if (visual)
+                PrefabUtility.RecordPrefabInstancePropertyModifications(visual);
+            if (firePoint)
+                PrefabUtility.RecordPrefabInstancePropertyModifications(firePoint);
+
+            EditorUtility.SetDirty(player);
         }
 
         /// <summary>
@@ -3604,20 +3999,19 @@ namespace ExtraterrestrialExhaust.Editor
             SetSerializedObjectReference(controller, "gameState", gameState);
 
             EnemyWeapon weapon = enemy.GetComponent<EnemyWeapon>();
-            if (!weapon)
+            EnemyContactDamage contactDamage = enemy.GetComponent<EnemyContactDamage>();
+            if (!contactDamage)
             {
                 // Older preserved melee prefabs can predate the dedicated
                 // contact component. Add it to the scene instance rather than
                 // mutating the authored asset, so the preserve path still has
                 // an actual EE5 contact-damage authority.
-                EnemyContactDamage contactDamage =
-                    enemy.GetComponent<EnemyContactDamage>();
-                if (!contactDamage)
-                    contactDamage = enemy.AddComponent<EnemyContactDamage>();
-
-                ConfigureEe5ContactDamage(contactDamage);
-                PrefabUtility.RecordPrefabInstancePropertyModifications(contactDamage);
+                contactDamage = enemy.AddComponent<EnemyContactDamage>();
             }
+            ConfigureEe5ContactDamage(contactDamage);
+            PrefabUtility.RecordPrefabInstancePropertyModifications(contactDamage);
+
+            ApplyEe5EnemyInstanceGameplayProfile(enemy, controller, weapon, weapon != null);
             if (ApplyEe5EnemyHitbox(enemy, weapon != null))
             {
                 foreach (Collider2D collider in enemy.GetComponents<Collider2D>())
@@ -3637,6 +4031,31 @@ namespace ExtraterrestrialExhaust.Editor
                     serializedWeapon,
                     "mirrorFirePointYWithUprightFlip",
                     Ee5SliceProfile.EnemyGunnerMirrorFirePointYWithUprightFlip);
+                SetBool(serializedWeapon, "enforceEe5Profile", true);
+                SetFloat(
+                    serializedWeapon,
+                    "fireCooldown",
+                    Ee5SliceProfile.EnemyGunnerFireCooldown);
+                SetFloat(
+                    serializedWeapon,
+                    "projectileSpeed",
+                    Ee5SliceProfile.EnemyGunnerProjectileSpeed);
+                SetFloat(
+                    serializedWeapon,
+                    "projectileLifetime",
+                    Ee5SliceProfile.EnemyGunnerProjectileLifetime);
+                SetFloat(
+                    serializedWeapon,
+                    "projectileKnockback",
+                    Ee5SliceProfile.EnemyGunnerProjectileKnockback);
+                SetBool(
+                    serializedWeapon,
+                    "requireTargetWithinAttackRange",
+                    Ee5SliceProfile.EnemyGunnerRequiresAttackRange);
+                SetBool(
+                    serializedWeapon,
+                    "requireLineOfSightToFire",
+                    Ee5SliceProfile.EnemyGunnerRequiresLineOfSightToFire);
                 serializedWeapon.ApplyModifiedPropertiesWithoutUndo();
                 PrefabUtility.RecordPrefabInstancePropertyModifications(weapon);
 
@@ -3688,6 +4107,113 @@ namespace ExtraterrestrialExhaust.Editor
             }
 
             return controller;
+        }
+
+        /// <summary>
+        /// Writes the role values that EnemyController also protects at
+        /// runtime onto the generated prefab instance. The public scene should
+        /// be truthful in the Inspector before Play, while the authored prefab
+        /// remains available for later hand-tuning.
+        /// </summary>
+        static void ApplyEe5EnemyInstanceGameplayProfile(
+            GameObject enemy,
+            EnemyController controller,
+            EnemyWeapon weapon,
+            bool ranged)
+        {
+            Vector3 rootScale = enemy.transform.localScale;
+            rootScale.x = ranged
+                ? Ee5SliceProfile.EnemyGunnerRootScaleX
+                : Ee5SliceProfile.EnemyMeleeRootScaleX;
+            enemy.transform.localScale = rootScale;
+
+            Rigidbody2D body = enemy.GetComponent<Rigidbody2D>();
+            if (body)
+            {
+                body.bodyType = RigidbodyType2D.Kinematic;
+                body.linearDamping = 0f;
+                body.angularDamping = 0.05f;
+                body.interpolation = RigidbodyInterpolation2D.Interpolate;
+                body.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
+                PrefabUtility.RecordPrefabInstancePropertyModifications(body);
+            }
+
+            HealthComponent health = enemy.GetComponent<HealthComponent>();
+            if (health)
+            {
+                SerializedObject serializedHealth = new SerializedObject(health);
+                SetFloat(
+                    serializedHealth,
+                    "maxHealth",
+                    ranged
+                        ? Ee5SliceProfile.EnemyGunnerMaxHealth
+                        : Ee5SliceProfile.EnemyMeleeMaxHealth);
+                SetFloat(
+                    serializedHealth,
+                    "invulnerabilityDuration",
+                    Ee5SliceProfile.EnemyInvulnerabilityDuration);
+                serializedHealth.ApplyModifiedPropertiesWithoutUndo();
+                PrefabUtility.RecordPrefabInstancePropertyModifications(health);
+            }
+
+            SerializedObject serializedController = new SerializedObject(controller);
+            SetEnum(
+                serializedController,
+                "movementMode",
+                ranged ? EnemyMovementMode.Wander : EnemyMovementMode.Chase);
+            SetFloat(
+                serializedController,
+                "chaseSpeed",
+                ranged
+                    ? Ee5SliceProfile.EnemyGunnerChaseSpeed
+                    : Ee5SliceProfile.EnemyMeleeChaseSpeed);
+            SetFloat(
+                serializedController,
+                "faceTurnSpeed",
+                ranged
+                    ? Ee5SliceProfile.EnemyGunnerFaceTurnSpeed
+                    : Ee5SliceProfile.EnemyMeleeFaceTurnSpeed);
+            SetFloat(
+                serializedController,
+                "attackRange",
+                ranged ? 7f : Ee5SliceProfile.EnemyMeleeAttackRange);
+            SetFloat(
+                serializedController,
+                "attackExitRange",
+                ranged ? 7f : Ee5SliceProfile.EnemyMeleeAttackExitRange);
+            SetFloat(
+                serializedController,
+                "contactDamageRange",
+                ranged ? 0f : Ee5SliceProfile.EnemyMeleeContactRange);
+            SetFloat(
+                serializedController,
+                "attackFacingRefreshDegrees",
+                ranged ? 0f : Ee5SliceProfile.EnemyMeleeAttackFacingRefreshDegrees);
+            SetFloat(
+                serializedController,
+                "wakeSignalDistanceMultiplier",
+                Ee5SliceProfile.EnemyWakeSignalDistanceMultiplier);
+            SetFloat(
+                serializedController,
+                "wanderRadius",
+                Ee5SliceProfile.EnemyGunnerWanderRadius);
+            SetFloat(
+                serializedController,
+                "wanderDurationMin",
+                Ee5SliceProfile.EnemyGunnerWanderDurationMin);
+            SetFloat(
+                serializedController,
+                "wanderDurationMax",
+                Ee5SliceProfile.EnemyGunnerWanderDurationMax);
+            SetBool(serializedController, "orbitWhileAttacking", false);
+            SetBool(serializedController, "forwardIsLocalNegativeX", ranged);
+            serializedController.ApplyModifiedPropertiesWithoutUndo();
+            PrefabUtility.RecordPrefabInstancePropertyModifications(controller);
+            PrefabUtility.RecordPrefabInstancePropertyModifications(enemy.transform);
+
+            if (ranged && !weapon)
+                throw new System.InvalidOperationException(
+                    "The public White Gunner prefab is missing EnemyWeapon.");
         }
 
         static T RequireComponent<T>(GameObject root, string assetPath)
