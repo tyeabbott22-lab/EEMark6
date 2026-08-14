@@ -270,9 +270,10 @@ namespace ExtraterrestrialExhaust.Player
             }
 
             // realScene3's sniper instance also has JetpackInput's direct
-            // fallback enabled beside JetpackMotor. Keep its extra force in
-            // the quick presentable path, but do not submit a second torque
-            // writer after the bounded turn response has taken ownership.
+            // fallback enabled beside JetpackMotor. In the active gold path
+            // this intentionally submits the second torque/force writer too;
+            // the profile switch above keeps the experimental bridge easy to
+            // re-enable for an A/B test without editing the prefab.
             ApplyEe5LegacyDirectPhysicsAssist(
                 command,
                 thrusting,
