@@ -53,7 +53,7 @@ namespace ExtraterrestrialExhaust.Player
         [SerializeField] bool removeVelocityIntoColliders = true;
 
         [Header("Stopper Zone")]
-        [Tooltip("EE5's lower-center volume suppresses new flight input while the craft coasts through it.")]
+        [Tooltip("Compatibility tag for older EE5-derived scenes. New scenes use FlightStopperZone directly.")]
         [SerializeField] string stopperTag = "StopperZone";
 
         Rigidbody2D body;
@@ -583,7 +583,16 @@ namespace ExtraterrestrialExhaust.Player
 
         bool IsStopper(Collider2D other)
         {
-            return other && !string.IsNullOrEmpty(stopperTag) && other.CompareTag(stopperTag);
+            if (!other)
+                return false;
+
+            // The explicit environment component is the production contract.
+            // Retain the imported EE5 tag only so older hand-authored scenes
+            // remain playable while they are migrated through the builder.
+            if (other.GetComponentInParent<FlightStopperZone>())
+                return true;
+
+            return !string.IsNullOrEmpty(stopperTag) && other.CompareTag(stopperTag);
         }
 
         void EnterStopperZone()

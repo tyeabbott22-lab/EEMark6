@@ -3118,6 +3118,11 @@ namespace ExtraterrestrialExhaust.Editor
                     issues.Add("Moon Thrust Stopper must be a trigger");
                 if (stopper.tag != "StopperZone")
                     issues.Add("Moon Thrust Stopper tag");
+                FlightStopperZone stopperZone = stopper.GetComponent<FlightStopperZone>();
+                if (!stopperZone)
+                    issues.Add("Moon Thrust Stopper FlightStopperZone contract");
+                else if (!stopperZone.IsTriggerVolume)
+                    issues.Add("Moon Thrust Stopper zone collider must be a trigger");
                 if (!stopper.GetComponent<SpriteShapeController>())
                     issues.Add("Moon Thrust Stopper SpriteShape");
             }
@@ -5944,7 +5949,8 @@ namespace ExtraterrestrialExhaust.Editor
             // The EE5 reference is an irregular translucent SpriteShape
             // volume. Its collider is a trigger: the player keeps falling or
             // coasting through it while PlayerFlightMotor suppresses thrust
-            // and rotation through the StopperZone contract.
+            // and rotation through FlightStopperZone. The imported tag remains
+            // serialized as an older-scene compatibility contract.
             GameObject zone = new GameObject("Moon Thrust Stopper - Solid Fall Area");
             zone.tag = "StopperZone";
             zone.transform.position = new Vector3(
@@ -5970,6 +5976,7 @@ namespace ExtraterrestrialExhaust.Editor
             collider.isTrigger = true;
             collider.pathCount = 1;
             collider.SetPath(0, points);
+            zone.AddComponent<FlightStopperZone>();
 
             SpriteShape profile = AssetDatabase.LoadAssetAtPath<SpriteShape>(
                 MoonTerrainFillProfileAssetPath);

@@ -45,6 +45,7 @@ The player foundation is intentionally split into three responsibilities:
 | `ContactHazard` / `HazardPresentation` | Optional reusable heat volume with EE5-style knockback, pulse telegraph, damage accent, and ember presentation. |
 | `PlayerCollisionDamage` | Optional high-speed impact experiment; disabled on the EE5 gold path because ordinary wall contact is not player damage in `realScene`. |
 | `BrittleWall` | Recreates the EE5 thrust-assisted high-speed slam through interior brittle shelves while leaving arena boundaries permanent. |
+| `FlightStopperZone` | Marks the EE5 lower-basin no-flight volume explicitly; the player motor owns the temporary control lock while the legacy tag remains only as scene compatibility. |
 | `HealthPickup` / `FireRatePickup` / `PickupPresentation` | Optional recovery and weapon-power beats with authored idle motion and collection confirmation, while remaining non-required room pressure. |
 | `EnemyController` | Provides explicit dormant, waking, chasing, attacking, and defeated states with EE5-style wall steering, ranged orbit movement, and line-of-sight wake charging. |
 | `EnemySpritePresentation` | Maps enemy states to imported idle, wake-alert, active, and defeat animation frames. |
