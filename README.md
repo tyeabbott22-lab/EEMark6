@@ -104,6 +104,26 @@ Unity `6000.3.21f1`.
 
 The build command runs the same preflight automatically and cancels before prompting to save or replacing a scene if a required prefab, gameplay component, input asset, imported sprite, SpriteShape profile, physics material, or audio cue is missing. Once preflight passes, the builder backs up an existing `FlightTest` scene under `Library` before replacing it. It never reads from or writes to an EE MARK 5 project at build time; all approved reference art and configuration live inside this repository.
 
+## End-to-end verification
+
+`Assets/Tests/PlayMode/PublicResumeSlicePlayModeTests.cs` loads the public `FlightTest` scene and verifies the complete reviewer route with the production components. It fires a real player projectile into the authored gunner hitbox, observes both enemy roles leave Dormant, completes the encounter through `HealthComponent`, physically collects the released carrier key, waits for the key-driven laser gate lift, enters the extraction trigger, and requires `GameOverReason.ExtractionComplete`.
+
+The test uses direct finishing damage only after the live projectile path succeeds. This keeps automated verification deterministic without replacing weapon, collision, key, gate, or extraction behavior with test-only runtime hooks.
+
+Run it from Unity's Test Runner under **PlayMode**, or from PowerShell with Unity `6000.3.21f1`:
+
+```powershell
+$playmodeResults = Join-Path $env:TEMP "ee6-playmode-results.xml"
+$playmodeLog = Join-Path $env:TEMP "ee6-playmode-tests.log"
+& "C:\Program Files\Unity\Hub\Editor\6000.3.21f1\Editor\Unity.exe" `
+  -batchmode -nographics `
+  -projectPath (Get-Location).Path `
+  -runTests -testPlatform PlayMode `
+  -testFilter ExtraterrestrialExhaust.Tests.PlayMode.PublicResumeSlicePlayModeTests `
+  -testResults $playmodeResults `
+  -logFile $playmodeLog
+```
+
 ## Playtest controls
 
 - `W` / `Up Arrow` / `Space`: thrust
