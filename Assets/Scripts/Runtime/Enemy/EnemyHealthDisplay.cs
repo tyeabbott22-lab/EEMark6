@@ -16,11 +16,16 @@ namespace ExtraterrestrialExhaust.Enemy
         [SerializeField, Min(0f)] float showOnStartDuration = 0.8f;
         [SerializeField, Min(0f)] float showOnHitDuration = 0.6f;
         [SerializeField, Min(0f)] float fadeSpeed = 6f;
+        [Tooltip("The close bruiser is deliberately a one-hit enemy. Keep its rotating health tell visible so it reads as an intentional combat beat rather than a missing HUD element.")]
+        [SerializeField] bool keepVisibleForSingleHitEnemy = true;
         [SerializeField] float rotationSpeed = 90f;
 
         HealthComponent health;
         float visibleRemaining;
         float alpha;
+
+        public SpriteRenderer DisplayRenderer => displayRenderer;
+        public bool IsVisible => displayRenderer && displayRenderer.enabled;
 
         void Awake()
         {
@@ -79,7 +84,12 @@ namespace ExtraterrestrialExhaust.Enemy
                 return;
 
             visibleRemaining = Mathf.Max(0f, visibleRemaining - Time.deltaTime);
-            float targetAlpha = health.IsAlive && visibleRemaining > 0f ? 1f : 0f;
+            bool persistentSingleHitReadout = keepVisibleForSingleHitEnemy
+                && health.MaxHealth <= 1.01f;
+            float targetAlpha = health.IsAlive
+                && (persistentSingleHitReadout || visibleRemaining > 0f)
+                ? 1f
+                : 0f;
             alpha = Mathf.MoveTowards(alpha, targetAlpha, fadeSpeed * Time.deltaTime);
             ApplyAlpha();
 

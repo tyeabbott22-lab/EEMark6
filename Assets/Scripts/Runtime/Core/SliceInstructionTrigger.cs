@@ -6,7 +6,7 @@ namespace ExtraterrestrialExhaust.Core
     /// <summary>
     /// Trigger-driven instruction prompt matching the EE5 realScene flow.
     /// Prompts identify the player through PlayerCharacter rather than tags or
-    /// legacy controller names, so generated scenes and future prefabs agree.
+    /// scene-specific controller names.
     /// </summary>
     [RequireComponent(typeof(BoxCollider2D))]
     public sealed class SliceInstructionTrigger : MonoBehaviour

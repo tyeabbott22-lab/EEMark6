@@ -60,9 +60,8 @@ namespace ExtraterrestrialExhaust.Enemy
             if (enforceEe5Profile)
                 ApplyEe5Profile();
 
-            // Generated scenes serialize the authoritative game-state owner;
-            // standalone prefabs still resolve one when they are dropped into
-            // a test scene without builder wiring.
+            // Standalone prefab previews can omit the shared game-state owner.
+            // Resolve it once so pause and combat remain coordinated.
             if (!gameState)
                 gameState = FindFirstObjectByType<GameStateMachine>();
 

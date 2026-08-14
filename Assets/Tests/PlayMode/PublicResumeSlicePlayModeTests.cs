@@ -5,6 +5,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
+using UnityEngine.U2D;
 using ExtraterrestrialExhaust.CameraSystem;
 using ExtraterrestrialExhaust.Combat;
 using ExtraterrestrialExhaust.Core;
@@ -152,6 +153,148 @@ namespace ExtraterrestrialExhaust.Tests.PlayMode
 
         [UnityTest]
         [Timeout(45000)]
+        public IEnumerator BrittlePassage_RetainsARealSpriteShapeDentBeforeBreaking()
+        {
+            GameObject passage = GameObject.Find("Brittle Launch Gate - SpriteShape");
+            PlayerCharacter player = Object.FindFirstObjectByType<PlayerCharacter>();
+            Assert.That(passage, Is.Not.Null, "The public room has no staged brittle passage.");
+            Assert.That(player, Is.Not.Null);
+
+            BrittleWall brittle = passage.GetComponent<BrittleWall>();
+            SpriteShapeController spriteShape = passage.GetComponent<SpriteShapeController>();
+            PolygonCollider2D collider = passage.GetComponent<PolygonCollider2D>();
+            Assert.That(brittle, Is.Not.Null, "The brittle passage has no impact behavior.");
+            Assert.That(spriteShape, Is.Not.Null, "The brittle passage is not a SpriteShape.");
+            Assert.That(collider, Is.Not.Null, "The brittle passage has no gameplay contour.");
+
+            int pointCount = spriteShape.spline.GetPointCount();
+            Vector2[] beforeSpline = new Vector2[pointCount];
+            Vector2[] beforeCollider = collider.points;
+            for (int i = 0; i < pointCount; i++)
+                beforeSpline[i] = spriteShape.spline.GetPosition(i);
+
+            Rigidbody2D body = player.FlightMotor.Body;
+            player.Health.ConfigureDamageRules(1000f, 0.05f);
+            body.gravityScale = 0f;
+            body.constraints = RigidbodyConstraints2D.FreezeRotation;
+            PlaceBody(body, new Vector2(collider.bounds.min.x - 0.4f, collider.bounds.center.y), 0f);
+            body.linearVelocity = Vector2.right * 3f;
+            Physics2D.SyncTransforms();
+
+            yield return WaitForCondition(
+                () => brittle.DeformationMagnitude > 0f,
+                3f,
+                "A normal contact did not leave a persistent brittle-wall dent.");
+
+            bool splineChanged = false;
+            for (int i = 0; i < pointCount; i++)
+            {
+                if (Vector2.Distance(beforeSpline[i], spriteShape.spline.GetPosition(i)) <= 0.001f)
+                    continue;
+
+                splineChanged = true;
+                break;
+            }
+            Assert.That(splineChanged, Is.True,
+                "The brittle chip did not alter the authored SpriteShape contour.");
+            Vector2[] afterCollider = collider.points;
+            bool colliderChanged = afterCollider.Length != beforeCollider.Length;
+            if (!colliderChanged)
+            {
+                for (int i = 0; i < afterCollider.Length; i++)
+                {
+                    if (Vector2.Distance(beforeCollider[i], afterCollider[i]) <= 0.001f)
+                        continue;
+
+                    colliderChanged = true;
+                    break;
+                }
+            }
+            Assert.That(colliderChanged, Is.True,
+                "The brittle collider did not follow its newly dented contour.");
+            Assert.That(brittle.IsBroken, Is.False,
+                "A low-speed demonstration contact should dent the passage before breaking it.");
+        }
+
+        [UnityTest]
+        [Timeout(45000)]
+        public IEnumerator BrittlePassage_BreaksOnSecondDirectPassAndPreservesMomentum()
+        {
+            GameObject passage = GameObject.Find("Brittle Launch Gate - SpriteShape");
+            PlayerCharacter player = Object.FindFirstObjectByType<PlayerCharacter>();
+            BrittleWall brittle = passage ? passage.GetComponent<BrittleWall>() : null;
+            PolygonCollider2D collider = passage ? passage.GetComponent<PolygonCollider2D>() : null;
+            Assert.That(brittle, Is.Not.Null);
+            Assert.That(collider, Is.Not.Null);
+            Assert.That(player, Is.Not.Null);
+
+            Rigidbody2D body = player.FlightMotor.Body;
+            player.Health.ConfigureDamageRules(1000f, 0.05f);
+            body.gravityScale = 0f;
+            body.constraints = RigidbodyConstraints2D.FreezeRotation;
+
+            Vector2 approachPoint = new Vector2(
+                collider.bounds.min.x - 0.4f,
+                collider.bounds.center.y);
+            PlaceBody(body, approachPoint, 0f);
+            body.linearVelocity = Vector2.right * 3f;
+            Physics2D.SyncTransforms();
+            yield return WaitForCondition(
+                () => brittle.ChipHits >= 1,
+                3f,
+                "The opening brittle pass did not register a readable chip.");
+            Assert.That(brittle.IsBroken, Is.False,
+                "The first teaching-pass impact should leave a dent, not skip straight to destruction.");
+
+            yield return new WaitForSeconds(0.12f);
+            PlaceBody(body, approachPoint, 0f);
+            body.linearVelocity = Vector2.right * 3f;
+            Physics2D.SyncTransforms();
+            yield return WaitForCondition(
+                () => brittle.IsBroken,
+                3f,
+                "The second direct brittle pass did not open the route.");
+
+            Assert.That(body.linearVelocity.x, Is.GreaterThan(2.4f),
+                "The brittle break removed the craft's forward momentum instead of handing it through the opened lane.");
+        }
+
+        [UnityTest]
+        [Timeout(15000)]
+        public IEnumerator OneHitMelee_PresentsASpinningHealthReadout()
+        {
+            EnemyController melee = null;
+            foreach (EnemyController enemy in Object.FindObjectsByType<EnemyController>(FindObjectsSortMode.None))
+            {
+                if (enemy.IsMelee)
+                {
+                    melee = enemy;
+                    break;
+                }
+            }
+
+            Assert.That(melee, Is.Not.Null, "The public room has no close-bruiser role.");
+            EnemyHealthDisplay display = melee.GetComponent<EnemyHealthDisplay>();
+            HealthComponent health = melee.GetComponent<HealthComponent>();
+            Assert.That(display, Is.Not.Null, "The close bruiser has no health-readout system.");
+            Assert.That(health, Is.Not.Null);
+            Assert.That(health.MaxHealth, Is.LessThanOrEqualTo(1.01f));
+            yield return WaitForCondition(
+                () => display.IsVisible && display.DisplayRenderer.sprite,
+                2f,
+                "The close bruiser's health readout never became visible.");
+
+            float startAngle = display.DisplayRenderer.transform.localEulerAngles.z;
+            yield return new WaitForSeconds(0.25f);
+            float endAngle = display.DisplayRenderer.transform.localEulerAngles.z;
+            Assert.That(
+                Mathf.Abs(Mathf.DeltaAngle(startAngle, endAngle)),
+                Is.GreaterThan(20f),
+                "The visible close-bruiser health readout is not using its EE5-style spin tell.");
+        }
+
+        [UnityTest]
+        [Timeout(45000)]
         public IEnumerator PublicSlice_CompletesCombatKeyGateAndExtractionRoute()
         {
             PlayerCharacter player = Object.FindFirstObjectByType<PlayerCharacter>();
@@ -179,6 +322,8 @@ namespace ExtraterrestrialExhaust.Tests.PlayMode
             Assert.That(gate, Is.Not.Null);
             Assert.That(laserGate, Is.Not.Null);
             Assert.That(laserGate.BeamCount, Is.EqualTo(1), "The public gate must use the single Laser Glow barrier.");
+            Assert.That(laserGate.HasEmberEmitter, Is.True,
+                "The EE5-style laser wall is missing its base ember emitter.");
             Assert.That(exit, Is.Not.Null);
             Assert.That(objective, Is.Not.Null);
             Assert.That(stopper, Is.Not.Null, "The lower basin has no explicit no-flight zone.");
@@ -186,6 +331,7 @@ namespace ExtraterrestrialExhaust.Tests.PlayMode
             Assert.That(GameObject.Find("Playable Low Basin - SpriteShape (8)"), Is.Not.Null);
             Assert.That(GameObject.Find("Upper Crater Shelf - SpriteShape"), Is.Not.Null);
             Assert.That(GameObject.Find("Lower Crater Shelf - SpriteShape"), Is.Not.Null);
+            Assert.That(GameObject.Find("Brittle Launch Gate - SpriteShape"), Is.Not.Null);
             Assert.That(GameObject.Find("Laser Wall - Vertical Forever Gate"), Is.Not.Null,
                 "The public route is missing its named EE5 laser wall landmark.");
 
@@ -233,33 +379,84 @@ namespace ExtraterrestrialExhaust.Tests.PlayMode
             // Align the authored, offset EE5 hitbox—not merely the enemy root—
             // with the real fire pose. That keeps this a projectile/collider
             // test while remaining independent of imported root scale/pivots.
+            // Keep the authored gunner in its staged encounter position and
+            // move the player into a short, unobstructed firing lane. This
+            // exercises the real projectile/hitbox pair without asking a live
+            // kinematic enemy controller to accept a test-only teleport.
+            Vector2 initialMuzzleOffset = (Vector2)weapon.FirePoint.position - playerBody.position;
+            Vector2 initialShotDirection = initialMuzzleOffset.normalized;
+            if (initialShotDirection.sqrMagnitude < 0.001f)
+                initialShotDirection = Vector2.right;
+            Vector2 desiredShotOrigin = (Vector2)gunnerHitbox.bounds.center - initialShotDirection * 0.8f;
+            PlaceBody(playerBody, desiredShotOrigin - initialMuzzleOffset, 0f);
+            weapon.ResetForRespawn();
+
             Vector2 shotOrigin = weapon.FirePoint.position;
             Vector2 shotDirection = (shotOrigin - playerBody.position).normalized;
             if (shotDirection.sqrMagnitude < 0.001f)
                 shotDirection = Vector2.right;
-            Vector2 desiredHitboxCenter = shotOrigin + shotDirection * 0.8f;
-            Vector2 hitboxCorrection = desiredHitboxCenter - (Vector2)gunnerHitbox.bounds.center;
-            PlaceBody(gunnerBody, gunnerBody.position + hitboxCorrection, 0f);
             Assert.That(
-                Vector2.Distance(gunnerHitbox.bounds.center, desiredHitboxCenter),
+                Vector2.Distance(gunnerHitbox.bounds.center, shotOrigin + shotDirection * 0.8f),
                 Is.LessThan(0.05f),
-                "The test could not align the gunner's authored hitbox with the shot lane.");
+                "The test could not align the real player firing lane with the gunner's authored hitbox.");
+            RaycastHit2D shotLane = Physics2D.Raycast(shotOrigin, shotDirection, 1.2f);
+            Assert.That(shotLane.collider, Is.EqualTo(gunnerHitbox),
+                "The real player firing lane is obstructed before it reaches the gunner hitbox.");
 
-            float gunnerHealthBeforeShot = gunnerHealth.CurrentHealth;
+            // Do not stop at a single proof-of-contact. The player report that
+            // motivated this test was a gunner that accepted damage until its
+            // final pip, then visually returned to idle and kept the key
+            // locked. Exercise every authored one-damage player shot through
+            // the live projectile / authored hitbox path so a late-hit failure
+            // cannot be hidden by the objective shortcut further below.
             int firedCount = 0;
             weapon.Fired += HandleFired;
-            Assert.That(weapon.TryFire(), Is.True, "The composed player weapon refused its opening shot.");
-            yield return WaitForCondition(
-                () => gunnerHealth.CurrentHealth < gunnerHealthBeforeShot,
-                2f,
-                "A live player projectile did not damage the gunner hitbox.");
+            for (int shot = 0; shot < Mathf.CeilToInt(gunnerHealth.MaxHealth); shot++)
+            {
+                // Re-align after recoil and the live gunner's wander step.
+                // This leaves both actors and all their real components
+                // enabled; it only keeps the test lane deterministic.
+                Vector2 muzzleOffset = (Vector2)weapon.FirePoint.position - playerBody.position;
+                Vector2 muzzleDirection = muzzleOffset.sqrMagnitude > 0.001f
+                    ? muzzleOffset.normalized
+                    : Vector2.right;
+                // The enlarged gunner art extends beyond its compact EE5 box.
+                // The opening shot deliberately skims just above that box to
+                // cover the projectile-only visual hit assist; later shots
+                // remain on the canonical authored center line.
+                Vector2 shotTarget = shot == 0
+                    ? (Vector2)gunnerHitbox.bounds.center
+                        + Vector2.up * (gunnerHitbox.bounds.extents.y + 0.2f)
+                    : (Vector2)gunnerHitbox.bounds.center;
+                Vector2 desiredMuzzle = shotTarget - muzzleDirection * 0.8f;
+                PlaceBody(playerBody, desiredMuzzle - muzzleOffset, 0f);
+                playerBody.linearVelocity = Vector2.zero;
+                weapon.ResetForRespawn();
+                yield return new WaitForFixedUpdate();
+
+                float healthBeforeShot = gunnerHealth.CurrentHealth;
+                Assert.That(weapon.TryFire(), Is.True,
+                    $"The composed player weapon refused gunner shot {shot + 1}.");
+                yield return WaitForCondition(
+                    () => gunnerHealth.CurrentHealth < healthBeforeShot,
+                    2f,
+                    $"Live player projectile {shot + 1} did not damage the gunner hitbox.");
+            }
             weapon.Fired -= HandleFired;
-            Assert.That(firedCount, Is.EqualTo(1), "The weapon did not publish exactly one firing event.");
+            Assert.That(firedCount, Is.EqualTo(Mathf.CeilToInt(gunnerHealth.MaxHealth)),
+                "The player weapon did not publish one firing event per gunner health pip.");
 
             yield return WaitForCondition(
-                () => gunner.State != EnemyState.Dormant,
-                4f,
-                "The nearby gunner never left its dormant state.");
+                () => gunner.State == EnemyState.Defeated,
+                2f,
+                "The final live projectile removed the gunner's last health pip but did not defeat it.");
+
+            yield return WaitForCondition(
+                () => key && (key.IsAvailable || key.IsCollected),
+                3f,
+                "The gunner's defeated carrier did not release a collectible energy key.");
+            Assert.That(objective.CurrentState, Is.Not.EqualTo(SliceObjectiveState.ClearEncounter),
+                "The objective director kept the route on CLEAR ENCOUNTER after the key carrier died.");
 
             PlaceBody(playerBody, meleeBody.position + Vector2.left, 0f);
             yield return WaitForCondition(
@@ -273,19 +470,11 @@ namespace ExtraterrestrialExhaust.Tests.PlayMode
                 player.gameObject,
                 direction: Vector2.right);
             Assert.That(meleeHealth.TryTakeDamage(finishingDamage), Is.True);
-            Assert.That(gunnerHealth.TryTakeDamage(finishingDamage), Is.True);
             yield return WaitForCondition(
                 () => encounter.IsComplete
-                    && melee.State == EnemyState.Defeated
-                    && gunner.State == EnemyState.Defeated,
+                    && melee.State == EnemyState.Defeated,
                 3f,
-                "Enemy death did not complete the authored encounter roster.");
-
-            yield return WaitForCondition(
-                () => key && key.State == EnergyKeyState.OrbitingPlayer,
-                3f,
-                "The carrier key did not release after the encounter.");
-            Assert.That(objective.CurrentState, Is.EqualTo(SliceObjectiveState.CollectEnergyKey));
+                "The remaining close bruiser did not complete the authored encounter roster.");
 
             Assert.That(key, Is.Not.Null, "The key disappeared before collection.");
             yield return WaitForCondition(
@@ -339,6 +528,14 @@ namespace ExtraterrestrialExhaust.Tests.PlayMode
 
         static void PlaceBody(Rigidbody2D body, Vector2 position, float rotation)
         {
+            // Rigidbody2D.position updates the simulation pose, but an
+            // interpolated body can keep child transforms on its previous
+            // render pose until the next physics step. Tests that read a
+            // fire point or authored hitbox immediately after a teleport need
+            // both representations synchronized.
+            body.transform.SetPositionAndRotation(
+                new Vector3(position.x, position.y, body.transform.position.z),
+                Quaternion.Euler(0f, 0f, rotation));
             body.position = position;
             body.rotation = rotation;
             body.linearVelocity = Vector2.zero;

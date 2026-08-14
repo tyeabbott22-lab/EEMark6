@@ -168,8 +168,8 @@ namespace ExtraterrestrialExhaust.Core
             Debug.LogWarning(
                 "Slice objective flow is playable but its serialized contract is incomplete: "
                 + details
-                + "Run Extraterrestrial Exhaust > Repair Active FlightTest Objective Contract "
-                + "and save FlightTest so the scene is reproducible.",
+                + ". Reopen the committed FlightTest scene and repair the missing serialized "
+                + "references before publishing a changed scene.",
                 this);
         }
 

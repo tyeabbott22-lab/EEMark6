@@ -1,141 +1,75 @@
-# Extraterrestrial Exhaust — EE MARK 6
+# Extraterrestrial Exhaust - EE MARK 6
 
-EE MARK 6 is the Unity 6 production rebuild of *Extraterrestrial Exhaust*, a 2D physics-action game about piloting a small spacecraft through hostile environments.
+EE MARK 6 is a focused Unity 6 vertical slice for *Extraterrestrial Exhaust*,
+a 2D physics-action game about piloting a small spacecraft through a hostile
+moon basin. It is the public, code-focused companion to EE MARK 5: this
+repository demonstrates the gameplay architecture and an end-to-end playable
+route, while EE MARK 5 footage represents the more content-complete and
+carefully tuned prototype.
 
-## Development goals
+## What is included
 
-- Build a complete, playable game around physics-based flight.
-- Keep input, simulation, presentation, and game rules in separate systems.
-- Prefer small, testable components over large scene-specific scripts.
-- Make the project understandable to another developer without the history of the prototype.
+One scene, `Assets/Scenes/FlightTest.unity`, contains the complete sample
+loop:
 
-## Vertical-slice contract
+1. Fly with a physics-driven craft and fire projectiles.
+2. Fight a ranged gunner and a close-range hunter.
+3. Break through a brittle passage.
+4. Defeat the gunner to release and collect an energy key.
+5. Deliver the key to the laser gate and reach extraction.
 
-The target is a focused Unity 6 vertical slice that preserves the playable loop of EE MARK 5:
+The project intentionally avoids custom scene-generation steps. `FlightTest`
+is the only enabled Build Settings scene and can be opened and played directly.
 
-1. Pilot the craft through physics-based flight.
-2. Defeat the encounter while managing health, wall impacts, and ranged pressure.
-3. Collect the energy key, deactivate the gate, and reach extraction.
-4. Watch the player capture sequence resolve into a clear completion state.
+## Requirements and quick start
 
-The project is intentionally organized so this loop can grow into the full game without moving prototype scripts wholesale into production code. The public-slice builder uses the EE5 wall, gate, objective, player, enemy, and moon-terrain references. Its basin and brittle shelves use their visible SpriteShape polygons as the actual collision surfaces, so the room shown to a reviewer is also the room used by gameplay.
+- Unity `6000.3.21f1`
+- Open this repository as a Unity project.
+- Open `Assets/Scenes/FlightTest.unity` and press Play.
 
-## Runtime architecture
+Controls:
 
-The player foundation is intentionally split into three responsibilities:
+- `W`, `Up Arrow`, or `Space` - thrust
+- `A` / `D` or `Left` / `Right Arrow` - rotate
+- `S` or `Down Arrow` - stabilize
+- `Z`, `Enter`, or left mouse - fire
+- `X` - flip visual/weapon facing
 
-| System | Responsibility |
+## Architecture at a glance
+
+Runtime code lives in `Assets/Scripts/Runtime` and separates input,
+simulation, presentation, and objective ownership.
+
+| Area | Primary components |
 | --- | --- |
-| `PlayerFlightInput` | Converts Unity Input System actions into a frame-independent flight command. |
-| `PlayerFlightMotor` | Applies movement and stabilization forces to the player's `Rigidbody2D`, including the EE5 stopper-zone control lock and tangential wall slide behavior. |
-| `PlayerFlightStateMachine` | Controls whether flight simulation is active, scripted, or disabled. |
-| `GameStateMachine` | Coordinates playing, pausing, game over, and the short EE5 defeat slowdown without scattering global time writes. |
-| `HealthComponent` | Shared health and damage contract for players, enemies, and hazards. |
-| `ProjectileTeam` | Prevents player fire from harming the player and enemy fire from harming enemy allies. |
-| `Ee5SliceProfile` | Named EE5 realScene tuning for player flight, weapon cadence, projectile speed, and camera feel; runtime locks are opt-out for experiments. |
-| `SliceObjectiveDirector` | Event-driven encounter, key, gate, and extraction state machine that gives the HUD one authoritative EE5 slice objective. |
-| `PlayerCharacter` | Composition root exposing the playable character's core systems and shared gameplay-eligibility contract, including game-state gating. |
-| `PlayerRespawnController` | Reproduces the EE5 current-room reload on death, with an explicit in-place respawn fallback for reusable rooms. |
-| `PlayerWeapon` / `PlayerWeaponPresentation` | Handles player firing, cooldowns, fire-rate boosts, recoil, aim line, and the immediate EE5-style muzzle punctuation without coupling VFX to damage rules. |
-| `PlayerProjectile` / projectile presentation components | Shared projectile movement, owner filtering, damage impacts, six-point EE5 trail, enemy-only sprite ghosts, hard-stop/fade cleanup, source-specific speed/tint overrides, and team-colored exhaust. |
-| `PlayerFlightPresentation` | Drives particle-backed exhaust, EE5-style asymmetric rotation boost flames, optional sprite-frame sequencing, and one-shot squash feedback without touching physics. |
-| `PlayerDamageFeedback` | Converts damage events into the EE5 alternating red/yellow hit flash and clears transient state on death/disable. |
-| `PlayerCameraFollow` | Provides EE5-style velocity lead, speed zoom, starfield parallax, coherent shake, enemy-death feedback, and wall-impact feedback. |
-| `PlayerHealthDisplay` | Presents the player health sheet briefly at spawn and after damage/healing, then fades it without owning combat rules. |
-| `ContactHazard` / `HazardPresentation` | Optional reusable heat volume with EE5-style knockback, pulse telegraph, damage accent, and ember presentation. |
-| `PlayerCollisionDamage` | Optional high-speed impact experiment; disabled on the EE5 gold path because ordinary wall contact is not player damage in `realScene`. |
-| `BrittleWall` | Recreates the EE5 thrust-assisted high-speed slam through interior brittle shelves while leaving arena boundaries permanent. |
-| `FlightStopperZone` | Marks the EE5 lower-basin no-flight volume explicitly; the player motor owns the temporary control lock while the legacy tag remains only as scene compatibility. |
-| `HealthPickup` / `FireRatePickup` / `PickupPresentation` | Optional recovery and weapon-power beats with authored idle motion and collection confirmation, while remaining non-required room pressure. |
-| `EnemyController` | Provides explicit dormant, waking, chasing, attacking, and defeated states with EE5-style wall steering, ranged orbit movement, and line-of-sight wake charging. |
-| `EnemySpritePresentation` | Maps enemy states to imported idle, wake-alert, active, and defeat animation frames. |
-| `EnemyWakePresentation` | Renders the controller-owned blocked/clear wake telegraph with a final warning flash so activation is readable before combat begins. |
-| `EnemyHealthDisplay` | Presents the imported six-frame health sheet briefly at spawn and after damage, scaled to each enemy's max health. |
-| `EnemyDeathPresentation` / `EnemyDeathBurst` | Plays the imported EE5 defeat animation and audio independently from enemy cleanup. |
-| `EnemyContactDamage` | Applies the EE5 close-pass contact damage contract to authored enemy bodies without coupling damage to their attack state. |
-| `EnemyWeapon` | Adds the EE5 white-gunner cadence, wall-aware line of sight, and readable pre-shot telegraph without coupling enemies to player weapons. |
-| `EncounterController` / `LevelExit` | Define the explicit combat roster while the EE5 carrier-key-gate-extraction sequence owns exit progression. |
-| `ExtractionPortalPresentation` | Provides the layered, pulsing extraction visual without scene-specific prototype dependencies. |
-| `EnergyKey` / `EnergyGate` | Drive the public room's clear-both-enemies → nearby collectable key → named laser-wall lift objective, with explicit key and gate state handoffs. |
-| `EnergyKeyPresentation` / `EnergyGatePresentation` / `ObjectiveSignalBurst` | Keep the key release, player collection, gate flight, timed gate-unlock pulse, and objective beats readable without coupling VFX to objective rules. |
-| `ScoreSystem` | Provides EE5-style event-driven arcade scoring with speed, flips, near misses, combat/objective beats, a live chain timer, and a bounded multiplier. |
-| `GameplayHud` | Presents score, live hull, action score callouts, and the current vertical-slice objective. |
-| `SliceInstructionDisplay` / `SliceInstructionTrigger` | Recreate EE5 realScene's trigger-driven center instructions for controls, key flow, gate flow, and extraction. |
-| `DamageFlashFeedback` / `ProjectileImpactBurst` | Provide immediate combat readability while authored VFX are migrated. |
+| Flight | `PlayerFlightInput`, `PlayerFlightMotor`, `PlayerFlightStateMachine` |
+| Combat | `PlayerWeapon`, `PlayerProjectile`, `HealthComponent`, `DamageInfo` |
+| Enemies | `EnemyController`, `EnemyWeapon`, `EnemyContactDamage` |
+| Objective flow | `EncounterController`, `EnergyKey`, `EnergyGate`, `LevelExit`, `SliceObjectiveDirector` |
+| Presentation | Player/enemy presentation components, `ProgrammableLaserGate`, `GameplayHud` |
 
-Gameplay systems should communicate with these public contracts rather than reaching into Rigidbody2D directly.
+The key handoff and extraction route are explicit state transitions rather
+than scene-name checks. Runtime comments document non-obvious compatibility
+and physics decisions close to the code that owns them.
 
-Combat uses `IDamageable` and `DamageInfo`, so weapons do not need to know whether they hit a player, enemy, or destructible object.
+## Tests
 
-The editor menu `Extraterrestrial Exhaust > Build Public Resume Slice (Preserve Prefabs)` rebuilds the narrow playable `FlightTest` scene without rewriting the reusable `PlayerCraft`, `EnemyMelee`, or `EnemyGunner` prefabs. `Build Flight Test Scene (Preserve Prefabs)` points to the same public route. The scene contains only the required player, camera, melee hunter, gunner, encounter, basin terrain, brittle shelves, no-flight stopper, carrier key, laser gate, extraction portal, HUD, and instruction flow. The broader non-preserving builder remains available for deliberate prefab repair and optional hazard experiments.
+`Assets/Tests/PlayMode/PublicResumeSlicePlayModeTests.cs` verifies the public
+route with live production components: keyboard flight input, player projectile
+damage (including a visual-edge hit), enemy defeat, key release and collection,
+gate opening, and extraction.
 
-The preserved prefabs still retain their old triangle/square composition guides for forensic comparison, but the public builder serializes those renderers disabled on scene instances. The saved demo therefore presents imported sprites, SpriteShape terrain, the programmable laser barrier, and the extraction portal directly rather than depending on a first-frame cleanup pass to stop looking like a debug room.
+Run the suite from Unity's **Test Runner > PlayMode**. The scene is also
+configured as the only Build Settings entry for a direct local build.
 
-`Extraterrestrial Exhaust > Normalize Imported Sprite Names` is a separate, explicit cleanup command for the EE5-derived filenames that are safe to clarify (`sprSnipe`, `health`, `bullet`, `keyfinal`, `buttonFInal1`, `wallFinal`, `sprStars`, and `sprExplode`). It renames them to semantic EE6 roles through Unity's asset database, preserving their GUIDs; the builder also supports the legacy paths until that command is run. Enemy strips remain on their EE5 names because the older variant builders reuse them by color and pose; those require an intentional art inventory pass before renaming.
+## Scope and limitations
 
-Running that builder also registers `FlightTest.unity` as the first Build Settings scene and configures the project identity for a playable vertical-slice build.
+This is a deliberately small resume sample, not a full-game release. It has
+one authored room, two enemy roles, and a single objective route. Bosses,
+additional scenes, broader progression, and frame-perfect EE MARK 5 tuning are
+out of scope. Death/reload behavior is functional but intentionally less
+developed than the showcased combat-to-extraction path.
 
-## EE5 reference scenes
-
-Reference art is imported under `Assets/Art/Reference` with its Unity metadata intact. Runtime behavior is re-authored in EE MARK 6; legacy prototype scripts and prefabs are not copied into the production path.
-
-The read-only room reference for this public slice is `Assets/Scenes/EE6.unity` in EE MARK 5. The named contracts are `Playable Low Basin - SpriteShape (8)`, `Moon Thrust Stopper - Solid Fall Area`, `Laser Wall - Vertical Forever Gate` / `Laser Glow`, `enemyGun (1)`, and `Enemy 01 - close bruiser`. EE MARK 6 re-authors those observable roles with explicit runtime contracts; it does not copy the legacy scripts or modify the reference project.
-
-## Project conventions
-
-- Runtime scripts live under `Assets/Scripts/Runtime`.
-- Editor-only tools live under `Assets/Scripts/Editor`.
-- Reusable gameplay compositions live under `Assets/Prefabs`; the scene builder refreshes them from the same authored setup.
-- Editor tooling is isolated in the `ExtraterrestrialExhaust.Editor` assembly.
-- New gameplay code uses descriptive PascalCase names.
-- Prototype code is migrated deliberately; it is not copied wholesale into the production path.
-
-## Unity version
-
-Unity `6000.3.21f1`.
-
-## Build the public slice
-
-1. Open the project in the Unity version above.
-2. Optionally run `Extraterrestrial Exhaust > Validate Public Resume Slice Build Inputs` for a non-destructive dependency audit.
-3. Run `Extraterrestrial Exhaust > Build Public Resume Slice (Preserve Prefabs)`.
-4. Wait for the builder's contract validation to report no missing systems.
-5. Open `Assets/Scenes/FlightTest.unity` and press Play.
-
-The build command runs the same preflight automatically and cancels before prompting to save or replacing a scene if a required prefab, gameplay component, input asset, imported sprite, SpriteShape profile, physics material, or audio cue is missing. Once preflight passes, the builder backs up an existing `FlightTest` scene under `Library` before replacing it. It never reads from or writes to an EE MARK 5 project at build time; all approved reference art and configuration live inside this repository.
-
-## End-to-end verification
-
-`Assets/Tests/PlayMode/PublicResumeSlicePlayModeTests.cs` loads the public `FlightTest` scene and verifies both the player-control chain and the complete reviewer route with production components. A virtual keyboard drives W thrust and D rotation through the real Input System asset, `PlayerFlightInput`, and `PlayerFlightMotor`, then confirms the gameplay camera follows the resulting Rigidbody2D motion. The route test fires a real player projectile into the authored gunner hitbox, observes both enemy roles leave Dormant, completes the encounter through `HealthComponent`, physically collects the released carrier key, waits for the key-driven laser gate lift, enters the extraction trigger, and requires `GameOverReason.ExtractionComplete`.
-
-The test uses direct finishing damage only after the live projectile path succeeds. This keeps automated verification deterministic without replacing weapon, collision, key, gate, or extraction behavior with test-only runtime hooks.
-
-Run it from Unity's Test Runner under **PlayMode**, or from PowerShell with Unity `6000.3.21f1`:
-
-```powershell
-$playmodeResults = Join-Path $env:TEMP "ee6-playmode-results.xml"
-$playmodeLog = Join-Path $env:TEMP "ee6-playmode-tests.log"
-& "C:\Program Files\Unity\Hub\Editor\6000.3.21f1\Editor\Unity.exe" `
-  -batchmode -nographics `
-  -projectPath (Get-Location).Path `
-  -runTests -testPlatform PlayMode `
-  -testFilter ExtraterrestrialExhaust.Tests.PlayMode.PublicResumeSlicePlayModeTests `
-  -testResults $playmodeResults `
-  -logFile $playmodeLog
-```
-
-## Playtest controls
-
-- `W` / `Up Arrow` / `Space`: thrust
-- `A` / `D` or `Left` / `Right Arrow`: rotate
-- `S` / `Down Arrow`: stabilize
-- `X`: flip the craft's visual facing and weapon side
-- `Z`, `Enter`, or left mouse: fire
-
-## Known limitations
-
-- EE MARK 6 is the maintainable portfolio slice, not the frame-perfect gameplay archive. EE MARK 5/7 remain the rigorous feel and content references; exact thrust, rotation, animation timing, and encounter pacing are intentionally not acceptance criteria here.
-- The demo contains one authored room and one deterministic objective route. It does not attempt to migrate the prototype's full scene roster, bosses, or progression structure.
-- Death uses the current-room reload path and is deliberately less developed than the combat/key/gate/extraction route.
-- `FlightTestRuntimeContract` remains as a narrowly scoped recovery bridge for stale local scenes. The committed public scene is built and tested without requiring that bridge to repair any presentation or objective references at startup.
-- The scene builder is still the authoring source of truth for the public room. Run it after intentionally changing preserved prefabs or imported reference assets, then rerun the Play Mode route test.
+For the strongest overview, pair this codebase with EE MARK 5 gameplay footage:
+EE MARK 6 explains how the systems are structured; EE MARK 5 shows the broader
+prototype's content and game feel.

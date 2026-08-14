@@ -126,11 +126,8 @@ namespace ExtraterrestrialExhaust.Player
             uprightAssistReleaseDelay = Ee5SliceProfile.UprightAssistReleaseDelay;
             removeVelocityIntoColliders = Ee5SliceProfile.PlayerRemoveVelocityIntoColliders;
 
-            // The generated scene and reusable prefab share one presentable
-            // flight contract. Do not let a stale prefab override silently
-            // reintroduce the soupier raw drag while the EE6 player is being
-            // brought into shape. Ee5SliceProfile keeps the exact EE5 values
-            // beside this short-term bridge for the later prefab rip.
+            // Keep the public slice's flight tuning in one profile so the
+            // scene and reusable craft cannot drift apart.
             // Keep the physics root at unit scale as well. The enlarged craft
             // art lives on Craft Visual; scaling this object changes collider
             // size and Rigidbody2D inertia, which is exactly the kind of old

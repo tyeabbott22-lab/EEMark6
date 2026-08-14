@@ -119,6 +119,11 @@ namespace ExtraterrestrialExhaust.Core
         public const float PlayerProjectileDamage = 1f;
         public const float PlayerProjectileKnockback = 0f;
         public const bool PlayerProjectileDestroysOnUnknownCollision = true;
+        // EE6 scales the imported enemy art independently of the small EE5
+        // root hitboxes. Keep a narrow projectile-only margin so a shot that
+        // visibly skims an enlarged silhouette does not read as a no-damage
+        // hit, without changing movement or contact-damage collision space.
+        public const float PlayerProjectileHitAssistRadius = 0.22f;
         public const float ProjectileNearMissDistance = 1.35f;
         // The EE5 realScene player does not own a generic impact-damage
         // component. Keep the reusable experiment available, but do not let
@@ -130,6 +135,19 @@ namespace ExtraterrestrialExhaust.Core
         // one contact-handoff contract.
         public const float BrittleFollowThroughAssistDuration = 0.16f;
         public const float BrittleAngularVelocityRetention = 0.18f;
+        // The public resume route uses a single short, teaching-style brittle
+        // gate. Its two-stage interaction is intentionally easier than the
+        // long-form EE5 obstacle variants: one contact leaves a visible notch;
+        // a second committed pass gives the craft a satisfying exit lane.
+        public const float PublicBrittleDentSpeed = 0.06f;
+        public const float PublicBrittleBreakSpeed = 3.6f;
+        public const float PublicBrittleChipDirectness = 0.01f;
+        public const float PublicBrittleBreakDirectness = 0.08f;
+        public const int PublicBrittleHitsToBreak = 2;
+        public const float PublicBrittleVelocityRetention = 0.98f;
+        public const float PublicBrittleFollowThroughNudge = 0.52f;
+        public const float PublicBrittleFollowThroughDuration = 0.22f;
+        public const float PublicBrittleAngularVelocityRetention = 0.88f;
 
         // EE5 separates the readable wake-line envelope from the enemy's
         // actual six-unit activation trigger. The telegraph can enter the
@@ -272,7 +290,10 @@ namespace ExtraterrestrialExhaust.Core
         // wallFinal2 prefabs. Keep the motion source-of-truth here so a scene
         // rebuild cannot quietly turn the key into a different game feel.
         public const float EnergyGateLiftDistance = 12f;
-        public const float EnergyGateLiftSpeed = 6f;
+        // LaserWall in EE5 retracts in 0.65 seconds. The public gate keeps the
+        // same visible escape window while EnergyGate remains the collider
+        // authority for the connected objective route.
+        public const float EnergyGateLiftSpeed = 18.46f;
         public static readonly Vector3 EnergyKeyEnemyOffset =
             new Vector3(-0.5f, 0f, 0f);
         public const float EnergyKeyEnemyOrbitRadius = 3f;
@@ -307,10 +328,11 @@ namespace ExtraterrestrialExhaust.Core
         // Generated FlightTest room landmarks. Keeping these together makes
         // a layout pass reviewable and prevents the builder's objective route,
         // instruction triggers, and collision lanes from drifting independently.
-        public static readonly Vector2 VerticalSlicePlayerSpawn = new Vector2(0f, 0f);
-        public static readonly Vector2 VerticalSliceMeleeSpawn = new Vector2(3.25f, 2.25f);
-        public static readonly Vector2 VerticalSliceGunnerSpawn = new Vector2(5f, -2f);
-        public static readonly Vector2 VerticalSliceGatePosition = new Vector2(5f, 0f);
+        public static readonly Vector2 VerticalSlicePlayerSpawn = new Vector2(-11f, 0f);
+        public static readonly Vector2 VerticalSliceBrittlePassagePosition = new Vector2(-7.1f, 0f);
+        public static readonly Vector2 VerticalSliceMeleeSpawn = new Vector2(-1.2f, 2.25f);
+        public static readonly Vector2 VerticalSliceGunnerSpawn = new Vector2(4.25f, -1.7f);
+        public static readonly Vector2 VerticalSliceGatePosition = new Vector2(10f, 0f);
         public static readonly Vector2 VerticalSliceGateColliderSize = new Vector2(0.35f, 3.8f);
         public static readonly Vector2 VerticalSliceGateKeyTarget = new Vector2(0f, 1.7f);
         // The gate art is a bottom-aligned strip on a square source canvas.
@@ -320,32 +342,33 @@ namespace ExtraterrestrialExhaust.Core
         public static readonly Vector3 EnergyGateArtworkLocalPosition =
             new Vector3(-2.02f, -0.15f, 0f);
         public const float EnergyGateArtworkScale = 2.6f;
-        public static readonly Vector2 VerticalSliceExitPosition = new Vector2(6.8f, 0f);
+        public static readonly Vector2 VerticalSliceExitPosition = new Vector2(13.2f, 0f);
         public const float VerticalSliceExitRadius = 1.45f;
-        public static readonly Vector2 VerticalSliceArenaHalfExtents = new Vector2(8f, 6f);
+        public static readonly Vector2 VerticalSliceArenaHalfExtents = new Vector2(16f, 8f);
         public const float VerticalSliceBoundaryThickness = 0.5f;
         public const float VerticalSliceBoundaryOverscan = 2f;
-        public static readonly Vector2 VerticalSliceUpperShelfPosition = new Vector2(0.8f, 4.15f);
+        public static readonly Vector2 VerticalSliceUpperShelfPosition = new Vector2(-1.4f, 5.9f);
         public static readonly Vector2 VerticalSliceUpperShelfSize = new Vector2(4.2f, 0.35f);
-        public static readonly Vector2 VerticalSliceLowerShelfPosition = new Vector2(-0.6f, -4.15f);
+        public static readonly Vector2 VerticalSliceLowerShelfPosition = new Vector2(3.4f, -5.9f);
         public static readonly Vector2 VerticalSliceLowerShelfSize = new Vector2(4.8f, 0.35f);
-        public static readonly Vector2 VerticalSliceExtractionSpinePosition = new Vector2(6.2f, 2.35f);
+        public static readonly Vector2 VerticalSliceExtractionSpinePosition = new Vector2(12f, 2.35f);
         public static readonly Vector2 VerticalSliceExtractionSpineSize = new Vector2(0.35f, 2.5f);
-        public static readonly Vector2 VerticalSliceHazardPosition = new Vector2(0f, -2.4f);
+        public static readonly Vector2 VerticalSliceHazardPosition = new Vector2(1.5f, -4.65f);
         public const float VerticalSliceHazardRadius = 1.15f;
-        public static readonly Vector2 VerticalSliceHealthCachePosition = new Vector2(-5.8f, 4.4f);
-        public static readonly Vector2 VerticalSliceFireRateCachePosition = new Vector2(-5.8f, -4.4f);
-        public static readonly Vector2 VerticalSliceFlightInstructionPosition = new Vector2(0f, 0f);
+        public static readonly Vector2 VerticalSliceHealthCachePosition = new Vector2(-13.5f, 5.9f);
+        public static readonly Vector2 VerticalSliceFireRateCachePosition = new Vector2(7.5f, -5.9f);
+        public static readonly Vector2 VerticalSliceFlightInstructionPosition = new Vector2(-11f, 0f);
         public static readonly Vector2 VerticalSliceFlightInstructionSize = new Vector2(4.2f, 3.4f);
-        public static readonly Vector2 VerticalSliceKeyInstructionPosition = new Vector2(2.5f, 3.5f);
+        public static readonly Vector2 VerticalSliceKeyInstructionPosition = new Vector2(-0.5f, 3.4f);
         public static readonly Vector2 VerticalSliceKeyInstructionSize = new Vector2(4.8f, 2.8f);
-        public static readonly Vector2 VerticalSliceGateInstructionPosition = new Vector2(5f, 0f);
+        public static readonly Vector2 VerticalSliceGateInstructionPosition = new Vector2(10f, 0f);
         public static readonly Vector2 VerticalSliceGateInstructionSize = new Vector2(2.2f, 5f);
-        public static readonly Vector2 VerticalSliceExitInstructionPosition = new Vector2(6.8f, 0f);
+        public static readonly Vector2 VerticalSliceExitInstructionPosition = new Vector2(13.2f, 0f);
         public static readonly Vector2 VerticalSliceExitInstructionSize = new Vector2(3f, 4f);
 
-        public const float FlightStopperCenterY = -2f;
-        public const float FlightStopperWidth = 12f;
+        public const float FlightStopperCenterX = 2.5f;
+        public const float FlightStopperCenterY = -6.1f;
+        public const float FlightStopperWidth = 10f;
         public const float FlightStopperHeight = 2f;
 
         public const float CameraFollowSpeed = 12f;

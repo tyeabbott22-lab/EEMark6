@@ -68,10 +68,8 @@ namespace ExtraterrestrialExhaust.Core
             if (!artwork)
                 return;
 
-            // Keep older generated scenes on the same source-canvas correction
-            // as the current builder. This makes the visible strip and the
-            // blocking collider share a center without touching arbitrary
-            // custom child objects.
+            // The imported gate art has an offset canvas. Correct the child
+            // visual without moving the gate's gameplay collider.
             artwork.localPosition = Ee5SliceProfile.EnergyGateArtworkLocalPosition;
             artwork.localRotation = Quaternion.Euler(0f, 0f, 90f);
             artwork.localScale = Vector3.one * Ee5SliceProfile.EnergyGateArtworkScale;

@@ -174,26 +174,6 @@ namespace ExtraterrestrialExhaust.Player
             return true;
         }
 
-        /// <summary>
-        /// Used by editor tooling to bind a generated test scene without exposing
-        /// Unity serialization details to gameplay systems.
-        /// </summary>
-        public void ConfigureInputAsset(InputActionAsset asset, string actionName = "Player/Move")
-        {
-            InputAction previousMoveAction = ResolvedMoveAction;
-            InputAction previousFlipAction = ResolvedFlipAction;
-            previousMoveAction?.Disable();
-            previousFlipAction?.Disable();
-
-            inputActions = asset;
-            moveActionName = actionName;
-            if (isActiveAndEnabled)
-            {
-                ResolvedMoveAction?.Enable();
-                ResolvedFlipAction?.Enable();
-            }
-        }
-
         Vector2 SanitizeMove(Vector2 raw)
         {
             return new Vector2(

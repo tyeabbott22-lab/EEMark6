@@ -63,7 +63,7 @@ Rigidbody2D:
   m_UseFullKinematicContacts: 0
   m_UseAutoMass: 0
   m_Mass: 8
-  m_LinearDamping: 0.35
+  m_LinearDamping: 0.08
   m_AngularDamping: 3.25
   m_GravityScale: 0.285
   m_Material: {fileID: 0}
@@ -146,6 +146,8 @@ MonoBehaviour:
   stateMachine: {fileID: 5013889060712747157}
   gameState: {fileID: 0}
   includeEe5KeyboardFallback: 1
+  turnDeadzone: 0.08
+  thrustDeadzone: 0.04
 --- !u!114 &3738852136710060132
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -168,6 +170,12 @@ MonoBehaviour:
   visual: {fileID: 0}
   allowFlip: 1
   enforceEe5Profile: 1
+  uprightAssistEnabled: 0
+  uprightAssistWindow: 16
+  uprightAssistSpeed: 36
+  uprightAssistAngularBrake: 30
+  uprightAssistMaxAngularSpeed: 75
+  uprightAssistReleaseDelay: 0.08
   removeVelocityIntoColliders: 1
   stopperTag: StopperZone
 --- !u!114 &5795851938182831067

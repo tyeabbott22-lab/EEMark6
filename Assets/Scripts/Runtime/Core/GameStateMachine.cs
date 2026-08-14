@@ -118,23 +118,6 @@ namespace ExtraterrestrialExhaust.Core
             enemyDefeatSlowdownRoutine = StartCoroutine(EnemyDefeatSlowdownRoutine());
         }
 
-        /// <summary>
-        /// Editor-generated scenes bind the shared Input System asset here so
-        /// pause remains a project-level flow concern rather than a keyboard
-        /// lookup hidden inside the state machine.
-        /// </summary>
-        public void ConfigureInputAsset(InputActionAsset asset, string actionName = "Player/Pause")
-        {
-            if (pauseAction != null)
-                pauseAction.Disable();
-
-            inputActions = asset;
-            pauseActionName = actionName;
-            ResolvePauseAction();
-            if (isActiveAndEnabled)
-                pauseAction?.Enable();
-        }
-
         void ResolvePauseAction()
         {
             pauseAction = inputActions != null

@@ -231,9 +231,8 @@ namespace ExtraterrestrialExhaust.Enemy
                 return separation.distance <= Mathf.Max(0f, targetBuffer);
             }
 
-            // Keep older hand-authored scenes playable if one side lost its
-            // collider. The serialized range is deliberately only a recovery
-            // path; generated scenes use the collider-pair test above.
+            // Trigger-only legacy prefabs have no solid collider pair. Their
+            // serialized contact range remains a narrow fallback.
             return Vector2.Distance(PhysicsPosition, candidate.PhysicsPosition)
                 <= ContactDamageReach;
         }
@@ -391,11 +390,9 @@ namespace ExtraterrestrialExhaust.Enemy
             rootScale.x = Mathf.Sign(authoredScaleX) * Mathf.Max(0.0001f, Mathf.Abs(rootScale.x));
             transform.localScale = rootScale;
 
-            // Enforce the role contract at runtime as a compatibility bridge.
-            // FlightTest is intentionally allowed to keep dirty prefab/scene
-            // values, but those values must not make the playable slice drift
-            // from the EE5 close-bruiser and enemyGun references.
-            //
+            // Keep role-defining movement values together. The imported
+            // prefab defaults may vary, while weapon/contact composition is
+            // the stable source of truth for the two sample enemies.
             // The serialized movement enum is intentionally not trusted here:
             // preserved realScene instances can carry an old Chase/Wander value
             // after their component graph has been repaired. EE5's role is
@@ -456,9 +453,8 @@ namespace ExtraterrestrialExhaust.Enemy
         {
             // The imported EE6 prefabs were originally built with centered
             // circles. EE5's enemyFast and enemyGun use small, offset boxes
-            // aligned to the actual sprite silhouette. Rebuild that shape at
-            // runtime as a compatibility bridge for existing scene instances;
-            // the editor builder writes the same BoxCollider2D for new scenes.
+            // aligned to the actual sprite silhouette. Create the box when an
+            // imported prefab still contains its original circle collider.
             BoxCollider2D authoredBox = GetComponent<BoxCollider2D>();
             if (!authoredBox)
                 authoredBox = gameObject.AddComponent<BoxCollider2D>();

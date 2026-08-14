@@ -146,12 +146,12 @@ Rigidbody2D:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1505159076451898056}
-  m_BodyType: 0
+  m_BodyType: 1
   m_Simulated: 1
   m_UseFullKinematicContacts: 0
   m_UseAutoMass: 0
   m_Mass: 1
-  m_LinearDamping: 2
+  m_LinearDamping: 0
   m_AngularDamping: 0.05
   m_GravityScale: 0
   m_Material: {fileID: 0}
@@ -161,7 +161,7 @@ Rigidbody2D:
   m_ExcludeLayers:
     serializedVersion: 2
     m_Bits: 0
-  m_Interpolate: 0
+  m_Interpolate: 1
   m_SleepingMode: 1
   m_CollisionDetection: 1
   m_Constraints: 0
@@ -228,6 +228,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b61fdcca3eedde44d9b7af3be2f92006, type: 3}
   m_Name: 
   m_EditorClassIdentifier: ExtraterrestrialExhaust.Runtime::ExtraterrestrialExhaust.Enemy.EnemyController
+  movementMode: 1
+  wanderRadius: 2
+  wanderDurationMin: 1
+  wanderDurationMax: 3
   detectionRange: 12
   wakeDistance: 6
   wakeDuration: 1.35
@@ -238,8 +242,14 @@ MonoBehaviour:
   wakeSignalDistanceMultiplier: 4
   wakeSignalChargeDuration: 1.15
   wakeSignalChargeDecay: 1.8
+  wakeSignalChargeSpeedAtEdge: 0.28
+  wakeSignalChargeSpeedAtClose: 1.85
   wakeFinalWarningDuration: 0.35
   attackRange: 7
+  attackExitRange: 7
+  contactDamageRange: 0
+  attackRecoveryDuration: 0.16
+  attackFacingRefreshDegrees: 0
   chaseSpeed: 2
   target: {fileID: 0}
   wallTag: Wall
@@ -256,14 +266,15 @@ MonoBehaviour:
   stuckEscapeCommitTime: 0.5
   blockOtherEnemies: 1
   otherEnemyBuffer: 0.025
-  orbitWhileAttacking: 1
+  targetBuffer: 0.04
+  orbitWhileAttacking: 0
   orbitRadius: 1.5
   orbitMoveSpeed: 2
   orbitAngularSpeed: 135
   orbitDirection: 1
   nearMissDistance: 1.65
   nearMissExitDistance: 2.15
-  faceTurnSpeed: 7.4
+  faceTurnSpeed: 5
   forwardIsLocalNegativeX: 1
   keepSpriteUpright: 1
   gameState: {fileID: 0}
@@ -308,14 +319,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ecf56e64a006ea248a044b057a8a0252, type: 3}
   m_Name: 
   m_EditorClassIdentifier: ExtraterrestrialExhaust.Runtime::ExtraterrestrialExhaust.Enemy.EnemyWeapon
+  enforceEe5Profile: 1
   projectilePrefab: {fileID: 8335205200750898339, guid: 0f75bc740062bf24fa349acba5d18d38, type: 3}
   firePoint: {fileID: 4802847836105849160}
+  mirrorFirePointYWithUprightFlip: 1
   fireCooldown: 1
   attackRange: 7
   requireTargetWithinAttackRange: 0
   requireLineOfSightToFire: 0
   projectileSpeed: 6
-  projectileLifetime: 5
+  projectileLifetime: 2
   projectileKnockback: 2.5
   projectileTint: {r: 0.05, g: 1, b: 0.16, a: 1}
   drawAimTelegraph: 0
@@ -572,8 +585,10 @@ MonoBehaviour:
   randomizeDormantStartFrame: 1
   hideAfterDefeat: 1
   faceDormantTowardTarget: 1
+  invertDormantSpriteX: 0
   forwardIsLocalNegativeX: 1
   restoreFacingAfterWake: 1
+  dormantFacingHysteresis: 0.2
 --- !u!114 &4374971525420444491
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -683,7 +698,7 @@ Transform:
   m_GameObject: {fileID: 4083418997944381214}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.65, y: 0, z: 0}
+  m_LocalPosition: {x: -0.542, y: 0.079, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

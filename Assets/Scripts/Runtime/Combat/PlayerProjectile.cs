@@ -37,6 +37,9 @@ namespace ExtraterrestrialExhaust.Combat
         [SerializeField] Color trailEndColor = new Color(1f, 0.1f, 0.04f, 1f);
         [Header("Enemy Near Miss")]
         [SerializeField, Min(0f)] float nearMissDistance = Ee5SliceProfile.ProjectileNearMissDistance;
+        [Header("Player Hit Assist")]
+        [Tooltip("Small swept forgiveness for enlarged EE6 enemy art. This affects player projectiles only; terrain remains the first blocking impact.")]
+        [SerializeField, Min(0f)] float playerHitAssistRadius = Ee5SliceProfile.PlayerProjectileHitAssistRadius;
 
         Rigidbody2D body;
         SpriteRenderer spriteRenderer;
@@ -53,6 +56,9 @@ namespace ExtraterrestrialExhaust.Combat
         bool dying;
         Material trailMaterial;
         readonly List<Vector3> trailPoints = new();
+        readonly RaycastHit2D[] hitAssistHits = new RaycastHit2D[12];
+        Vector2 lastPhysicsPosition;
+        bool hasPhysicsPosition;
 
         public ProjectileTeam Team => team;
 
@@ -67,6 +73,7 @@ namespace ExtraterrestrialExhaust.Combat
                 knockback = Ee5SliceProfile.PlayerProjectileKnockback;
                 destroyOnUnrecognizedCollision = Ee5SliceProfile.PlayerProjectileDestroysOnUnknownCollision;
                 nearMissDistance = Ee5SliceProfile.ProjectileNearMissDistance;
+                playerHitAssistRadius = Ee5SliceProfile.PlayerProjectileHitAssistRadius;
             }
 
             spriteRenderer = GetComponent<SpriteRenderer>();
@@ -80,6 +87,8 @@ namespace ExtraterrestrialExhaust.Combat
             ConfigureTrail();
             body.gravityScale = 0f;
             body.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
+            lastPhysicsPosition = body.position;
+            hasPhysicsPosition = true;
         }
 
         void OnDestroy()
@@ -114,7 +123,28 @@ namespace ExtraterrestrialExhaust.Combat
             dying = false;
             body.linearVelocity = direction * (speedOverride > 0f ? speedOverride : speed);
             transform.right = direction;
+            lastPhysicsPosition = body.position;
+            hasPhysicsPosition = true;
             ResetTrail();
+        }
+
+        void FixedUpdate()
+        {
+            if (!body)
+                return;
+
+            Vector2 currentPosition = body.position;
+            if (!hasPhysicsPosition)
+            {
+                lastPhysicsPosition = currentPosition;
+                hasPhysicsPosition = true;
+                return;
+            }
+
+            if (!dying && team == ProjectileTeam.Player && playerHitAssistRadius > 0f)
+                CheckPlayerHitAssist(lastPhysicsPosition, currentPosition);
+
+            lastPhysicsPosition = currentPosition;
         }
 
         /// <summary>Applies source-specific presentation without changing impact rules.</summary>
@@ -242,6 +272,47 @@ namespace ExtraterrestrialExhaust.Combat
                     impactNormal);
                 BeginImpactEnd();
             }
+        }
+
+        void CheckPlayerHitAssist(Vector2 from, Vector2 to)
+        {
+            Vector2 travel = to - from;
+            float distance = travel.magnitude;
+            if (distance <= 0.0001f)
+                return;
+
+#pragma warning disable CS0618
+            int hitCount = Physics2D.CircleCastNonAlloc(
+                from,
+                playerHitAssistRadius,
+                travel / distance,
+                hitAssistHits,
+                distance);
+#pragma warning restore CS0618
+
+            RaycastHit2D closestImpact = default;
+            float closestDistance = float.PositiveInfinity;
+            for (int i = 0; i < hitCount; i++)
+            {
+                RaycastHit2D hit = hitAssistHits[i];
+                Collider2D hitCollider = hit.collider;
+                if (!hitCollider || IsOwnerCollider(hitCollider))
+                    continue;
+
+                bool blocksShot = Ee5SliceProfile.IsWallCollider(hitCollider);
+                bool damagesEnemy = CanDamage(hitCollider);
+                if ((!blocksShot && !damagesEnemy) || hit.distance >= closestDistance)
+                    continue;
+
+                closestDistance = hit.distance;
+                closestImpact = hit;
+            }
+
+            // Send the chosen collider through the normal impact authority.
+            // This preserves damage, effects, score, and destruction behavior
+            // while ensuring a wall selected before an enemy still blocks it.
+            if (closestImpact.collider)
+                HandleImpact(closestImpact.collider);
         }
 
         void ConfigureTrail()
@@ -430,11 +501,14 @@ namespace ExtraterrestrialExhaust.Combat
                 if (!enemy || !enemy.IsDamageable)
                     return false;
 
-                // EE5's enemyGun/enemyFast prefabs use one offset BoxCollider2D
-                // as the gameplay silhouette. Do not let a stale child or
-                // compatibility collider become an accidental second hurtbox.
-                Collider2D authoredHitbox = enemy.GameplayHitbox;
-                return !authoredHitbox || other == authoredHitbox;
+                // The canonical BoxCollider2D still defines the normal
+                // hurtbox. Accept another enabled collider in that same enemy
+                // hierarchy as a compatibility path, though: preserved scene
+                // instances can retain a scaled visual/contact collider while
+                // their controller rebuilds the root box on Awake. A projectile
+                // destroys itself after this first accepted hit, so this cannot
+                // create a double-damage path.
+                return true;
             }
 
             // EE5 EnemyBullet only has a player impact path. Do not let an

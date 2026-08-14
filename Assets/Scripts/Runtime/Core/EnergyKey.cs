@@ -17,8 +17,8 @@ namespace ExtraterrestrialExhaust.Core
     /// <summary>
     /// EE5-style objective key: orbit an encounter carrier, release when that
     /// carrier is defeated, orbit the player, follow the player, then fly into
-    /// the gate. Other enemies remain active pressure while the carrier
-    /// objective progresses.
+    /// the gate. Other enemies remain active pressure; they do not turn an
+    /// already-defeated carrier's reward into a hidden second requirement.
     /// </summary>
     // Transport after the gate has advanced. This keeps the delicate key-to-
     // socket flight and gate lift on one stable physics-clock handoff.
@@ -492,15 +492,21 @@ namespace ExtraterrestrialExhaust.Core
 
         bool CanReleaseFromEnemy()
         {
-            // The resume room teaches one explicit route: clear the small
-            // encounter, then claim the reward. A carrier remains useful for
-            // the key's initial visual anchor, but a surviving bruiser should
-            // never leave the objective state machine half-complete.
-            if (requiredEncounter)
-                return requiredEncounter.IsComplete;
-
+            // The key is visually and mechanically bound to the white gunner.
+            // Its defeat event is the normal release authority. Requiring the
+            // purple melee hunter as well made a destroyed gunner leave a
+            // locked key in place, which read as a last-health-pip failure.
+            // Keep the rest of the encounter alive as optional pressure while
+            // preserving the clear carrier -> key -> gate progression.
             if (enemyTarget)
                 return enemyTarget.State == EnemyState.Defeated;
+
+            // The event path above is authoritative while the carrier exists.
+            // An encounter completion remains a recovery route for additive
+            // scene loads where a destroyed carrier reference cannot be
+            // re-subscribed after the fact.
+            if (requiredEncounter)
+                return requiredEncounter.IsComplete;
 
             // A missing carrier reference is not permission to release at
             // scene start. Old hand-authored scenes can resolve references a

@@ -21,6 +21,9 @@ namespace ExtraterrestrialExhaust.Core
         [SerializeField] Color coreColor = new Color(0.55f, 0.95f, 1f, 1f);
         [SerializeField] Color glowColor = new Color(0.03f, 0.35f, 1f, 0.42f);
         [SerializeField] int sortingOrder = 12;
+        [Header("EE5 Emitter")]
+        [SerializeField] Color emberColor = new Color(0.08f, 0.45f, 1f, 0.85f);
+        [SerializeField, Min(0f)] float emberRate = 28f;
         [Header("Objective Cues")]
         [SerializeField] Color approachCoreColor = new Color(1f, 0.82f, 0.18f, 1f);
         [SerializeField] Color approachGlowColor = new Color(1f, 0.45f, 0.04f, 0.5f);
@@ -39,14 +42,21 @@ namespace ExtraterrestrialExhaust.Core
         float approachCueRemaining;
         float unlockCueRemaining;
         bool setupComplete;
+        ParticleSystem embers;
+        Transform emberTransform;
+        Vector3 closedGatePosition;
+        bool capturedClosedGatePosition;
+        bool creatingPresentation;
 
         public bool IsDisabled => gate && gate.IsDisabled;
         public int BeamCount => beamCount;
+        public bool HasEmberEmitter => embers != null;
 
         void Awake()
         {
             gate = GetComponent<EnergyGate>();
             pulseOffset = Random.value * Mathf.PI * 2f;
+            CaptureClosedGatePosition();
             EnsureSetup();
         }
 
@@ -55,6 +65,7 @@ namespace ExtraterrestrialExhaust.Core
             if (!gate)
                 gate = GetComponent<EnergyGate>();
 
+            CaptureClosedGatePosition();
             EnsureSetup();
             ApplyLines(0f, coreColor, glowColor);
         }
@@ -70,6 +81,8 @@ namespace ExtraterrestrialExhaust.Core
                 if (glowLines[i])
                     glowLines[i].enabled = false;
             }
+            if (embers)
+                embers.Stop(true, ParticleSystemStopBehavior.StopEmitting);
         }
 
         void OnValidate()
@@ -84,7 +97,7 @@ namespace ExtraterrestrialExhaust.Core
             // Awake creates the runtime beams before the public scene plays;
             // an already-configured instance can still refresh its editor
             // preview below without mutating hierarchy during validation.
-            if (!Application.isPlaying && !setupComplete)
+            if (!Application.isPlaying || !setupComplete || creatingPresentation)
                 return;
 
             EnsureSetup();
@@ -177,37 +190,56 @@ namespace ExtraterrestrialExhaust.Core
 
         void EnsureSetup()
         {
+            if (creatingPresentation)
+                return;
+
             if (!gate)
                 gate = GetComponent<EnergyGate>();
             if (!gate)
                 return;
 
-            // Older scene data can serialize zero after a partially completed
-            // builder pass. A programmable barrier with no beams reads as a
-            // missing gate, so keep the runtime contract visibly valid.
-            beamCount = Mathf.Max(1, beamCount);
-
-            while (coreLines.Count < beamCount)
+            creatingPresentation = true;
+            try
             {
-                int index = coreLines.Count;
-                Transform beamRoot = FindOrCreateChild($"Laser Beam {index + 1:00}");
-                LineRenderer glow = FindOrCreateLine(beamRoot, "Glow", glowLines.Count);
-                LineRenderer core = FindOrCreateLine(beamRoot, "Core", coreLines.Count);
-                glowLines.Add(glow);
-                coreLines.Add(core);
-            }
+                // A programmable barrier needs at least one visible beam.
+                beamCount = Mathf.Max(1, beamCount);
 
-            // A builder pass can reduce the authored count. Keep excess beams
-            // dormant instead of destroying user-authored child objects.
-            for (int i = beamCount; i < coreLines.Count; i++)
+                while (coreLines.Count < beamCount)
+                {
+                    int index = coreLines.Count;
+                    Transform beamRoot = FindOrCreateChild($"Laser Beam {index + 1:00}");
+                    LineRenderer glow = FindOrCreateLine(beamRoot, "Glow", glowLines.Count);
+                    LineRenderer core = FindOrCreateLine(beamRoot, "Core", coreLines.Count);
+                    glowLines.Add(glow);
+                    coreLines.Add(core);
+                }
+
+                // A builder pass can reduce the authored count. Keep excess beams
+                // dormant instead of destroying user-authored child objects.
+                for (int i = beamCount; i < coreLines.Count; i++)
+                {
+                    if (coreLines[i])
+                        coreLines[i].enabled = false;
+                    if (glowLines[i])
+                        glowLines[i].enabled = false;
+                }
+
+                EnsureEmbers();
+                setupComplete = true;
+            }
+            finally
             {
-                if (coreLines[i])
-                    coreLines[i].enabled = false;
-                if (glowLines[i])
-                    glowLines[i].enabled = false;
+                creatingPresentation = false;
             }
+        }
 
-            setupComplete = true;
+        void CaptureClosedGatePosition()
+        {
+            if (!gate || gate.IsDisabled)
+                return;
+
+            closedGatePosition = transform.position;
+            capturedClosedGatePosition = true;
         }
 
         Transform FindOrCreateChild(string childName)
@@ -239,6 +271,7 @@ namespace ExtraterrestrialExhaust.Core
             line.sharedMaterial = GetMaterial();
             line.textureMode = LineTextureMode.Stretch;
             ConfigureEnergyWidth(line, childName == "Core");
+            ApplyEnergyGradient(line, childName == "Core" ? coreColor : glowColor, childName == "Core");
             return line;
         }
 
@@ -258,6 +291,40 @@ namespace ExtraterrestrialExhaust.Core
                 new Keyframe(1f, hotCore ? 0.48f : 0.62f));
         }
 
+        static void ApplyEnergyGradient(LineRenderer line, Color tint, bool hotCore)
+        {
+            if (!line)
+                return;
+
+            Color deep = Color.Lerp(new Color(0.015f, 0.05f, 0.35f, hotCore ? 0.92f : 0.34f), tint, 0.22f);
+            Color mid = Color.Lerp(new Color(0.04f, 0.35f, 1f, hotCore ? 1f : 0.52f), tint, 0.38f);
+            Color hot = hotCore
+                ? Color.Lerp(new Color(0.8f, 1f, 1f, 1f), tint, 0.24f)
+                : Color.Lerp(new Color(0.16f, 0.7f, 1f, 0.65f), tint, 0.42f);
+            Color upper = Color.Lerp(new Color(0.01f, 0.035f, 0.24f, hotCore ? 0.72f : 0.24f), tint, 0.16f);
+            Gradient gradient = new Gradient();
+            gradient.SetKeys(
+                new[]
+                {
+                    new GradientColorKey(deep, 0f),
+                    new GradientColorKey(hot, 0.16f),
+                    new GradientColorKey(mid, 0.34f),
+                    new GradientColorKey(mid, 0.58f),
+                    new GradientColorKey(deep, 0.78f),
+                    new GradientColorKey(upper, 1f)
+                },
+                new[]
+                {
+                    new GradientAlphaKey(deep.a, 0f),
+                    new GradientAlphaKey(hot.a, 0.16f),
+                    new GradientAlphaKey(mid.a, 0.34f),
+                    new GradientAlphaKey(mid.a, 0.58f),
+                    new GradientAlphaKey(deep.a, 0.78f),
+                    new GradientAlphaKey(upper.a, 1f)
+                });
+            line.colorGradient = gradient;
+        }
+
         void ApplyLines(float pulse, Color activeCoreColor, Color activeGlowColor)
         {
             if (!setupComplete || !gate)
@@ -273,7 +340,14 @@ namespace ExtraterrestrialExhaust.Core
                 : gate.IsOpening
                     ? 1f - Mathf.SmoothStep(0f, 1f, progress)
                     : 1f;
-            float bottom = -height * 0.5f;
+            // The collider root retreats upward, while EE5's LaserWall keeps
+            // its emitter planted and retracts the rendered energy toward the
+            // ceiling. Offset the local points by that lift so the beam reads
+            // as one anchored energy wall instead of a blue line drifting away.
+            float rootLift = capturedClosedGatePosition
+                ? transform.position.y - closedGatePosition.y
+                : 0f;
+            float bottom = -height * 0.5f - rootLift;
             float top = bottom + height * visibleScale;
             bool visible = !gate.IsRouteClear && visibleScale > 0.001f;
             // OnEnable applies the authored base pose before Update produces
@@ -303,10 +377,74 @@ namespace ExtraterrestrialExhaust.Core
                 glow.SetPosition(1, new Vector3(0f, top, 0f));
                 core.widthMultiplier = coreWidth * pulseScale;
                 glow.widthMultiplier = glowWidth * pulseScale;
-                core.startColor = activeCoreColor;
-                core.endColor = activeCoreColor;
-                glow.startColor = activeGlowColor;
-                glow.endColor = activeGlowColor;
+                ApplyEnergyGradient(core, activeCoreColor, true);
+                ApplyEnergyGradient(glow, activeGlowColor, false);
+            }
+
+            UpdateEmbers(bottom, visible, activeCoreColor);
+        }
+
+        void EnsureEmbers()
+        {
+            if (embers)
+                return;
+
+            Transform child = transform.Find("Alien Blue Embers");
+            GameObject emberObject = child ? child.gameObject : new GameObject("Alien Blue Embers");
+            if (!child)
+                emberObject.transform.SetParent(transform, false);
+
+            emberTransform = emberObject.transform;
+            embers = emberObject.GetComponent<ParticleSystem>();
+            if (!embers)
+                embers = emberObject.AddComponent<ParticleSystem>();
+
+            ParticleSystem.MainModule main = embers.main;
+            main.loop = true;
+            main.playOnAwake = true;
+            main.startLifetime = new ParticleSystem.MinMaxCurve(0.18f, 0.55f);
+            main.startSpeed = new ParticleSystem.MinMaxCurve(0.15f, 0.7f);
+            main.startSize = new ParticleSystem.MinMaxCurve(0.035f, 0.12f);
+            main.startColor = new ParticleSystem.MinMaxGradient(emberColor, coreColor);
+            main.gravityModifier = 0f;
+            main.maxParticles = 90;
+
+            ParticleSystem.EmissionModule emission = embers.emission;
+            emission.enabled = true;
+            emission.rateOverTime = emberRate;
+            ParticleSystem.ShapeModule shape = embers.shape;
+            shape.enabled = true;
+            shape.shapeType = ParticleSystemShapeType.Circle;
+            shape.radius = 0.32f;
+            shape.radiusThickness = 0.18f;
+            ParticleSystem.NoiseModule noise = embers.noise;
+            noise.enabled = true;
+            noise.strength = 0.32f;
+            noise.frequency = 0.75f;
+            ParticleSystemRenderer renderer = emberObject.GetComponent<ParticleSystemRenderer>();
+            renderer.material = GetMaterial();
+            renderer.sortingOrder = sortingOrder + 2;
+            if (Application.isPlaying)
+                embers.Play(true);
+        }
+
+        void UpdateEmbers(float bottom, bool visible, Color activeCoreColor)
+        {
+            if (!embers)
+                return;
+
+            if (emberTransform)
+                emberTransform.localPosition = new Vector3(0f, bottom + 0.2f, 0f);
+            ParticleSystem.MainModule main = embers.main;
+            main.startColor = new ParticleSystem.MinMaxGradient(emberColor, activeCoreColor);
+            if (visible)
+            {
+                if (!embers.isPlaying)
+                    embers.Play(true);
+            }
+            else if (embers.isPlaying)
+            {
+                embers.Stop(true, ParticleSystemStopBehavior.StopEmitting);
             }
         }
 
