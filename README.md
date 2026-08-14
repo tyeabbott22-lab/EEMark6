@@ -131,3 +131,11 @@ $playmodeLog = Join-Path $env:TEMP "ee6-playmode-tests.log"
 - `S` / `Down Arrow`: stabilize
 - `X`: flip the craft's visual facing and weapon side
 - `Z`, `Enter`, or left mouse: fire
+
+## Known limitations
+
+- EE MARK 6 is the maintainable portfolio slice, not the frame-perfect gameplay archive. EE MARK 5/7 remain the rigorous feel and content references; exact thrust, rotation, animation timing, and encounter pacing are intentionally not acceptance criteria here.
+- The demo contains one authored room and one deterministic objective route. It does not attempt to migrate the prototype's full scene roster, bosses, or progression structure.
+- Death uses the current-room reload path and is deliberately less developed than the combat/key/gate/extraction route.
+- `FlightTestRuntimeContract` remains as a narrowly scoped recovery bridge for stale local scenes. The committed public scene is built and tested without requiring that bridge to repair any presentation or objective references at startup.
+- The scene builder is still the authoring source of truth for the public room. Run it after intentionally changing preserved prefabs or imported reference assets, then rerun the Play Mode route test.
