@@ -54,11 +54,10 @@ namespace ExtraterrestrialExhaust.Core
             if (gateArtwork)
                 baseArtworkColor = gateArtwork.color;
 
-            // The current builder preserves the original square outline for
-            // older scenes, but ProgrammableLaserGate is now the authored
-            // barrier. Showing both makes the gate read like two conflicting
-            // colliders and is especially confusing during the lift. Keep the
-            // legacy line available as a fallback when no laser gate exists.
+            // Older serialized scenes can preserve the original square
+            // outline, but ProgrammableLaserGate is now the authored barrier.
+            // Showing both makes the gate read like two conflicting colliders,
+            // so retain the line only as a fallback for laser-free variants.
             if (programmableLaserGate && gateLine)
                 gateLine.enabled = false;
         }

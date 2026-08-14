@@ -206,6 +206,12 @@ namespace ExtraterrestrialExhaust.Editor
             if (!publicSlice)
                 CreateEnvironmentalPressure();
 
+            // Persist the career-facing presentation in the scene itself.
+            // Preserved prefabs intentionally keep their old composition
+            // guides, but the public instance must not wait until Play for a
+            // runtime compatibility component to hide them.
+            SuppressKnownPublicDebugOutlines();
+
             // The gold-standard slice is intentionally focused on the EE5 loop:
             // encounter -> key -> gate -> extraction. Pickup and hazard scripts
             // remain optional pressure and recovery beats rather than becoming
@@ -719,6 +725,7 @@ namespace ExtraterrestrialExhaust.Editor
             }
 
             int removedLegacyPlaceholders = RemoveLegacyObjectivePlaceholders();
+            int suppressedDebugOutlines = SuppressKnownPublicDebugOutlines();
 
             EncounterController encounter = UnityEngine.Object.FindFirstObjectByType<EncounterController>();
             EnergyKey energyKey = UnityEngine.Object.FindFirstObjectByType<EnergyKey>();
@@ -838,6 +845,9 @@ namespace ExtraterrestrialExhaust.Editor
                         : "The scene was repaired but could not be saved; save FlightTest manually.")
                     + (removedLegacyPlaceholders > 0
                         ? $" Removed {removedLegacyPlaceholders} legacy objective placeholder(s)."
+                        : string.Empty)
+                    + (suppressedDebugOutlines > 0
+                        ? $" Suppressed {suppressedDebugOutlines} composition guide(s)."
                         : string.Empty)
                     + (repairedEnemyHitboxes
                         ? " Authored EE5 enemy hurtboxes were also repaired."
@@ -2218,6 +2228,97 @@ namespace ExtraterrestrialExhaust.Editor
             return removed;
         }
 
+        static int SuppressKnownPublicDebugOutlines()
+        {
+            int suppressed = 0;
+
+            GameObject player = GameObject.Find("Player Craft");
+            Transform playerVisual = player
+                ? player.transform.Find("Craft Visual")
+                : null;
+            LineRenderer playerOutline = playerVisual
+                ? playerVisual.GetComponent<LineRenderer>()
+                : null;
+            if (playerOutline
+                && playerOutline.enabled
+                && IsGeneratedPlayerOutline(playerOutline))
+            {
+                playerOutline.enabled = false;
+                RecordPublicInstanceOverride(playerOutline);
+                suppressed++;
+            }
+
+            EnemyController[] enemies =
+                UnityEngine.Object.FindObjectsByType<EnemyController>(
+                    FindObjectsSortMode.None);
+            foreach (EnemyController enemy in enemies)
+            {
+                LineRenderer enemyOutline = enemy
+                    ? enemy.GetComponent<LineRenderer>()
+                    : null;
+                if (!enemyOutline
+                    || !enemyOutline.enabled
+                    || !IsGeneratedSquareOutline(enemyOutline, 0.55f))
+                {
+                    continue;
+                }
+
+                enemyOutline.enabled = false;
+                RecordPublicInstanceOverride(enemyOutline);
+                suppressed++;
+            }
+
+            EnergyGate gate = UnityEngine.Object.FindFirstObjectByType<EnergyGate>();
+            LineRenderer gateOutline = gate ? gate.GetComponent<LineRenderer>() : null;
+            if (gate
+                && gate.GetComponent<ProgrammableLaserGate>()
+                && gateOutline
+                && gateOutline.enabled)
+            {
+                gateOutline.enabled = false;
+                RecordPublicInstanceOverride(gateOutline);
+                suppressed++;
+            }
+
+            if (suppressed > 0)
+                EditorSceneManager.MarkSceneDirty(SceneManager.GetActiveScene());
+
+            return suppressed;
+        }
+
+        static void RecordPublicInstanceOverride(Component component)
+        {
+            if (!component)
+                return;
+
+            EditorUtility.SetDirty(component);
+            if (PrefabUtility.IsPartOfPrefabInstance(component))
+                PrefabUtility.RecordPrefabInstancePropertyModifications(component);
+        }
+
+        static bool IsGeneratedPlayerOutline(LineRenderer outline)
+        {
+            if (!outline || outline.positionCount != 4)
+                return false;
+
+            Vector3[] expected =
+            {
+                new Vector3(0f, 0.7f),
+                new Vector3(-0.45f, -0.45f),
+                new Vector3(0f, -0.2f),
+                new Vector3(0.45f, -0.45f)
+            };
+
+            const float tolerance = 0.02f;
+            for (int i = 0; i < expected.Length; i++)
+            {
+                if (Vector3.Distance(outline.GetPosition(i), expected[i]) > tolerance)
+                    return false;
+            }
+
+            return true;
+        }
+
         static bool HasLegacyObjectivePlaceholders()
         {
             EnergyKey energyKey = UnityEngine.Object.FindFirstObjectByType<EnergyKey>();
@@ -2777,6 +2878,7 @@ namespace ExtraterrestrialExhaust.Editor
 
             if (HasLegacyObjectivePlaceholders())
                 issues.Add("legacy objective placeholder outline(s)");
+            AddPublicDebugOutlineIssues(issues);
 
             GameplayHud hud = UnityEngine.Object.FindFirstObjectByType<GameplayHud>();
             if (!hud)
@@ -2856,6 +2958,49 @@ namespace ExtraterrestrialExhaust.Editor
             if (enemies == null || enemies.Length < 2)
                 issues.Add($"Enemy roster ({enemies?.Length ?? 0}/2)");
             return issues;
+        }
+
+        static void AddPublicDebugOutlineIssues(List<string> issues)
+        {
+            GameObject player = GameObject.Find("Player Craft");
+            Transform playerVisual = player
+                ? player.transform.Find("Craft Visual")
+                : null;
+            LineRenderer playerOutline = playerVisual
+                ? playerVisual.GetComponent<LineRenderer>()
+                : null;
+            if (playerOutline
+                && playerOutline.enabled
+                && IsGeneratedPlayerOutline(playerOutline))
+            {
+                issues.Add("Player Craft composition outline is visible");
+            }
+
+            EnemyController[] enemies =
+                UnityEngine.Object.FindObjectsByType<EnemyController>(
+                    FindObjectsSortMode.None);
+            foreach (EnemyController enemy in enemies)
+            {
+                LineRenderer outline = enemy
+                    ? enemy.GetComponent<LineRenderer>()
+                    : null;
+                if (outline
+                    && outline.enabled
+                    && IsGeneratedSquareOutline(outline, 0.55f))
+                {
+                    issues.Add($"{enemy.gameObject.name} composition outline is visible");
+                }
+            }
+
+            EnergyGate gate = UnityEngine.Object.FindFirstObjectByType<EnergyGate>();
+            LineRenderer gateOutline = gate ? gate.GetComponent<LineRenderer>() : null;
+            if (gate
+                && gate.GetComponent<ProgrammableLaserGate>()
+                && gateOutline
+                && gateOutline.enabled)
+            {
+                issues.Add("Energy Gate legacy outline is visible");
+            }
         }
 
         static void AddBrittleTerrainContractIssues(
@@ -5076,10 +5221,6 @@ namespace ExtraterrestrialExhaust.Editor
             serializedGatePresentation.FindProperty("approachPulseWidthMultiplier").floatValue = 1.25f;
             serializedGatePresentation.FindProperty("approachPulseSpeed").floatValue = 24f;
             serializedGatePresentation.ApplyModifiedPropertiesWithoutUndo();
-            CreateSquareOutline(
-                gate.transform,
-                Ee5SliceProfile.VerticalSliceGateColliderSize,
-                new Color(0.2f, 0.55f, 1f));
             CreateGateVisual(gate.transform);
 
             GameObject key = new GameObject("Energy Key");
