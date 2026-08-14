@@ -59,6 +59,8 @@ namespace ExtraterrestrialExhaust.Editor
         const string LegacyBoundaryWallSpriteAssetPath = "Assets/Art/Reference/Environment/wallFinal.png";
         const string MoonTerrainFillProfileAssetPath =
             "Assets/Art/Reference/Environment/Moon/MoonTerrainFillProfile.asset";
+        const string MoonTerrainPhysicsMaterialAssetPath =
+            "Assets/Art/Reference/Environment/Moon/MoonHighFriction.physicsMaterial2D";
         const string StarfieldSpritePath = "Assets/Art/Reference/Environment/starfield_backdrop.png";
         const string LegacyStarfieldSpritePath = "Assets/Art/Reference/Environment/sprStars.png";
         const string NebulaSpritePath = "Assets/Art/Reference/Environment/nebula_backdrop.png";
@@ -76,16 +78,22 @@ namespace ExtraterrestrialExhaust.Editor
         [MenuItem("Extraterrestrial Exhaust/Build Flight Test Scene")]
         public static void Build()
         {
-            BuildInternal(false);
+            BuildInternal(false, false);
         }
 
         [MenuItem("Extraterrestrial Exhaust/Build Flight Test Scene (Preserve Prefabs)")]
         public static void BuildPreservingPrefabs()
         {
-            BuildInternal(true);
+            BuildInternal(true, true);
         }
 
-        static void BuildInternal(bool preservePrefabs)
+        [MenuItem("Extraterrestrial Exhaust/Build Public Resume Slice (Preserve Prefabs)")]
+        public static void BuildPublicResumeSlice()
+        {
+            BuildInternal(true, true);
+        }
+
+        static void BuildInternal(bool preservePrefabs, bool publicSlice)
         {
             lastBuildSucceeded = false;
             if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
@@ -195,7 +203,8 @@ namespace ExtraterrestrialExhaust.Editor
 
             CreateArenaBoundaries();
             CreateFlightStopperZone();
-            CreateEnvironmentalPressure();
+            if (!publicSlice)
+                CreateEnvironmentalPressure();
 
             // The gold-standard slice is intentionally focused on the EE5 loop:
             // encounter -> key -> gate -> extraction. Pickup and hazard scripts
@@ -207,7 +216,8 @@ namespace ExtraterrestrialExhaust.Editor
             ConfigureBuildSettings();
                 Selection.activeGameObject = GameObject.Find("Player Craft");
                 Debug.Log(
-                    $"Built {ScenePath}{(preservePrefabs ? " from existing prefabs without rewriting them" : "")}. "
+                    $"Built {(publicSlice ? "the public resume slice at " : string.Empty)}{ScenePath}"
+                    + $"{(preservePrefabs ? " from existing prefabs without rewriting them" : "")}. "
                     + "Controls: W/Space thrust, A/D or Q/E rotate, S/C stabilize, X flip.");
                 ValidateActiveFlightTestSceneContract();
             }
@@ -2507,8 +2517,13 @@ namespace ExtraterrestrialExhaust.Editor
                         Vector3.one * Ee5SliceProfile.EnergyGateArtworkScale) > 0.02f)
                     issues.Add("Energy Gate artwork scale does not match the authored collider");
             }
-            if (!energyGateObject || !energyGateObject.GetComponent<ProgrammableLaserGate>())
+            ProgrammableLaserGate programmableGate = energyGateObject
+                ? energyGateObject.GetComponent<ProgrammableLaserGate>()
+                : null;
+            if (!programmableGate)
                 issues.Add("Energy Gate programmable laser network");
+            else if (programmableGate.BeamCount != 1)
+                issues.Add($"Energy Gate laser silhouette ({programmableGate.BeamCount} beams, expected 1)");
             CheckSceneObjectPosition(
                 GameObject.Find("Level Exit"),
                 Ee5SliceProfile.VerticalSliceExitPosition,
@@ -2759,24 +2774,67 @@ namespace ExtraterrestrialExhaust.Editor
                     "HUD exit",
                     issues);
             }
-            GameObject stopper = GameObject.Find("Flight Stopper Zone");
-            if (!stopper)
-                issues.Add("Flight Stopper Zone");
+            GameObject basin = GameObject.Find("Playable Low Basin - SpriteShape (8)");
+            if (!basin)
+            {
+                issues.Add("playable SpriteShape basin");
+            }
             else
             {
-                BoxCollider2D stopperCollider = stopper.GetComponent<BoxCollider2D>();
-                if (!stopperCollider)
-                    issues.Add("Flight Stopper Zone collider");
-                else if (!stopperCollider.isTrigger)
-                    issues.Add("Flight Stopper Zone must be a trigger");
-                if (stopper.tag != "StopperZone")
-                    issues.Add("Flight Stopper Zone tag");
+                PolygonCollider2D basinCollider = basin.GetComponent<PolygonCollider2D>();
+                if (!basinCollider || basinCollider.isTrigger)
+                    issues.Add("playable SpriteShape basin collision");
+                if (!basin.GetComponent<SpriteShapeController>())
+                    issues.Add("playable SpriteShape basin renderer");
             }
+
+            GameObject stopper = GameObject.Find("Moon Thrust Stopper - Solid Fall Area");
+            if (!stopper)
+                issues.Add("Moon Thrust Stopper - Solid Fall Area");
+            else
+            {
+                Collider2D stopperCollider = stopper.GetComponent<Collider2D>();
+                if (!stopperCollider)
+                    issues.Add("Moon Thrust Stopper collider");
+                else if (!stopperCollider.isTrigger)
+                    issues.Add("Moon Thrust Stopper must be a trigger");
+                if (stopper.tag != "StopperZone")
+                    issues.Add("Moon Thrust Stopper tag");
+                if (!stopper.GetComponent<SpriteShapeController>())
+                    issues.Add("Moon Thrust Stopper SpriteShape");
+            }
+
+            AddBrittleTerrainContractIssues(
+                "Upper Crater Shelf - SpriteShape",
+                issues);
+            AddBrittleTerrainContractIssues(
+                "Lower Crater Shelf - SpriteShape",
+                issues);
 
             EnemyController[] enemies = UnityEngine.Object.FindObjectsByType<EnemyController>(FindObjectsSortMode.None);
             if (enemies == null || enemies.Length < 2)
                 issues.Add($"Enemy roster ({enemies?.Length ?? 0}/2)");
             return issues;
+        }
+
+        static void AddBrittleTerrainContractIssues(
+            string objectName,
+            List<string> issues)
+        {
+            GameObject terrain = GameObject.Find(objectName);
+            if (!terrain)
+            {
+                issues.Add(objectName);
+                return;
+            }
+
+            PolygonCollider2D collider = terrain.GetComponent<PolygonCollider2D>();
+            if (!collider || collider.isTrigger)
+                issues.Add($"{objectName} collision");
+            if (!terrain.GetComponent<SpriteShapeController>())
+                issues.Add($"{objectName} SpriteShape");
+            if (!terrain.GetComponent<BrittleWall>())
+                issues.Add($"{objectName} brittle behavior");
         }
 
         static void AddGeneratedEnemyContractIssues(
@@ -4461,13 +4519,20 @@ namespace ExtraterrestrialExhaust.Editor
             serializedGate.ApplyModifiedPropertiesWithoutUndo();
             ProgrammableLaserGate laserGate = gate.AddComponent<ProgrammableLaserGate>();
             SerializedObject serializedLaserGate = new SerializedObject(laserGate);
-            serializedLaserGate.FindProperty("beamCount").intValue = 3;
-            serializedLaserGate.FindProperty("beamSpacing").floatValue = 0.12f;
-            serializedLaserGate.FindProperty("coreWidth").floatValue = 0.055f;
-            serializedLaserGate.FindProperty("glowWidth").floatValue = 0.32f;
+            // EE5's Laser Glow wall is one energy mass rendered as a hot core
+            // over a wide blue glow. Keep that authored silhouette instead of
+            // turning the gate into three unrelated parallel debug beams.
+            serializedLaserGate.FindProperty("beamCount").intValue = 1;
+            serializedLaserGate.FindProperty("beamSpacing").floatValue = 0f;
+            serializedLaserGate.FindProperty("coreWidth").floatValue = 0.14f;
+            serializedLaserGate.FindProperty("glowWidth").floatValue = 0.55f;
             serializedLaserGate.FindProperty("pulseSpeed").floatValue = 3f;
-            serializedLaserGate.FindProperty("pulseAmount").floatValue = 0.18f;
-            serializedLaserGate.FindProperty("sortingOrder").intValue = 12;
+            serializedLaserGate.FindProperty("pulseAmount").floatValue = 0.15f;
+            serializedLaserGate.FindProperty("coreColor").colorValue =
+                new Color(0.35f, 0.95f, 1f, 1f);
+            serializedLaserGate.FindProperty("glowColor").colorValue =
+                new Color(0.06f, 0.18f, 0.75f, 0.48f);
+            serializedLaserGate.FindProperty("sortingOrder").intValue = 8;
             serializedLaserGate.ApplyModifiedPropertiesWithoutUndo();
             EnergyGatePresentation gatePresentation = gate.AddComponent<EnergyGatePresentation>();
             SerializedObject serializedGatePresentation = new SerializedObject(gatePresentation);
@@ -4943,7 +5008,18 @@ namespace ExtraterrestrialExhaust.Editor
 
             BoxCollider2D collider = wall.AddComponent<BoxCollider2D>();
             collider.size = size;
-            BrittleWall brittleWall = wall.AddComponent<BrittleWall>();
+            ConfigureBrittleWall(wall);
+            CreateWallVisual(wall.transform, size, new Color(0.95f, 0.12f, 1f, 0.92f));
+        }
+
+        static void ConfigureBrittleWall(GameObject wall)
+        {
+            if (!wall)
+                return;
+
+            BrittleWall brittleWall = wall.GetComponent<BrittleWall>();
+            if (!brittleWall)
+                brittleWall = wall.AddComponent<BrittleWall>();
             SerializedObject serialized = new SerializedObject(brittleWall);
             serialized.FindProperty("dentSpeed").floatValue = 0.15f;
             serialized.FindProperty("breakSpeed").floatValue = 14f;
@@ -4969,7 +5045,6 @@ namespace ExtraterrestrialExhaust.Editor
             serialized.FindProperty("scrapePulseScale").floatValue = 0.045f;
             serialized.FindProperty("scrapeFlashColor").colorValue = new Color(1f, 0.62f, 1f, 1f);
             serialized.ApplyModifiedPropertiesWithoutUndo();
-            CreateWallVisual(wall.transform, size, new Color(0.95f, 0.12f, 1f, 0.92f));
         }
 
         static void CreateArenaBoundaries()
@@ -4991,33 +5066,31 @@ namespace ExtraterrestrialExhaust.Editor
                 new Vector2(halfExtents.x, 0f),
                 new Vector2(thickness, boundarySize.y + overscan));
             CreateWall(
-                "Floor",
-                new Vector2(0f, -halfExtents.y),
-                new Vector2(boundarySize.x, thickness));
-            CreateWall(
                 "Ceiling",
                 new Vector2(0f, halfExtents.y),
                 new Vector2(boundarySize.x, thickness));
 
-            // The box colliders above remain the gameplay boundary. This
-            // imported EE5 SpriteShape is presentation-only, so terrain art
-            // can become richer without changing movement, brittle impacts,
-            // or aim-line collision rules.
-            CreateMoonTerrainBasin();
+            // EE5's Playable Low Basin uses the SpriteShape polygon as the
+            // actual collision surface. Make the imported moon shape the
+            // authority here as well; box terrain is retained only when the
+            // profile asset is unavailable in a partial checkout.
+            bool createdMoonTerrain = CreateMoonTerrainBasin();
+            if (!createdMoonTerrain)
+            {
+                CreateWall(
+                    "Floor",
+                    new Vector2(0f, -halfExtents.y),
+                    new Vector2(boundarySize.x, thickness));
+                CreateBrittleWall(
+                    "Upper Crater Shelf",
+                    Ee5SliceProfile.VerticalSliceUpperShelfPosition,
+                    Ee5SliceProfile.VerticalSliceUpperShelfSize);
+                CreateBrittleWall(
+                    "Lower Crater Shelf",
+                    Ee5SliceProfile.VerticalSliceLowerShelfPosition,
+                    Ee5SliceProfile.VerticalSliceLowerShelfSize);
+            }
 
-            // EE5's realScene reads as a room rather than a blank box: the
-            // shelves create readable flight lanes, break line of sight, and
-            // give the wake telegraph and gunner pressure somewhere to matter.
-            // They stay off the authored key, gate, and exit landmarks so the
-            // objective route remains direct and testable.
-            CreateBrittleWall(
-                "Upper Crater Shelf",
-                Ee5SliceProfile.VerticalSliceUpperShelfPosition,
-                Ee5SliceProfile.VerticalSliceUpperShelfSize);
-            CreateBrittleWall(
-                "Lower Crater Shelf",
-                Ee5SliceProfile.VerticalSliceLowerShelfPosition,
-                Ee5SliceProfile.VerticalSliceLowerShelfSize);
             CreateWall(
                 "Extraction Spine",
                 Ee5SliceProfile.VerticalSliceExtractionSpinePosition,
@@ -5026,28 +5099,60 @@ namespace ExtraterrestrialExhaust.Editor
 
         static void CreateFlightStopperZone()
         {
-            // EE5's lower-center white stopper is a gameplay volume, not a
-            // decorative wall: while inside it, flight input and rotation are
-            // suppressed but existing momentum is allowed to coast through.
-            GameObject zone = new GameObject("Flight Stopper Zone");
+            // The EE5 reference is an irregular translucent SpriteShape
+            // volume. Its collider is a trigger: the player keeps falling or
+            // coasting through it while PlayerFlightMotor suppresses thrust
+            // and rotation through the StopperZone contract.
+            GameObject zone = new GameObject("Moon Thrust Stopper - Solid Fall Area");
             zone.tag = "StopperZone";
             zone.transform.position = new Vector3(
                 0f,
                 Ee5SliceProfile.FlightStopperCenterY,
                 0f);
 
-            BoxCollider2D collider = zone.AddComponent<BoxCollider2D>();
-            collider.isTrigger = true;
-            collider.size = new Vector2(
-                Ee5SliceProfile.FlightStopperWidth,
-                Ee5SliceProfile.FlightStopperHeight);
+            float halfWidth = Ee5SliceProfile.FlightStopperWidth * 0.5f;
+            float halfHeight = Ee5SliceProfile.FlightStopperHeight * 0.5f;
+            Vector2[] points =
+            {
+                new Vector2(-halfWidth, -halfHeight * 0.55f),
+                new Vector2(-halfWidth * 0.72f, -halfHeight * 0.9f),
+                new Vector2(0f, -halfHeight * 0.72f),
+                new Vector2(halfWidth * 0.75f, -halfHeight * 0.25f),
+                new Vector2(halfWidth, halfHeight * 0.45f),
+                new Vector2(halfWidth * 0.5f, halfHeight * 0.82f),
+                new Vector2(-halfWidth * 0.4f, halfHeight * 0.7f),
+                new Vector2(-halfWidth, halfHeight * 0.32f)
+            };
 
-            // Keep the cue understated like EE5's nearly transparent white
-            // strip while still making the volume discoverable in the slice.
-            CreateSquareOutline(
-                zone.transform,
-                collider.size,
-                new Color(0.75f, 0.88f, 1f, 0.32f));
+            PolygonCollider2D collider = zone.AddComponent<PolygonCollider2D>();
+            collider.isTrigger = true;
+            collider.pathCount = 1;
+            collider.SetPath(0, points);
+
+            SpriteShape profile = AssetDatabase.LoadAssetAtPath<SpriteShape>(
+                MoonTerrainFillProfileAssetPath);
+            if (profile)
+            {
+                SpriteShapeController controller = zone.AddComponent<SpriteShapeController>();
+                ConfigureSpriteShape(
+                    controller,
+                    profile,
+                    points,
+                    0.3f,
+                    ShapeTangentMode.Continuous);
+                controller.spriteShapeRenderer.sortingOrder = -8;
+                controller.spriteShapeRenderer.color =
+                    new Color(0.48f, 0.08f, 0.78f, 0.58f);
+            }
+            else
+            {
+                CreateSquareOutline(
+                    zone.transform,
+                    new Vector2(
+                        Ee5SliceProfile.FlightStopperWidth,
+                        Ee5SliceProfile.FlightStopperHeight),
+                    new Color(0.48f, 0.08f, 0.78f, 0.58f));
+            }
         }
 
         static void EnsureTag(string tag)
@@ -5059,7 +5164,7 @@ namespace ExtraterrestrialExhaust.Editor
             }
         }
 
-        static void CreateMoonTerrainBasin()
+        static bool CreateMoonTerrainBasin()
         {
             SpriteShape profile = AssetDatabase.LoadAssetAtPath<SpriteShape>(
                 MoonTerrainFillProfileAssetPath);
@@ -5067,8 +5172,12 @@ namespace ExtraterrestrialExhaust.Editor
             {
                 Debug.LogWarning(
                     $"EE5 moon terrain profile not found at {MoonTerrainFillProfileAssetPath}; keeping wall-sprite fallback.");
-                return;
+                return false;
             }
+
+            PhysicsMaterial2D terrainMaterial =
+                AssetDatabase.LoadAssetAtPath<PhysicsMaterial2D>(
+                    MoonTerrainPhysicsMaterialAssetPath);
 
             Vector2 halfExtents = Ee5SliceProfile.VerticalSliceArenaHalfExtents;
             float floorY = -halfExtents.y;
@@ -5076,27 +5185,32 @@ namespace ExtraterrestrialExhaust.Editor
             float halfWidth = halfExtents.x;
 
             CreateMoonTerrainPiece(
-                "Playable Low Basin - SpriteShape",
+                "Playable Low Basin - SpriteShape (8)",
                 profile,
+                terrainMaterial,
                 Vector2.zero,
                 new[]
                 {
-                    new Vector2(-halfWidth, floorY + 0.28f),
-                    new Vector2(-halfWidth * 0.8f, floorY + 0.52f),
-                    new Vector2(-halfWidth * 0.55f, floorY + 0.38f),
-                    new Vector2(-halfWidth * 0.275f, floorY + 0.6f),
-                    new Vector2(0f, floorY + 0.44f),
-                    new Vector2(halfWidth * 0.275f, floorY + 0.62f),
-                    new Vector2(halfWidth * 0.55f, floorY + 0.42f),
-                    new Vector2(halfWidth * 0.8f, floorY + 0.55f),
-                    new Vector2(halfWidth, floorY + 0.3f),
+                    new Vector2(-halfWidth, floorY + 0.45f),
+                    new Vector2(-halfWidth * 0.84f, floorY + 0.39f),
+                    new Vector2(-halfWidth * 0.64f, floorY + 0.18f),
+                    new Vector2(-halfWidth * 0.42f, floorY - 0.11f),
+                    new Vector2(-halfWidth * 0.22f, floorY - 0.3f),
+                    new Vector2(0f, floorY - 0.38f),
+                    new Vector2(halfWidth * 0.22f, floorY - 0.31f),
+                    new Vector2(halfWidth * 0.44f, floorY - 0.09f),
+                    new Vector2(halfWidth * 0.66f, floorY + 0.23f),
+                    new Vector2(halfWidth * 0.84f, floorY + 0.44f),
+                    new Vector2(halfWidth, floorY + 0.46f),
                     new Vector2(halfWidth, basinBottomY),
                     new Vector2(-halfWidth, basinBottomY)
-                });
+                },
+                false);
 
             CreateMoonTerrainPiece(
                 "Upper Crater Shelf - SpriteShape",
                 profile,
+                terrainMaterial,
                 Ee5SliceProfile.VerticalSliceUpperShelfPosition,
                 new[]
                 {
@@ -5109,11 +5223,13 @@ namespace ExtraterrestrialExhaust.Editor
                     new Vector2(0.7f, 0.24f),
                     new Vector2(-0.7f, 0.17f),
                     new Vector2(-2.1f, 0.2f)
-                });
+                },
+                true);
 
             CreateMoonTerrainPiece(
                 "Lower Crater Shelf - SpriteShape",
                 profile,
+                terrainMaterial,
                 Ee5SliceProfile.VerticalSliceLowerShelfPosition,
                 new[]
                 {
@@ -5126,36 +5242,68 @@ namespace ExtraterrestrialExhaust.Editor
                     new Vector2(0.9f, 0.22f),
                     new Vector2(-0.7f, 0.16f),
                     new Vector2(-2.4f, 0.2f)
-                });
+                },
+                true);
+
+            return true;
         }
 
-        static void CreateMoonTerrainPiece(
+        static GameObject CreateMoonTerrainPiece(
             string objectName,
             SpriteShape profile,
+            PhysicsMaterial2D terrainMaterial,
             Vector2 position,
-            Vector2[] points)
+            Vector2[] points,
+            bool brittle)
         {
             GameObject terrain = new GameObject(objectName);
             terrain.tag = "Wall";
             terrain.transform.position = position;
 
+            PolygonCollider2D collider = terrain.AddComponent<PolygonCollider2D>();
+            collider.isTrigger = false;
+            collider.pathCount = 1;
+            collider.SetPath(0, points);
+            if (terrainMaterial)
+                collider.sharedMaterial = terrainMaterial;
+
             SpriteShapeController controller = terrain.AddComponent<SpriteShapeController>();
+            ConfigureSpriteShape(controller, profile, points, 0.32f);
+            controller.spriteShapeRenderer.sortingOrder = -20;
+            controller.spriteShapeRenderer.color = brittle
+                ? new Color(0.92f, 0.48f, 1f, 0.96f)
+                : Color.white;
+
+            if (brittle)
+                ConfigureBrittleWall(terrain);
+
+            return terrain;
+        }
+
+        static void ConfigureSpriteShape(
+            SpriteShapeController controller,
+            SpriteShape profile,
+            Vector2[] points,
+            float pointHeight,
+            ShapeTangentMode tangentMode = ShapeTangentMode.Linear)
+        {
+            if (!controller || !profile || points == null || points.Length < 3)
+                return;
+
             controller.spriteShape = profile;
             controller.fillPixelsPerUnit = 24f;
             controller.splineDetail = 2;
             controller.worldSpaceUVs = true;
             controller.colliderDetail = 0;
             controller.autoUpdateCollider = false;
-            controller.spriteShapeRenderer.sortingOrder = -20;
-            controller.spriteShapeRenderer.color = new Color(0.8f, 0.86f, 1f, 0.92f);
 
             controller.spline.Clear();
             controller.spline.isOpenEnded = false;
             for (int i = 0; i < points.Length; i++)
             {
                 controller.spline.InsertPointAt(i, points[i]);
-                controller.spline.SetHeight(i, 0.35f);
-                controller.spline.SetTangentMode(i, ShapeTangentMode.Continuous);
+                controller.spline.SetHeight(i, pointHeight);
+                controller.spline.SetTangentMode(i, tangentMode);
             }
 
             controller.RefreshSpriteShape();

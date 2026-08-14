@@ -229,7 +229,24 @@ namespace ExtraterrestrialExhaust.Core
             line.sortingOrder = sortingOrder + (childName == "Core" ? 1 : 0);
             line.sharedMaterial = GetMaterial();
             line.textureMode = LineTextureMode.Stretch;
+            ConfigureEnergyWidth(line, childName == "Core");
             return line;
+        }
+
+        static void ConfigureEnergyWidth(LineRenderer line, bool hotCore)
+        {
+            if (!line)
+                return;
+
+            // EE5's Laser Glow wall has a dense emitter end and a tapered far
+            // end rather than a constant-width debug line. Keep the curve
+            // normalized here; ApplyLines owns only the per-frame multiplier.
+            line.widthCurve = new AnimationCurve(
+                new Keyframe(0f, hotCore ? 0.72f : 0.88f),
+                new Keyframe(0.16f, hotCore ? 1.16f : 1.08f),
+                new Keyframe(0.38f, hotCore ? 1.04f : 0.96f),
+                new Keyframe(0.72f, 0.78f),
+                new Keyframe(1f, hotCore ? 0.48f : 0.62f));
         }
 
         void ApplyLines(float pulse, Color activeCoreColor, Color activeGlowColor)
@@ -250,7 +267,10 @@ namespace ExtraterrestrialExhaust.Core
             float bottom = -height * 0.5f;
             float top = bottom + height * visibleScale;
             bool visible = !gate.IsRouteClear && visibleScale > 0.001f;
-            float pulseScale = Mathf.Max(0.1f, pulse);
+            // OnEnable applies the authored base pose before Update produces
+            // its first pulse. Treat a non-positive value as neutral width so
+            // the gate never flashes as a hairline for one frame.
+            float pulseScale = pulse > 0f ? pulse : 1f;
 
             for (int i = 0; i < coreLines.Count; i++)
             {
@@ -272,10 +292,8 @@ namespace ExtraterrestrialExhaust.Core
                 core.SetPosition(1, new Vector3(0f, top, 0f));
                 glow.SetPosition(0, new Vector3(0f, bottom, 0f));
                 glow.SetPosition(1, new Vector3(0f, top, 0f));
-                core.startWidth = coreWidth * pulseScale;
-                core.endWidth = coreWidth * pulseScale;
-                glow.startWidth = glowWidth * pulseScale;
-                glow.endWidth = glowWidth * pulseScale;
+                core.widthMultiplier = coreWidth * pulseScale;
+                glow.widthMultiplier = glowWidth * pulseScale;
                 core.startColor = activeCoreColor;
                 core.endColor = activeCoreColor;
                 glow.startColor = activeGlowColor;

@@ -18,7 +18,7 @@ The target is a focused Unity 6 vertical slice that preserves the playable loop 
 3. Collect the energy key, deactivate the gate, and reach extraction.
 4. Watch the player capture sequence resolve into a clear completion state.
 
-The project is intentionally organized so this loop can grow into the full game without moving prototype scripts wholesale into production code. The current builder already uses the EE5 wall, gate, objective, player, and enemy art references; its generated colliders remain separate from those presentation assets.
+The project is intentionally organized so this loop can grow into the full game without moving prototype scripts wholesale into production code. The public-slice builder uses the EE5 wall, gate, objective, player, enemy, and moon-terrain references. Its basin and brittle shelves use their visible SpriteShape polygons as the actual collision surfaces, so the room shown to a reviewer is also the room used by gameplay.
 
 ## Runtime architecture
 
@@ -66,7 +66,7 @@ Gameplay systems should communicate with these public contracts rather than reac
 
 Combat uses `IDamageable` and `DamageInfo`, so weapons do not need to know whether they hit a player, enemy, or destructible object.
 
-The editor menu `Extraterrestrial Exhaust > Build Flight Test Scene` rebuilds the playable FlightTest scene from code and refreshes the reusable `PlayerCraft`, `EnemyMelee`, and `EnemyGunner` prefabs. The two enemy compositions keep close-range chase pressure separate from ranged projectile pressure while sharing the EE5 contact-damage contract. The generated room contains the required encounter, energy key, gate, extraction, and lower-center stopper landmarks plus deliberately optional hazard, health, and fire-rate beats; none of those optional resources can unlock or complete the objective flow.
+The editor menu `Extraterrestrial Exhaust > Build Public Resume Slice (Preserve Prefabs)` rebuilds the narrow playable `FlightTest` scene without rewriting the reusable `PlayerCraft`, `EnemyMelee`, or `EnemyGunner` prefabs. `Build Flight Test Scene (Preserve Prefabs)` points to the same public route. The scene contains only the required player, camera, melee hunter, gunner, encounter, basin terrain, brittle shelves, no-flight stopper, carrier key, laser gate, extraction portal, HUD, and instruction flow. The broader non-preserving builder remains available for deliberate prefab repair and optional hazard experiments.
 
 `Extraterrestrial Exhaust > Normalize Imported Sprite Names` is a separate, explicit cleanup command for the EE5-derived filenames that are safe to clarify (`sprSnipe`, `health`, `bullet`, `keyfinal`, `buttonFInal1`, `wallFinal`, `sprStars`, and `sprExplode`). It renames them to semantic EE6 roles through Unity's asset database, preserving their GUIDs; the builder also supports the legacy paths until that command is run. Enemy strips remain on their EE5 names because the older variant builders reuse them by color and pose; those require an intentional art inventory pass before renaming.
 
@@ -76,7 +76,7 @@ Running that builder also registers `FlightTest.unity` as the first Build Settin
 
 Reference art is imported under `Assets/Art/Reference` with its Unity metadata intact. Runtime behavior is re-authored in EE MARK 6; legacy prototype scripts and prefabs are not copied into the production path.
 
-The player gold standard is the shared `sniper.prefab` used by the `realScene` family in EE MARK 5. `realScene` is the baseline authored scene; `realScene2` adds the boss-health encounter; `realScene3` contains the final-boss variant. EE MARK 6 preserves the player’s tuned movement, camera, scale, health, weapon, and extraction loop while replacing prototype coupling with explicit runtime contracts. The builder keeps the EE5 camera response profile and the deliberate one-second player-shot cadence as named slice tuning, rather than leaving those values implicit in an inspector.
+The read-only room reference for this public slice is `Assets/Scenes/EE6.unity` in EE MARK 5. The named contracts are `Playable Low Basin - SpriteShape (8)`, `Moon Thrust Stopper - Solid Fall Area`, `Laser Wall - Vertical Forever Gate` / `Laser Glow`, `enemyGun (1)`, and `Enemy 01 - close bruiser`. EE MARK 6 re-authors those observable roles with explicit runtime contracts; it does not copy the legacy scripts or modify the reference project.
 
 ## Project conventions
 
@@ -90,6 +90,15 @@ The player gold standard is the shared `sniper.prefab` used by the `realScene` f
 ## Unity version
 
 Unity `6000.3.21f1`.
+
+## Build the public slice
+
+1. Open the project in the Unity version above.
+2. Run `Extraterrestrial Exhaust > Build Public Resume Slice (Preserve Prefabs)`.
+3. Wait for the builder's contract validation to report no missing systems.
+4. Open `Assets/Scenes/FlightTest.unity` and press Play.
+
+The builder backs up an existing `FlightTest` scene under `Library` before replacing it. It never reads from or writes to an EE MARK 5 project at build time; all approved reference art and configuration live inside this repository.
 
 ## Playtest controls
 
