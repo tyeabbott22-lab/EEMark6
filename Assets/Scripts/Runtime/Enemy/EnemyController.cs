@@ -951,6 +951,13 @@ namespace ExtraterrestrialExhaust.Enemy
             foreach (Collider2D collider in GetComponentsInChildren<Collider2D>(true))
                 collider.enabled = false;
 
+            // Collider.enabled is normally visible to the next physics step,
+            // but a projectile/contact callback can still be queued in this
+            // one step. Sync the disable before broadcasting Defeated so the
+            // key handoff sees a genuinely inert actor and no dead enemy can
+            // produce one last hit.
+            Physics2D.SyncTransforms();
+
             Defeated?.Invoke(this);
 
             // EE5 destroys the defeated actor after its death event has been

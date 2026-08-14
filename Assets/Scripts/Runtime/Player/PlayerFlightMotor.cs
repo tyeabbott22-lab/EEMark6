@@ -354,11 +354,15 @@ namespace ExtraterrestrialExhaust.Player
         {
             float targetAngularVelocity = -Mathf.Clamp(inputAmount, -1f, 1f)
                 * Ee5SliceProfile.PlayerPresentableMaxAngularVelocity;
-            body.angularVelocity = Mathf.MoveTowards(
-                body.angularVelocity,
-                targetAngularVelocity,
-                Ee5SliceProfile.PlayerPresentableTurnAcceleration
-                * Time.fixedDeltaTime);
+            // Quick presentable bridge: the keyboard turn owns the authored
+            // angular envelope immediately. The old ramp made a short A/D
+            // tap spend most of its life accelerating, which read as a slow
+            // or sticky player even though the EE5 reference reaches the
+            // same capped speed almost instantly through its tiny body
+            // inertia. Neutral input still goes through the release brake
+            // below, so a deliberate held turn remains a flip while a
+            // released turn stops decisively.
+            body.angularVelocity = targetAngularVelocity;
         }
 
         void ApplyPresentableReleaseBrake()
