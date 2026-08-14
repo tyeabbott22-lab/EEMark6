@@ -46,9 +46,10 @@ namespace ExtraterrestrialExhaust.Core
         // player relies on that cap, so keep the equivalent degree value when
         // the rebuilt motor applies its explicit safety clamp.
         public const float PlayerPresentableMaxAngularVelocity = 400f;
-        // Optional direct-response bridge retained for quick A/B tests while
-        // the prefab cleanup is still in flight. It is not the active slice
-        // contract; the authored torque path is the current gold behavior.
+        // The imported EE5 prefab's two torque writers are useful forensic
+        // evidence, but they make the rebuilt player feel viscous when stale
+        // prefab and scene values are both present. The presentable slice
+        // owns the turn response explicitly while cleanup is deferred.
         public const float PlayerPresentableTurnAcceleration = 2880f;
         // The reference craft damps naturally, but the rebuilt stack can carry
         // a stale angular-velocity impulse through a short keyboard tap. Bleed
@@ -60,15 +61,12 @@ namespace ExtraterrestrialExhaust.Core
         // while neutral input settles in roughly 0.17 seconds from full turn.
         public const float PlayerPresentableReleaseBrake = 2160f;
         public const float PlayerPresentableReleaseBrakeDelay = 0.04f;
-        // Use the authored EE5 torque handoff for the playable slice. The
-        // imported sniper has JetpackMotor plus JetpackInput's direct fallback
-        // enabled, so PlayerFlightMotor intentionally preserves both writers
-        // until the prefab can be cleaned up against a measured reference.
-        public const bool PlayerPresentableTurnResponseOwnsRotation = false;
-        // EE5's sniper prefab has JetpackMotor and JetpackInput both enabled.
-        // JetpackInput applies the same direct force/torque after the motor
-        // step. Keep that observable compatibility quirk named and switchable.
-        public const bool PlayerLegacyDirectPhysicsAssist = true;
+        // Reach the reference's roughly 400 degrees/second ceiling immediately
+        // so a short A/D tap is readable while a held turn still permits a
+        // deliberate flip. The duplicated legacy writer remains available for
+        // later side-by-side comparison without contaminating this test build.
+        public const bool PlayerPresentableTurnResponseOwnsRotation = true;
+        public const bool PlayerLegacyDirectPhysicsAssist = false;
         // realScene3 has no hidden neutral correction. S/C is the explicit
         // stabilize command; leaving this off prevents a release tap from
         // fighting an intentional partial turn or flip.
