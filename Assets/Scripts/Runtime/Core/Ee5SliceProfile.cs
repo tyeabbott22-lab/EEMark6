@@ -65,11 +65,11 @@ namespace ExtraterrestrialExhaust.Core
         // while neutral input settles in roughly 0.17 seconds from full turn.
         public const float PlayerPresentableReleaseBrake = 2160f;
         public const float PlayerPresentableReleaseBrakeDelay = 0.04f;
-        // The reference sniper has both JetpackMotor and JetpackInput enabled.
-        // Restore that observable desktop stack for the presentable route;
-        // the bounded response remains available as an isolated lab mode, but
-        // it must not replace the reference's authored torque behavior.
-        public const bool PlayerPresentableTurnResponseOwnsRotation = false;
+        // Quick presentable bridge: let the rebuilt motor reach the reference
+        // rotation envelope immediately instead of asking Unity 6 to reproduce
+        // the old duplicated-torque path through two separate writers. The
+        // authored torque values remain above as the cleanup/rip contract.
+        public const bool PlayerPresentableTurnResponseOwnsRotation = true;
         // EE5's sniper prefab has JetpackMotor and JetpackInput both enabled.
         // JetpackInput applies the same direct force/torque after the motor
         // step. Keep that observable compatibility quirk named and switchable.

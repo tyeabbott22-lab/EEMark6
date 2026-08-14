@@ -270,11 +270,14 @@ namespace ExtraterrestrialExhaust.Player
             }
 
             // realScene3's sniper instance also has JetpackInput's direct
-            // fallback enabled beside JetpackMotor. It is a strange but
-            // observable part of the reference feel, so reproduce it as a
-            // named compatibility pass owned by the motor.
-            if (!usePresentableTurnResponse)
-                ApplyEe5LegacyDirectPhysicsAssist(command, thrusting, turning);
+            // fallback enabled beside JetpackMotor. Keep its extra force in
+            // the quick presentable path, but do not submit a second torque
+            // writer after the bounded turn response has taken ownership.
+            ApplyEe5LegacyDirectPhysicsAssist(
+                command,
+                thrusting,
+                turning,
+                !usePresentableTurnResponse);
 
             // Optional presentable bridge: when enabled, the rebuilt stack
             // reaches its rotation envelope through a bounded handoff. The
@@ -370,7 +373,8 @@ namespace ExtraterrestrialExhaust.Player
         void ApplyEe5LegacyDirectPhysicsAssist(
             Vector2 command,
             bool thrusting,
-            bool turning)
+            bool turning,
+            bool applyRotationTorque)
         {
             if (!Ee5SliceProfile.PlayerLegacyDirectPhysicsAssist
                 || !body.simulated
@@ -383,7 +387,8 @@ namespace ExtraterrestrialExhaust.Player
             if (!turning)
                 return;
 
-            body.AddTorque(-command.x * rotationTorque, ForceMode2D.Force);
+            if (applyRotationTorque)
+                body.AddTorque(-command.x * rotationTorque, ForceMode2D.Force);
             if (rotationAddsThrust)
             {
                 body.AddRelativeForce(
