@@ -50,6 +50,14 @@ namespace ExtraterrestrialExhaust.Combat
         {
             float impactSpeed = collision.relativeVelocity.magnitude;
             PlayerCameraFollow.Instance?.TryShakeForWallImpact(collision);
+
+            // Unity sends collision callbacks to disabled behaviours so they
+            // can opt back in. The EE5 profile disables this experiment in
+            // Awake before caching health, so never enter its damage path from
+            // one of those compatibility callbacks.
+            if (!enabled || !health)
+                return;
+
             if (impactSpeed < minimumImpactSpeed || Time.time < nextDamageTime)
                 return;
 

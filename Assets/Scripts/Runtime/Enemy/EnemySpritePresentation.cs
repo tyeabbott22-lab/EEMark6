@@ -43,7 +43,7 @@ namespace ExtraterrestrialExhaust.Enemy
 
         EnemyController controller;
         SpriteRenderer scaledSourceRenderer;
-        Renderer[] renderers;
+        SpriteRenderer[] spriteRenderers;
         Sprite[] currentFrames;
         EnemyState currentState;
         int frameIndex;
@@ -79,7 +79,7 @@ namespace ExtraterrestrialExhaust.Enemy
             // controller is the authoritative role-specific source at runtime.
             RefreshRoleFacingContract();
 
-            renderers = GetComponentsInChildren<Renderer>(true);
+            spriteRenderers = GetComponentsInChildren<SpriteRenderer>(true);
             authoredFlipX = spriteRenderer && spriteRenderer.flipX;
         }
 
@@ -495,25 +495,25 @@ namespace ExtraterrestrialExhaust.Enemy
 
         void SetRenderersEnabled(bool enabled)
         {
-            if (renderers == null)
+            if (spriteRenderers == null)
                 return;
 
-            for (int i = 0; i < renderers.Length; i++)
+            for (int i = 0; i < spriteRenderers.Length; i++)
             {
-                if (!renderers[i])
+                if (!spriteRenderers[i])
                     continue;
 
                 // The 1.5x EE5 art clone is the only visible source once the
                 // visual-size contract is active. State changes used to turn
                 // the original renderer back on here, producing a doubled
                 // silhouette (and apparent jitter) during wake/attack beats.
-                if (renderers[i] == scaledSourceRenderer)
+                if (spriteRenderers[i] == scaledSourceRenderer)
                 {
-                    renderers[i].enabled = false;
+                    spriteRenderers[i].enabled = false;
                     continue;
                 }
 
-                renderers[i].enabled = enabled;
+                spriteRenderers[i].enabled = enabled;
             }
         }
 
