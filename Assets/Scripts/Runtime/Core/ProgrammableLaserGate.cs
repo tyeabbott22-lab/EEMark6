@@ -78,6 +78,15 @@ namespace ExtraterrestrialExhaust.Core
             beamSpacing = Mathf.Max(0f, beamSpacing);
             coreWidth = Mathf.Max(0.001f, coreWidth);
             glowWidth = Mathf.Max(coreWidth, glowWidth);
+
+            // Adding a component during another component's OnValidate is
+            // illegal in Unity 6 and produces a misleading builder error.
+            // Awake creates the runtime beams before the public scene plays;
+            // an already-configured instance can still refresh its editor
+            // preview below without mutating hierarchy during validation.
+            if (!Application.isPlaying && !setupComplete)
+                return;
+
             EnsureSetup();
             if (!Application.isPlaying)
                 ApplyLines(0f, coreColor, glowColor);

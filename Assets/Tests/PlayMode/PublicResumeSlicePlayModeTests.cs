@@ -62,6 +62,9 @@ namespace ExtraterrestrialExhaust.Tests.PlayMode
             Assert.That(cameraFollow, Is.Not.Null, "FlightTest has no gameplay camera follow.");
             Assert.That(cameraFollow.Target, Is.EqualTo(player), "The gameplay camera is not bound to the player.");
             Assert.That(gameplayCamera, Is.Not.Null, "FlightTest has no MainCamera.");
+            ParticleSystem[] exhaustParticles = player.GetComponentsInChildren<ParticleSystem>(true);
+            Assert.That(exhaustParticles.Length, Is.GreaterThanOrEqualTo(2),
+                "The player has no composed left/right exhaust particle systems.");
 
             Rigidbody2D body = player.FlightMotor.Body;
             Assert.That(body, Is.Not.Null);
@@ -112,6 +115,17 @@ namespace ExtraterrestrialExhaust.Tests.PlayMode
                 "W did not move the real Rigidbody2D along the craft's thrust axis.");
             Assert.That(gameplayCamera.transform.position.y - cameraStart.y, Is.GreaterThan(0.05f),
                 "The gameplay camera did not follow the thrusting player.");
+            bool exhaustWasPlaying = false;
+            for (int i = 0; i < exhaustParticles.Length; i++)
+            {
+                if (!exhaustParticles[i].isPlaying || exhaustParticles[i].particleCount <= 0)
+                    continue;
+
+                exhaustWasPlaying = true;
+                break;
+            }
+            Assert.That(exhaustWasPlaying, Is.True,
+                "Thrust did not start any visible exhaust particles.");
 
             // Verify turning separately so thrust displacement cannot hide a
             // missing torque binding or a frozen Rigidbody2D constraint.
@@ -172,6 +186,8 @@ namespace ExtraterrestrialExhaust.Tests.PlayMode
             Assert.That(GameObject.Find("Playable Low Basin - SpriteShape (8)"), Is.Not.Null);
             Assert.That(GameObject.Find("Upper Crater Shelf - SpriteShape"), Is.Not.Null);
             Assert.That(GameObject.Find("Lower Crater Shelf - SpriteShape"), Is.Not.Null);
+            Assert.That(GameObject.Find("Laser Wall - Vertical Forever Gate"), Is.Not.Null,
+                "The public route is missing its named EE5 laser wall landmark.");
 
             EnemyController[] enemies = Object.FindObjectsByType<EnemyController>(FindObjectsSortMode.None);
             Assert.That(enemies, Has.Length.EqualTo(2), "The public encounter must contain exactly two roles.");
@@ -271,15 +287,11 @@ namespace ExtraterrestrialExhaust.Tests.PlayMode
                 "The carrier key did not release after the encounter.");
             Assert.That(objective.CurrentState, Is.EqualTo(SliceObjectiveState.CollectEnergyKey));
 
-            float collectDeadline = Time.realtimeSinceStartup + 5f;
-            while (key && !key.IsCollected && Time.realtimeSinceStartup < collectDeadline)
-            {
-                PlaceBody(playerBody, key.GameplayPosition, 0f);
-                yield return new WaitForFixedUpdate();
-            }
-
             Assert.That(key, Is.Not.Null, "The key disappeared before collection.");
-            Assert.That(key.IsCollected, Is.True, "Physical player/key proximity did not collect the key.");
+            yield return WaitForCondition(
+                () => key && key.IsCollected,
+                3f,
+                "The released key did not converge into the player's collection range.");
             yield return WaitForCondition(
                 () => objective.CurrentState == SliceObjectiveState.OpenExtractionGate,
                 2f,

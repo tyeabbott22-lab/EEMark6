@@ -56,7 +56,7 @@ The player foundation is intentionally split into three responsibilities:
 | `EnemyWeapon` | Adds the EE5 white-gunner cadence, wall-aware line of sight, and readable pre-shot telegraph without coupling enemies to player weapons. |
 | `EncounterController` / `LevelExit` | Define the explicit combat roster while the EE5 carrier-key-gate-extraction sequence owns exit progression. |
 | `ExtractionPortalPresentation` | Provides the layered, pulsing extraction visual without scene-specific prototype dependencies. |
-| `EnergyKey` / `EnergyGate` | Recreate the EE5 key-to-gate traversal objective, including release-point-preserving player orbit motion and the authored upward gate lift. |
+| `EnergyKey` / `EnergyGate` | Drive the public room's clear-both-enemies → nearby collectable key → named laser-wall lift objective, with explicit key and gate state handoffs. |
 | `EnergyKeyPresentation` / `EnergyGatePresentation` / `ObjectiveSignalBurst` | Keep the key release, player collection, gate flight, timed gate-unlock pulse, and objective beats readable without coupling VFX to objective rules. |
 | `ScoreSystem` | Provides EE5-style event-driven arcade scoring with speed, flips, near misses, combat/objective beats, a live chain timer, and a bounded multiplier. |
 | `GameplayHud` | Presents score, live hull, action score callouts, and the current vertical-slice objective. |
