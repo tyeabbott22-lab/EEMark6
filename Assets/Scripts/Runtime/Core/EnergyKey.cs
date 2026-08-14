@@ -424,26 +424,20 @@ namespace ExtraterrestrialExhaust.Core
             orbitCenter = player ? player.PhysicsPosition : body.position;
             releasedAtTime = Time.time;
 
+            // A carrier can die across the room from the player. Preserving
+            // that distance as the initial orbit radius makes the public key
+            // circle well outside its own pickup range, which turns the next
+            // objective into a frustrating precision chase. Preserve the
+            // visible release pulse, but immediately converge on the authored
+            // nearby collection orbit.
+            currentRadiusX = orbitRadiusX;
+            currentRadiusY = orbitRadiusY;
             Vector2 fromPlayer = body.position - orbitCenter;
-            if (fromPlayer.sqrMagnitude > 0.001f)
-            {
-                // Preserve the release point on the ellipse, then let the
-                // normal radius easing grow it into the authored EE5 orbit.
-                float ellipseScale = Mathf.Sqrt(
-                    Mathf.Pow(fromPlayer.x / Mathf.Max(0.001f, orbitRadiusX), 2f)
-                    + Mathf.Pow(fromPlayer.y / Mathf.Max(0.001f, orbitRadiusY), 2f));
-                currentRadiusX = orbitRadiusX * ellipseScale;
-                currentRadiusY = orbitRadiusY * ellipseScale;
-                phase = Mathf.Atan2(
+            phase = fromPlayer.sqrMagnitude > 0.001f
+                ? Mathf.Atan2(
                     fromPlayer.y / Mathf.Max(0.001f, orbitRadiusY),
-                    fromPlayer.x / Mathf.Max(0.001f, orbitRadiusX));
-            }
-            else
-            {
-                currentRadiusX = orbitRadiusX;
-                currentRadiusY = orbitRadiusY;
-                phase = UnityEngine.Random.Range(0f, Mathf.PI * 2f);
-            }
+                    fromPlayer.x / Mathf.Max(0.001f, orbitRadiusX))
+                : UnityEngine.Random.Range(0f, Mathf.PI * 2f);
 
             keyCollider.enabled = true;
             UpdateAvailabilityVisual();
@@ -498,9 +492,15 @@ namespace ExtraterrestrialExhaust.Core
 
         bool CanReleaseFromEnemy()
         {
+            // The resume room teaches one explicit route: clear the small
+            // encounter, then claim the reward. A carrier remains useful for
+            // the key's initial visual anchor, but a surviving bruiser should
+            // never leave the objective state machine half-complete.
+            if (requiredEncounter)
+                return requiredEncounter.IsComplete;
+
             if (enemyTarget)
-                return enemyTarget.State == EnemyState.Defeated
-                    || (requiredEncounter && requiredEncounter.IsComplete);
+                return enemyTarget.State == EnemyState.Defeated;
 
             // A missing carrier reference is not permission to release at
             // scene start. Old hand-authored scenes can resolve references a

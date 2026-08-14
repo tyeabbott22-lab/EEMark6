@@ -91,6 +91,14 @@ namespace ExtraterrestrialExhaust.Core
         public const float PlayerBoostedExhaustWidthMultiplier = 1.45f;
         public const float PlayerBoostedExhaustYScale = 1.5f;
         public const float PlayerBoostedParticleEmissionMultiplier = 1.4f;
+        // The public scene is read at a glance in a portfolio review. Keep
+        // the particle exhaust large enough to survive the compact camera
+        // frame and the imported craft's source-canvas scaling.
+        public const float PlayerExhaustParticleMinSize = 0.075f;
+        public const float PlayerExhaustParticleMaxSize = 0.16f;
+        public const float PlayerExhaustParticleEmissionRate = 46f;
+        public const int PlayerExhaustSortingOrder = 28;
+        public const float PlayerExhaustLength = 0.75f;
         // EE5 expands these root-space X anchors by 1.55 when its visual-size
         // hack is active. These are the resulting sniper positions.
         public static readonly Vector3 PlayerLeftExhaustAnchor =
@@ -270,26 +278,26 @@ namespace ExtraterrestrialExhaust.Core
         public const float EnergyKeyEnemyOrbitRadius = 3f;
         public const float EnergyKeyEnemyOrbitSpeed = 3f;
         public const float EnergyKeyEnemyOrbitSharpness = 6f;
-        public const float EnergyKeyOrbitRadiusX = 4.4f;
-        public const float EnergyKeyOrbitRadiusY = 1.9f;
+        // EE5's wide orbit is an authored combat flourish, but in this
+        // small public room it placed the key outside its own pickup assist.
+        // Keep the release beat, then settle the key close enough to collect
+        // with ordinary flight rather than a precision chase.
+        public const float EnergyKeyOrbitRadiusX = 0.8f;
+        public const float EnergyKeyOrbitRadiusY = 0.55f;
         public const float EnergyKeyOrbitSpeed = 2f;
-        public const float EnergyKeyOrbitSharpness = 8f;
-        public const float EnergyKeyRadiusEase = 3.5f;
-        public const float EnergyKeyCenterFollowSharpness = 5.5f;
-        public const float EnergyKeyVisualScale = 1.65f;
+        public const float EnergyKeyOrbitSharpness = 12f;
+        public const float EnergyKeyRadiusEase = 12f;
+        public const float EnergyKeyCenterFollowSharpness = 10f;
+        public const float EnergyKeyVisualScale = 2.05f;
         // energy_key.png keeps its artwork in the upper half of a transparent
         // 96x64 canvas; move the visual down so the gameplay root stays centered.
         public static readonly Vector3 EnergyKeyVisualOffset = new Vector3(0f, -0.13f, 0f);
         public const float EnergyKeyCollectDistance = 0.65f;
-        // Presentable bridge for the current FlightTest player: the raw EE5 key
-        // still uses the tight distance above, but the slower prototype craft
-        // gets a small pickup grace so the authored orbit does not become a
-        // frustrating chase. Remove this when the imported player is fully
-        // side-by-side matched.
-        // Keep the temporary pickup grace generous enough for the current
-        // player bridge: the EE5 orbit remains unchanged, but a slow/awkward
-        // prototype craft should not miss the key during its single pass.
-        public const float EnergyKeyCollectionAssistDistance = 2.15f;
+        // This is intentionally wider than the public key orbit, so the
+        // objective remains reliable even when the craft is rotating or
+        // drifting as the carrier is defeated.
+        public const float EnergyKeyCollectionAssistDistance = 1.4f;
+        public const float EnergyKeyPickupTriggerRadius = 1.05f;
         public const float EnergyKeyGateUnlockRange = 2.4f;
         public const float EnergyKeyGateFlySpeed = 14f;
         public static readonly Vector3 EnergyKeyPlayerOffset =

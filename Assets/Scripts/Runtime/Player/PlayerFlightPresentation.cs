@@ -45,6 +45,9 @@ namespace ExtraterrestrialExhaust.Player
         [SerializeField, Range(0f, 1f)] float exhaustCollisionLifetimeLoss = 1f;
         [SerializeField, Range(0.01f, 2f)] float exhaustCollisionRadiusScale = 0.35f;
         [SerializeField] int exhaustSortingOrder = -1;
+        [SerializeField, Min(0.001f)] float exhaustParticleMinSize = 0.075f;
+        [SerializeField, Min(0.001f)] float exhaustParticleMaxSize = 0.16f;
+        [SerializeField, Min(0f)] float exhaustParticleEmissionRate = 46f;
 
         [Header("Exhaust Anchors")]
         [SerializeField] Vector3 leftExhaustAnchor = new Vector3(-0.28f, -0.35f, 0f);
@@ -120,6 +123,11 @@ namespace ExtraterrestrialExhaust.Player
             boostedExhaustEndColor = Ee5SliceProfile.PlayerBoostedExhaustTipColor;
             leftExhaustAnchor = Ee5SliceProfile.PlayerLeftExhaustAnchor;
             rightExhaustAnchor = Ee5SliceProfile.PlayerRightExhaustAnchor;
+            exhaustSortingOrder = Ee5SliceProfile.PlayerExhaustSortingOrder;
+            exhaustParticleMinSize = Ee5SliceProfile.PlayerExhaustParticleMinSize;
+            exhaustParticleMaxSize = Ee5SliceProfile.PlayerExhaustParticleMaxSize;
+            exhaustParticleEmissionRate = Ee5SliceProfile.PlayerExhaustParticleEmissionRate;
+            exhaustLength = Ee5SliceProfile.PlayerExhaustLength;
         }
 
         void OnEnable()
@@ -500,7 +508,9 @@ namespace ExtraterrestrialExhaust.Player
             main.simulationSpace = ParticleSystemSimulationSpace.Local;
             main.startLifetime = new ParticleSystem.MinMaxCurve(0.16f, 0.34f);
             main.startSpeed = 0f;
-            main.startSize = new ParticleSystem.MinMaxCurve(0.035f, 0.09f);
+            main.startSize = new ParticleSystem.MinMaxCurve(
+                exhaustParticleMinSize,
+                exhaustParticleMaxSize);
             main.startColor = new ParticleSystem.MinMaxGradient(
                 new Color(0.25f, 0.92f, 1f, 0.82f),
                 new Color(0.62f, 0.12f, 1f, 0.2f));
@@ -609,13 +619,16 @@ namespace ExtraterrestrialExhaust.Player
 
             ParticleSystem.EmissionModule emission = particles.emission;
             float emissionMultiplier = boosted ? boostedParticleEmissionMultiplier : 1f;
-            emission.rateOverTime = Mathf.Lerp(0f, 24f * emissionMultiplier, amount);
+            emission.rateOverTime = Mathf.Lerp(
+                0f,
+                exhaustParticleEmissionRate * emissionMultiplier,
+                amount);
             ApplyParticleBoostScale(particles, boosted);
             ParticleSystem.MainModule main = particles.main;
             float particleSizeMultiplier = boosted ? boostedExhaustWidthMultiplier : 1f;
             main.startSize = new ParticleSystem.MinMaxCurve(
-                0.035f * particleSizeMultiplier,
-                0.09f * particleSizeMultiplier);
+                exhaustParticleMinSize * particleSizeMultiplier,
+                exhaustParticleMaxSize * particleSizeMultiplier);
             main.startColor = boosted
                 ? new ParticleSystem.MinMaxGradient(
                     boostedExhaustStartColor,

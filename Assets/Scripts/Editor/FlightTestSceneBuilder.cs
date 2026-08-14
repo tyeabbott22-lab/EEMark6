@@ -55,6 +55,7 @@ namespace ExtraterrestrialExhaust.Editor
         const string LegacyEnergyKeySpriteAssetPath = "Assets/Art/Reference/Objectives/keyfinal.png";
         const string EnergyGateSpriteAssetPath = "Assets/Art/Reference/Objectives/energy_gate.png";
         const string LegacyEnergyGateSpriteAssetPath = "Assets/Art/Reference/Objectives/buttonFInal1.png";
+        const string PublicGateObjectName = "Laser Wall - Vertical Forever Gate";
         const string BoundaryWallSpriteAssetPath = "Assets/Art/Reference/Environment/boundary_wall.png";
         const string LegacyBoundaryWallSpriteAssetPath = "Assets/Art/Reference/Environment/wallFinal.png";
         const string MoonTerrainFillProfileAssetPath =
@@ -2820,37 +2821,37 @@ namespace ExtraterrestrialExhaust.Editor
                 true,
                 "White Gunner",
                 issues);
-            GameObject energyGateObject = GameObject.Find("Energy Gate");
+            GameObject energyGateObject = GameObject.Find(PublicGateObjectName);
             CheckSceneObjectPosition(
                 energyGateObject,
                 Ee5SliceProfile.VerticalSliceGatePosition,
-                "Energy Gate",
+                PublicGateObjectName,
                 issues);
             Transform gateArtwork = energyGateObject
                 ? energyGateObject.transform.Find("Gate Artwork")
                 : null;
             if (!gateArtwork)
             {
-                issues.Add("Energy Gate artwork");
+                issues.Add($"{PublicGateObjectName} artwork");
             }
             else
             {
                 if (Vector3.Distance(
                         gateArtwork.localPosition,
                         Ee5SliceProfile.EnergyGateArtworkLocalPosition) > 0.02f)
-                    issues.Add("Energy Gate artwork is not centered against its collider");
+                    issues.Add($"{PublicGateObjectName} artwork is not centered against its collider");
                 if (Vector3.Distance(
                         gateArtwork.localScale,
                         Vector3.one * Ee5SliceProfile.EnergyGateArtworkScale) > 0.02f)
-                    issues.Add("Energy Gate artwork scale does not match the authored collider");
+                    issues.Add($"{PublicGateObjectName} artwork scale does not match the authored collider");
             }
             ProgrammableLaserGate programmableGate = energyGateObject
                 ? energyGateObject.GetComponent<ProgrammableLaserGate>()
                 : null;
             if (!programmableGate)
-                issues.Add("Energy Gate programmable laser network");
+                issues.Add($"{PublicGateObjectName} programmable laser network");
             else if (programmableGate.BeamCount != 1)
-                issues.Add($"Energy Gate laser silhouette ({programmableGate.BeamCount} beams, expected 1)");
+                issues.Add($"{PublicGateObjectName} laser silhouette ({programmableGate.BeamCount} beams, expected 1)");
             CheckSceneObjectPosition(
                 GameObject.Find("Level Exit"),
                 Ee5SliceProfile.VerticalSliceExitPosition,
@@ -5364,7 +5365,7 @@ namespace ExtraterrestrialExhaust.Editor
             encounterEnemies.GetArrayElementAtIndex(1).objectReferenceValue = gunnerEnemy;
             serializedEncounter.ApplyModifiedPropertiesWithoutUndo();
 
-            GameObject gate = new GameObject("Energy Gate");
+            GameObject gate = new GameObject(PublicGateObjectName);
             gate.tag = "Wall";
             gate.transform.position = Ee5SliceProfile.VerticalSliceGatePosition;
             BoxCollider2D gateCollider = gate.AddComponent<BoxCollider2D>();
@@ -5424,6 +5425,7 @@ namespace ExtraterrestrialExhaust.Editor
                 + Ee5SliceProfile.EnergyKeyEnemyOffset;
             CircleCollider2D keyCollider = key.AddComponent<CircleCollider2D>();
             keyCollider.isTrigger = true;
+            keyCollider.radius = Ee5SliceProfile.EnergyKeyPickupTriggerRadius;
             EnergyKey energyKey = key.AddComponent<EnergyKey>();
             Rigidbody2D keyBody = key.GetComponent<Rigidbody2D>();
             if (keyBody)
@@ -5439,10 +5441,9 @@ namespace ExtraterrestrialExhaust.Editor
             SerializedObject serializedKey = new SerializedObject(energyKey);
             serializedKey.FindProperty("enforceEe5Profile").boolValue = true;
             serializedKey.FindProperty("requiredEncounter").objectReferenceValue = encounter;
-            // EE5's key-lock beat is carried by the ranged gunner. The melee
-            // hunter remains active pressure while the player chases the key,
-            // which is the authored reason this objective does not require the
-            // entire encounter to be cleared before it can progress.
+            // The gunner remains the key's visual carrier. The public route
+            // intentionally releases only after the two-enemy encounter is
+            // complete, so its objective flow is clear at a glance.
             serializedKey.FindProperty("enemyTarget").objectReferenceValue = gunnerEnemy;
             serializedKey.FindProperty("targetGate").objectReferenceValue = energyGate;
             serializedKey.FindProperty("enemyOffset").vector3Value =
@@ -5674,7 +5675,7 @@ namespace ExtraterrestrialExhaust.Editor
                 "Energy Key Instruction",
                 Ee5SliceProfile.VerticalSliceKeyInstructionPosition,
                 Ee5SliceProfile.VerticalSliceKeyInstructionSize,
-                "DEFEAT THE CARRIER.\nTHE ENERGY KEY WILL BREAK FREE WHEN IT IS DEFEATED.",
+                "CLEAR BOTH HOSTILES.\nTHE ENERGY KEY WILL BREAK FREE.",
                 false,
                 objectiveDirector,
                 SliceObjectiveState.ClearEncounter);
@@ -5682,7 +5683,7 @@ namespace ExtraterrestrialExhaust.Editor
                 "Energy Gate Instruction",
                 Ee5SliceProfile.VerticalSliceGateInstructionPosition,
                 Ee5SliceProfile.VerticalSliceGateInstructionSize,
-                "COLLECT THE ENERGY KEY,\nTHEN FLY INTO THE ENERGY GATE.",
+                "COLLECT THE ENERGY KEY,\nTHEN FLY TO THE LASER WALL.",
                 false,
                 objectiveDirector,
                 SliceObjectiveState.OpenExtractionGate);
@@ -5882,12 +5883,15 @@ namespace ExtraterrestrialExhaust.Editor
                 brittleWall = wall.AddComponent<BrittleWall>();
             SerializedObject serialized = new SerializedObject(brittleWall);
             serialized.FindProperty("dentSpeed").floatValue = 0.15f;
-            serialized.FindProperty("breakSpeed").floatValue = 14f;
+            // The public room uses brittle terrain as a readable mechanic,
+            // not a high-skill speed check. A committed thrust pass should
+            // break it while glancing bumps still scrape it.
+            serialized.FindProperty("breakSpeed").floatValue = 6.5f;
             serialized.FindProperty("minimumChipDirectness").floatValue = 0.12f;
-            serialized.FindProperty("minimumDirectness").floatValue = 0.68f;
+            serialized.FindProperty("minimumDirectness").floatValue = 0.35f;
             serialized.FindProperty("requireThrustToChip").boolValue = false;
             serialized.FindProperty("requireThrustToBreak").boolValue = true;
-            serialized.FindProperty("chipsBeforeBreak").intValue = 8;
+            serialized.FindProperty("chipsBeforeBreak").intValue = 3;
             serialized.FindProperty("retainedVelocity").floatValue = 0.94f;
             serialized.FindProperty("followThroughNudge").floatValue = 0.34f;
             serialized.FindProperty("followThroughAssistDuration").floatValue =

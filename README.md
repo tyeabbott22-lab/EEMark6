@@ -106,7 +106,7 @@ The build command runs the same preflight automatically and cancels before promp
 
 ## End-to-end verification
 
-`Assets/Tests/PlayMode/PublicResumeSlicePlayModeTests.cs` loads the public `FlightTest` scene and verifies the complete reviewer route with the production components. It fires a real player projectile into the authored gunner hitbox, observes both enemy roles leave Dormant, completes the encounter through `HealthComponent`, physically collects the released carrier key, waits for the key-driven laser gate lift, enters the extraction trigger, and requires `GameOverReason.ExtractionComplete`.
+`Assets/Tests/PlayMode/PublicResumeSlicePlayModeTests.cs` loads the public `FlightTest` scene and verifies both the player-control chain and the complete reviewer route with production components. A virtual keyboard drives W thrust and D rotation through the real Input System asset, `PlayerFlightInput`, and `PlayerFlightMotor`, then confirms the gameplay camera follows the resulting Rigidbody2D motion. The route test fires a real player projectile into the authored gunner hitbox, observes both enemy roles leave Dormant, completes the encounter through `HealthComponent`, physically collects the released carrier key, waits for the key-driven laser gate lift, enters the extraction trigger, and requires `GameOverReason.ExtractionComplete`.
 
 The test uses direct finishing damage only after the live projectile path succeeds. This keeps automated verification deterministic without replacing weapon, collision, key, gate, or extraction behavior with test-only runtime hooks.
 

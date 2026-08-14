@@ -2,8 +2,10 @@ using System;
 using System.Collections;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
+using ExtraterrestrialExhaust.CameraSystem;
 using ExtraterrestrialExhaust.Combat;
 using ExtraterrestrialExhaust.Core;
 using ExtraterrestrialExhaust.Enemy;
@@ -17,9 +19,10 @@ namespace ExtraterrestrialExhaust.Tests.PlayMode
     /// used only after one live projectile has proved the weapon/hitbox path;
     /// this keeps the test deterministic without replacing gameplay systems.
     /// </summary>
-    public sealed class PublicResumeSlicePlayModeTests
+    public sealed class PublicResumeSlicePlayModeTests : InputTestFixture
     {
         const string ScenePath = "Assets/Scenes/FlightTest.unity";
+        Keyboard testKeyboard;
 
         [UnitySetUp]
         public IEnumerator LoadPublicSlice()
@@ -39,8 +42,98 @@ namespace ExtraterrestrialExhaust.Tests.PlayMode
         [UnityTearDown]
         public IEnumerator RestoreGlobalTime()
         {
+            testKeyboard = null;
             Time.timeScale = 1f;
             yield return null;
+        }
+
+        [UnityTest]
+        [Timeout(15000)]
+        public IEnumerator PlayerKeyboardInput_DrivesFlightMotorAndCamera()
+        {
+            PlayerCharacter player = Object.FindFirstObjectByType<PlayerCharacter>();
+            PlayerCameraFollow cameraFollow = Object.FindFirstObjectByType<PlayerCameraFollow>();
+            Camera gameplayCamera = Camera.main;
+
+            Assert.That(player, Is.Not.Null, "FlightTest has no PlayerCharacter.");
+            Assert.That(player.FlightInput, Is.Not.Null, "Player input adapter is not composed.");
+            Assert.That(player.FlightMotor, Is.Not.Null, "Player flight motor is not composed.");
+            Assert.That(player.FlightState.CurrentState, Is.EqualTo(PlayerFlightState.FreeFlight));
+            Assert.That(cameraFollow, Is.Not.Null, "FlightTest has no gameplay camera follow.");
+            Assert.That(cameraFollow.Target, Is.EqualTo(player), "The gameplay camera is not bound to the player.");
+            Assert.That(gameplayCamera, Is.Not.Null, "FlightTest has no MainCamera.");
+
+            Rigidbody2D body = player.FlightMotor.Body;
+            Assert.That(body, Is.Not.Null);
+
+            // The virtual keyboard exercises the production InputAction asset
+            // and EE5 compatibility adapter. Physics is isolated from gravity
+            // for this short contract test so only authored flight force is
+            // responsible for the measured displacement.
+            testKeyboard = InputSystem.AddDevice<Keyboard>("EE6 PlayMode Test Keyboard");
+            player.Health.ConfigureDamageRules(1000f, 0.05f);
+            body.gravityScale = 0f;
+            body.constraints = RigidbodyConstraints2D.None;
+            player.FlightMotor.ResetFacingForRespawn();
+            PlaceBody(body, Vector2.zero, 0f);
+
+            // Let the camera settle onto the reset pose before measuring its
+            // response to player movement.
+            for (int i = 0; i < 12; i++)
+                yield return null;
+
+            Vector2 thrustStart = body.position;
+            Vector3 cameraStart = gameplayCamera.transform.position;
+            Press(testKeyboard.wKey);
+            yield return null;
+
+            Assert.That(Keyboard.current, Is.EqualTo(testKeyboard),
+                "Another keyboard replaced the deterministic test device.");
+            Assert.That(Keyboard.current.wKey.isPressed, Is.True,
+                "The current keyboard lost its W state before gameplay sampled it.");
+            Assert.That(player.FlightInput.isActiveAndEnabled, Is.True,
+                "PlayerFlightInput became disabled during the scene settle.");
+            Assert.That(player.FlightState.CurrentState, Is.EqualTo(PlayerFlightState.FreeFlight),
+                "The player left FreeFlight before keyboard input could be sampled.");
+            Assert.That(Object.FindFirstObjectByType<GameStateMachine>().CurrentState,
+                Is.EqualTo(GameState.Playing),
+                "The game left Playing before keyboard input could be sampled.");
+            Assert.That(player.FlightInput.Move.y, Is.GreaterThan(0.9f),
+                "W did not reach the production PlayerFlightInput adapter.");
+
+            for (int i = 0; i < 12; i++)
+                yield return new WaitForFixedUpdate();
+            yield return null;
+
+            Assert.That(player.FlightMotor.AppliedFlightInput.y, Is.GreaterThan(0.9f),
+                "The flight motor did not consume the thrust command.");
+            Assert.That(player.FlightMotor.ControlMode, Is.EqualTo(PlayerFlightControlMode.Thrusting));
+            Assert.That(body.position.y - thrustStart.y, Is.GreaterThan(0.1f),
+                "W did not move the real Rigidbody2D along the craft's thrust axis.");
+            Assert.That(gameplayCamera.transform.position.y - cameraStart.y, Is.GreaterThan(0.05f),
+                "The gameplay camera did not follow the thrusting player.");
+
+            // Verify turning separately so thrust displacement cannot hide a
+            // missing torque binding or a frozen Rigidbody2D constraint.
+            Release(testKeyboard.wKey);
+            yield return null;
+            PlaceBody(body, Vector2.zero, 0f);
+            Press(testKeyboard.dKey);
+            yield return null;
+
+            Assert.That(Keyboard.current, Is.EqualTo(testKeyboard),
+                "Another keyboard replaced the deterministic test device.");
+            Assert.That(player.FlightInput.Move.x, Is.GreaterThan(0.9f),
+                "D did not reach the production PlayerFlightInput adapter.");
+
+            for (int i = 0; i < 10; i++)
+                yield return new WaitForFixedUpdate();
+
+            Assert.That(player.FlightMotor.AppliedFlightInput.x, Is.GreaterThan(0.9f),
+                "The flight motor did not consume the turn command.");
+            Assert.That(player.FlightMotor.ControlMode, Is.EqualTo(PlayerFlightControlMode.Turning));
+            Assert.That(Mathf.Abs(body.rotation), Is.GreaterThan(1f),
+                "D did not rotate the real player Rigidbody2D.");
         }
 
         [UnityTest]
