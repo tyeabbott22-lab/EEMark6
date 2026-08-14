@@ -1,5 +1,6 @@
 using UnityEngine;
 using ExtraterrestrialExhaust.CameraSystem;
+using ExtraterrestrialExhaust.Core;
 using ExtraterrestrialExhaust.Player;
 
 namespace ExtraterrestrialExhaust.Combat
@@ -25,8 +26,24 @@ namespace ExtraterrestrialExhaust.Combat
 
         void Awake()
         {
+            // The EE5 realScene player does not lose hull on ordinary wall
+            // contact. Preserved FlightTest instances can carry an old
+            // enabled override even when the prefab is correctly disabled;
+            // enforce the gold slice contract before the first collision
+            // callback so a dirty scene cannot invent a death path.
+            if (!IsEe5CollisionDamageEnabled())
+            {
+                enabled = false;
+                return;
+            }
+
             health = GetComponent<HealthComponent>();
             player = GetComponent<PlayerCharacter>();
+        }
+
+        static bool IsEe5CollisionDamageEnabled()
+        {
+            return Ee5SliceProfile.PlayerCollisionDamageEnabled;
         }
 
         void OnCollisionEnter2D(Collision2D collision)
