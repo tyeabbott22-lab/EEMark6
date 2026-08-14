@@ -93,9 +93,40 @@ namespace ExtraterrestrialExhaust.Editor
             BuildInternal(true, true);
         }
 
+        [MenuItem("Extraterrestrial Exhaust/Validate Public Resume Slice Build Inputs")]
+        public static void ValidatePublicResumeSliceBuildInputs()
+        {
+            List<string> issues = GetPublicSliceBuildInputIssues();
+            if (issues.Count == 0)
+            {
+                Debug.Log(
+                    "Public resume-slice inputs are ready: required prefabs, gameplay components, "
+                    + "input actions, imported art, moon SpriteShape assets, and audio are available.");
+                return;
+            }
+
+            Debug.LogError(
+                "Public resume-slice build inputs are incomplete: "
+                + string.Join("; ", issues)
+                + ". No scene was replaced. Restore or reimport these assets before running the builder.");
+        }
+
         static void BuildInternal(bool preservePrefabs, bool publicSlice)
         {
             lastBuildSucceeded = false;
+            if (publicSlice)
+            {
+                List<string> preflightIssues = GetPublicSliceBuildInputIssues();
+                if (preflightIssues.Count > 0)
+                {
+                    Debug.LogError(
+                        "Public resume-slice build cancelled before scene replacement: "
+                        + string.Join("; ", preflightIssues)
+                        + ". Run Extraterrestrial Exhaust > Validate Public Resume Slice Build Inputs for the same audit.");
+                    return;
+                }
+            }
+
             if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
             {
                 Debug.Log("FlightTest build cancelled before replacing the active scene.");
@@ -236,6 +267,150 @@ namespace ExtraterrestrialExhaust.Editor
                 Debug.LogException(exception);
                 if (File.Exists(ScenePath))
                     EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            }
+        }
+
+        static List<string> GetPublicSliceBuildInputIssues()
+        {
+            List<string> issues = new List<string>();
+
+            RequireBuildAsset<InputActionAsset>(InputAssetPath, "Unity Input System actions", issues);
+            RequireBuildAsset<PlayerProjectile>(ProjectilePrefabPath, "player projectile prefab", issues);
+            GameObject playerPrefab = RequireBuildAsset<GameObject>(
+                PlayerPrefabPath,
+                "PlayerCraft prefab",
+                issues);
+            GameObject meleePrefab = RequireBuildAsset<GameObject>(
+                EnemyMeleePrefabPath,
+                "EnemyMelee prefab",
+                issues);
+            GameObject gunnerPrefab = RequireBuildAsset<GameObject>(
+                EnemyGunnerPrefabPath,
+                "EnemyGunner prefab",
+                issues);
+
+            RequireBuildComponent<PlayerCharacter>(playerPrefab, "PlayerCraft", issues);
+            RequireBuildComponent<PlayerFlightStateMachine>(playerPrefab, "PlayerCraft", issues);
+            RequireBuildComponent<PlayerFlightInput>(playerPrefab, "PlayerCraft", issues);
+            RequireBuildComponent<PlayerFlightMotor>(playerPrefab, "PlayerCraft", issues);
+            RequireBuildComponent<HealthComponent>(playerPrefab, "PlayerCraft", issues);
+            RequireBuildComponent<PlayerWeaponInput>(playerPrefab, "PlayerCraft", issues);
+            RequireBuildComponent<PlayerWeapon>(playerPrefab, "PlayerCraft", issues);
+            RequireBuildComponent<PlayerFlightPresentation>(playerPrefab, "PlayerCraft", issues);
+            RequireBuildComponent<PlayerWeaponPresentation>(playerPrefab, "PlayerCraft", issues);
+            RequireBuildComponent<PlayerDamageFeedback>(playerPrefab, "PlayerCraft", issues);
+            RequireBuildComponent<PlayerHealthDisplay>(playerPrefab, "PlayerCraft", issues);
+            RequireBuildComponent<PlayerRespawnController>(playerPrefab, "PlayerCraft", issues);
+
+            RequireBuildComponent<EnemyController>(meleePrefab, "EnemyMelee", issues);
+            RequireBuildComponent<HealthComponent>(meleePrefab, "EnemyMelee", issues);
+            RequireBuildComponent<EnemySpritePresentation>(meleePrefab, "EnemyMelee", issues);
+            RequireBuildComponent<EnemyDeathPresentation>(meleePrefab, "EnemyMelee", issues);
+            RequireBuildComponent<EnemyController>(gunnerPrefab, "EnemyGunner", issues);
+            RequireBuildComponent<HealthComponent>(gunnerPrefab, "EnemyGunner", issues);
+            RequireBuildComponent<EnemyWeapon>(gunnerPrefab, "EnemyGunner", issues);
+            RequireBuildComponent<EnemySpritePresentation>(gunnerPrefab, "EnemyGunner", issues);
+            RequireBuildComponent<EnemyDeathPresentation>(gunnerPrefab, "EnemyGunner", issues);
+
+            RequireSpriteAsset(
+                PlayerCraftSpriteAssetPath,
+                LegacyPlayerCraftSpriteAssetPath,
+                "orange player craft sprite",
+                issues);
+            RequireSpriteAsset(
+                PlayerHealthSpriteAssetPath,
+                LegacyPlayerHealthSpriteAssetPath,
+                "player/enemy health sheet",
+                issues,
+                2);
+            RequireSpriteAsset(
+                PlayerProjectileSpriteAssetPath,
+                LegacyPlayerProjectileSpriteAssetPath,
+                "player projectile sprite",
+                issues);
+            RequireSpriteAsset(EnemySpritePath, null, "white gunner active sprite", issues);
+            RequireSpriteAsset(EnemyIdleSpritePath, null, "white gunner dormant strip", issues);
+            RequireSpriteAsset(EnemyDefeatSpritePath, null, "white gunner wake/defeat strip", issues);
+            RequireSpriteAsset(MeleeSpritePath, null, "close bruiser active sprite", issues);
+            RequireSpriteAsset(MeleeIdleSpritePath, null, "close bruiser dormant strip", issues);
+            RequireSpriteAsset(MeleeDefeatSpritePath, null, "close bruiser wake/defeat strip", issues);
+            RequireSpriteAsset(
+                EnergyKeySpriteAssetPath,
+                LegacyEnergyKeySpriteAssetPath,
+                "energy key sprite",
+                issues);
+            RequireSpriteAsset(
+                EnergyGateSpriteAssetPath,
+                LegacyEnergyGateSpriteAssetPath,
+                "energy gate artwork",
+                issues);
+            RequireSpriteAsset(
+                BoundaryWallSpriteAssetPath,
+                LegacyBoundaryWallSpriteAssetPath,
+                "boundary wall artwork",
+                issues);
+            RequireSpriteAsset(
+                StarfieldSpritePath,
+                LegacyStarfieldSpritePath,
+                "starfield backdrop",
+                issues);
+            RequireSpriteAsset(
+                EnemyBurstSpritePath,
+                LegacyEnemyBurstSpritePath,
+                "enemy defeat burst",
+                issues);
+
+            RequireBuildAsset<SpriteShape>(
+                MoonTerrainFillProfileAssetPath,
+                "moon terrain SpriteShape profile",
+                issues);
+            RequireBuildAsset<PhysicsMaterial2D>(
+                MoonTerrainPhysicsMaterialAssetPath,
+                "moon terrain physics material",
+                issues);
+            RequireBuildAsset<AudioClip>(ThrustAudioPath, "player thrust audio", issues);
+            RequireBuildAsset<AudioClip>(EnemyBurstAudioPath, "enemy defeat audio", issues);
+            return issues;
+        }
+
+        static T RequireBuildAsset<T>(
+            string assetPath,
+            string label,
+            List<string> issues)
+            where T : UnityEngine.Object
+        {
+            T asset = AssetDatabase.LoadAssetAtPath<T>(assetPath);
+            if (!asset)
+                issues.Add($"{label} missing at {assetPath}");
+            return asset;
+        }
+
+        static void RequireBuildComponent<T>(
+            GameObject prefab,
+            string label,
+            List<string> issues)
+            where T : Component
+        {
+            if (prefab && !prefab.GetComponent<T>())
+                issues.Add($"{label} is missing {typeof(T).Name}");
+        }
+
+        static void RequireSpriteAsset(
+            string semanticPath,
+            string legacyPath,
+            string label,
+            List<string> issues,
+            int minimumFrames = 1)
+        {
+            string assetPath = string.IsNullOrEmpty(legacyPath)
+                ? semanticPath
+                : ResolveAssetPath(semanticPath, legacyPath);
+            Sprite[] sprites = LoadSprites(assetPath);
+            if (sprites.Length < minimumFrames)
+            {
+                issues.Add(
+                    $"{label} has {sprites.Length} sprite frame(s) at {assetPath}; "
+                    + $"expected at least {minimumFrames}");
             }
         }
 

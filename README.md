@@ -96,11 +96,12 @@ Unity `6000.3.21f1`.
 ## Build the public slice
 
 1. Open the project in the Unity version above.
-2. Run `Extraterrestrial Exhaust > Build Public Resume Slice (Preserve Prefabs)`.
-3. Wait for the builder's contract validation to report no missing systems.
-4. Open `Assets/Scenes/FlightTest.unity` and press Play.
+2. Optionally run `Extraterrestrial Exhaust > Validate Public Resume Slice Build Inputs` for a non-destructive dependency audit.
+3. Run `Extraterrestrial Exhaust > Build Public Resume Slice (Preserve Prefabs)`.
+4. Wait for the builder's contract validation to report no missing systems.
+5. Open `Assets/Scenes/FlightTest.unity` and press Play.
 
-The builder backs up an existing `FlightTest` scene under `Library` before replacing it. It never reads from or writes to an EE MARK 5 project at build time; all approved reference art and configuration live inside this repository.
+The build command runs the same preflight automatically and cancels before prompting to save or replacing a scene if a required prefab, gameplay component, input asset, imported sprite, SpriteShape profile, physics material, or audio cue is missing. Once preflight passes, the builder backs up an existing `FlightTest` scene under `Library` before replacing it. It never reads from or writes to an EE MARK 5 project at build time; all approved reference art and configuration live inside this repository.
 
 ## Playtest controls
 
